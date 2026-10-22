@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Calibración de sprites{% endblock %}
+
+{% block content %}
+<div class="panel" style="max-width:900px;">
+    <h1>🎯 CALIBRACIÓN — click en el punto entre los pies de cada frame</h1>
+    <p class="hint">Haz click justo donde el personaje toca el suelo (entre ambos pies) en cada imagen. Las coordenadas aparecen debajo de cada una.</p>
+
+    <div id="frames-grid" style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; margin-top:20px;">
+        {% for i in range(frame_count) %}
+        <div style="text-align:center;">
+            <div style="position:relative; display:inline-block;">
+                <img src="{{ url_for('static', filename='images/raw_frames/' + anim + '_' + i|string + '.png') }}"
+                     data-frame="{{ i }}" class="calib-img"
+                     style="width:256px; height:256px; image-rendering: pixelated; cursor:crosshair; border:1px solid var(--locked);">
+            </div>
+            <p id="coords-{{ i }}" style="color:var(--cyan); font-size:0.85em;">frame {{ i }}: sin marcar</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:20px;">
+        <h3>Resultado (cópiame esto):</h3>
+        <textarea id="result" rows="6" style="width:100%; background:#0d1117; color:#c9d1d9; border:1px solid var(--locked); font-family:monospace;" readonly></textarea>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const anchors = {};
+
+document.querySelectorAll('.calib-img').forEach(img => {
+    img.addEventListener('click', (e) => {
+        const rect = img.getBoundingClientRect();
+        // la imagen se muestra a 256x256 real, así que no hace falta escalar
+        const x = Math.round(e.clientX - rect.left);
+        const y = Math.round(e.clientY - rect.top);
+        const frame = img.dataset.frame;
+        anchors[frame] = { x, y };
+        document.getElementById('coords-' + frame).textContent = `frame ${frame}: (${x}, ${y})`;
+        updateResult();
+    });
+});
+
+function updateResult() {
+    const lines = Object.entries(anchors)
+        .sort((a, b) => a[0] - b[0])
+        .map(([f, c]) => `    ${f}: (${c.x}, ${c.y}),`);
+    document.getElementById('result').value = "{\n" + lines.join("\n") + "\n}";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,760 @@
+
+const SCREEN_X = 60;
+const SCREEN_Y = 110;
+
+const SCREEN_WIDTH = 1160;
+const SCREEN_HEIGHT = 480;
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+ctx.imageSmoothingEnabled = false;
+
+function loadFrames(folder, count) {
+
+    const frames = [];
+
+    for(let i=1;i<=count;i++){
+
+        const img = new Image();
+
+        img.src =
+        `/static/img/skeli_fixed/${folder}/${folder}${i}.png`;
+
+        frames.push(img);
+    }
+
+    return frames;
+}
+
+const animations = {
+    idle: loadFrames("idle",4),
+    walk: loadFrames("walk",6),
+    attack: loadFrames("attack",4)
+};
+
+const player = {
+
+    x: 620,
+    y: 340,
+
+    width: 110,
+    height: 170,
+
+    speed: 4,
+
+    frame: 0,
+
+    facing: 1,
+
+    state: "idle"
+};
+
+const keys = {};
+
+document.addEventListener("keydown",(e)=>{
+
+    keys[e.key.toLowerCase()] = true;
+
+});
+
+document.addEventListener("keyup",(e)=>{
+
+    keys[e.key.toLowerCase()] = false;
+
+});
+
+
+const walls = [
+
+    {x:0,y:0,w:1280,h:40},
+    {x:0,y:680,w:1280,h:40},
+
+    {x:0,y:0,w:40,h:720},
+    {x:1240,y:0,w:40,h:720},
+
+    // ala izquierda
+    {x:350,y:40,w:40,h:220},
+    {x:350,y:460,w:40,h:220},
+
+    // ala derecha
+    {x:890,y:40,w:40,h:220},
+    {x:890,y:460,w:40,h:220}
+
+];
+
+const doors = [];
+
+for(let i=0;i<14;i++){
+
+    doors.push({
+
+        x:90 + ((i%7)*160),
+
+        y:i<7 ? 80 : 560,
+
+        w:70,
+
+        h:70,
+
+        level:i+1
+
+    });
+}
+
+function collides(nx,ny){
+
+    const p = {
+
+        x:nx,
+
+        y:ny,
+
+        w:player.width/2,
+
+        h:player.height-20
+
+    };
+
+    for(const wall of walls){
+
+        if(
+
+            p.x < wall.x + wall.w &&
+
+            p.x + p.w > wall.x &&
+
+            p.y < wall.y + wall.h &&
+
+            p.y + p.h > wall.y
+
+        ){
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function updatePlayer(){
+
+    let moving = false;
+
+    let dx = 0;
+    let dy = 0;
+
+    if(keys["a"]){
+
+        dx -= player.speed;
+        player.facing = -1;
+        moving = true;
+    }
+
+    if(keys["d"]){
+
+        dx += player.speed;
+        player.facing = 1;
+        moving = true;
+    }
+
+    if(keys["w"]){
+
+        dy -= player.speed;
+        moving = true;
+    }
+
+    if(keys["s"]){
+
+        dy += player.speed;
+        moving = true;
+    }
+
+    if(!collides(player.x + dx, player.y)){
+
+        player.x += dx;
+    }
+
+    if(!collides(player.x, player.y + dy)){
+
+        player.y += dy;
+    }
+
+    
+
+    player.y = Math.max(
+        SCREEN_Y,
+        Math.min(
+            player.y,
+            SCREEN_Y +
+            SCREEN_HEIGHT -
+            player.height
+        )
+    );
+
+player.state = moving ? "walk" : "idle";
+
+    for(const door of doors){
+
+        if(
+
+            player.x < door.x + door.w &&
+            player.x + player.width > door.x &&
+
+            player.y < door.y + door.h &&
+            player.y + player.height > door.y
+
+        ){
+
+            if(keys["e"]){
+
+                if(door.level===1){
+
+                    window.location.href="/level1/";
+                }
+            }
+        }
+    }
+}
+
+let tick = 0;
+
+function animatePlayer(){
+
+    tick++;
+
+    if(tick < 8){
+
+        return;
+    }
+
+    tick = 0;
+
+    player.frame++;
+
+    const anim = animations[player.state];
+
+    if(player.frame >= anim.length){
+
+        player.frame = 0;
+    }
+}
+
+function drawMap(){
+
+    ctx.fillStyle = "#49152d";
+
+    ctx.fillRect(
+        0,0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.fillStyle = "#6d2745";
+
+    ctx.fillRect(
+        0,
+        300,
+        1280,
+        120
+    );
+
+    ctx.fillRect(
+        570,
+        40,
+        120,
+        640
+    );
+
+    ctx.fillStyle="#734f34";
+
+    for(const door of doors){
+
+        ctx.fillRect(
+            door.x,
+            door.y,
+            door.w,
+            door.h
+        );
+
+        ctx.fillStyle="#fff";
+
+        ctx.font="18px monospace";
+
+        ctx.fillText(
+            door.level,
+            door.x+25,
+            door.y+42
+        );
+
+        ctx.fillStyle="#734f34";
+    }
+}
+
+function drawWalls(){
+
+    ctx.strokeStyle="#000";
+
+    walls.forEach(w=>{
+
+        ctx.strokeRect(
+            w.x,
+            w.y,
+            w.w,
+            w.h
+        );
+    });
+}
+
+function drawPlayer(){
+
+    const sprite =
+    animations[player.state][player.frame];
+
+    ctx.save();
+
+    if(player.facing === -1){
+
+        ctx.scale(-1,1);
+
+        ctx.drawImage(
+
+            sprite,
+
+            -player.x - player.width,
+
+            player.y,
+
+            player.width,
+
+            player.height
+
+        );
+
+    }else{
+
+        ctx.drawImage(
+
+            sprite,
+
+            player.x,
+
+            player.y,
+
+            player.width,
+
+            player.height
+
+        );
+    }
+
+    ctx.restore();
+
+    ctx.fillStyle="white";
+
+    ctx.font="14px monospace";
+
+    ctx.fillText(
+
+        "FABIANCHO",
+
+        player.x - 10,
+
+        player.y - 10
+
+    );
+}
+
+function drawHUD(){
+
+    ctx.fillStyle="white";
+
+    ctx.font="18px monospace";
+
+    ctx.fillText(
+
+        "WASD MOVER | J GOLPEAR | E ENTRAR",
+
+        20,
+
+        25
+
+    );
+}
+
+function loop(){
+
+    requestAnimationFrame(loop);
+
+    updatePlayer();
+
+    animatePlayer();
+
+    drawMap();
+
+    drawWalls();
+
+    drawPlayer();
+    drawScreenBorder();
+
+    drawHUD();
+    drawArcadeCabinet();
+
+    drawArcade();
+}
+
+loop();
+
+
+function drawArcade(){
+
+    // panel arcade inferior
+
+    ctx.fillStyle = "#181818";
+
+    ctx.fillRect(
+        0,
+        620,
+        canvas.width,
+        100
+    );
+
+    // marco metálico
+
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 8;
+
+    ctx.strokeRect(
+        5,
+        5,
+        canvas.width - 10,
+        canvas.height - 10
+    );
+
+    // palanca
+
+    let offsetX = 0;
+
+    if(keys["a"]) offsetX = -18;
+    if(keys["d"]) offsetX = 18;
+
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 6;
+
+    ctx.beginPath();
+    ctx.moveTo(120,690);
+    ctx.lineTo(
+        120 + offsetX,
+        650
+    );
+    ctx.stroke();
+
+    ctx.fillStyle = "#ff2020";
+
+    ctx.beginPath();
+    ctx.arc(
+        120 + offsetX,
+        650,
+        12,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    // base palanca
+
+    ctx.fillStyle="#444";
+
+    ctx.beginPath();
+    ctx.arc(
+        120,
+        690,
+        20,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    // boton ataque
+
+    ctx.fillStyle =
+        keys["j"]
+        ? "#ff2020"
+        : "#880000";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        1110,
+        660,
+        25,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // boton salto
+
+    ctx.fillStyle =
+        keys[" "]
+        ? "#00e0ff"
+        : "#004455";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        1180,
+        690,
+        25,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    ctx.fillStyle="#ffffff";
+
+    ctx.font="16px monospace";
+
+    ctx.fillText(
+        "ATAQUE",
+        1075,
+        615
+    );
+
+    ctx.fillText(
+        "SALTO",
+        1150,
+        615
+    );
+}
+
+
+function drawArcadeCabinet(){
+
+    // ===== MARQUESINA =====
+
+    ctx.fillStyle = "#8b5a2b";
+
+    ctx.fillRect(
+        180,
+        10,
+        920,
+        70
+    );
+
+    ctx.fillStyle = "#d28f2f";
+
+    ctx.fillRect(
+        200,
+        20,
+        880,
+        50
+    );
+
+    ctx.fillStyle = "#111";
+
+    ctx.font = "bold 30px monospace";
+
+    ctx.fillText(
+        "FABIANCHO CTF",
+        450,
+        55
+    );
+
+    // ===== MARCO PANTALLA =====
+
+    ctx.fillStyle = "#3a2a18";
+
+    ctx.fillRect(
+        25,
+        85,
+        1230,
+        530
+    );
+
+    // ===== PANEL CONTROL =====
+
+    ctx.fillStyle = "#6f4a25";
+
+    ctx.fillRect(
+        0,
+        620,
+        1280,
+        100
+    );
+
+    ctx.fillStyle = "#8d6436";
+
+    ctx.fillRect(
+        0,
+        620,
+        1280,
+        20
+    );
+
+    // ===== JOYSTICK =====
+
+    let stickX = 140;
+    let stickY = 680;
+
+    let offX = 0;
+    let offY = 0;
+
+    if(keys["a"]) offX = -18;
+    if(keys["d"]) offX = 18;
+
+    if(keys["w"]) offY = -12;
+    if(keys["s"]) offY = 12;
+
+    ctx.fillStyle = "#222";
+
+    ctx.beginPath();
+    ctx.arc(
+        stickX,
+        stickY,
+        24,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 7;
+
+    ctx.beginPath();
+    ctx.moveTo(stickX,stickY);
+    ctx.lineTo(
+        stickX + offX,
+        stickY - 45 + offY
+    );
+    ctx.stroke();
+
+    ctx.fillStyle = "#cc1111";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        stickX + offX,
+        stickY - 45 + offY,
+        12,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // ===== BOTON ATAQUE =====
+
+    const attackPressed =
+        keys["j"] ||
+        keys["J"];
+
+    ctx.fillStyle =
+        attackPressed
+        ? "#ff0000"
+        : "#770000";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        1070,
+        665,
+        28,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    if(attackPressed){
+
+        ctx.fillStyle =
+        "rgba(255,0,0,0.25)";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            1070,
+            665,
+            40,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+
+    // ===== BOTON SALTO =====
+
+    const jumpPressed =
+        keys[" "];
+
+    ctx.fillStyle =
+        jumpPressed
+        ? "#33ccff"
+        : "#004466";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        1160,
+        690,
+        25,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // ===== ETIQUETAS =====
+
+    ctx.fillStyle = "#fff";
+
+    ctx.font = "15px monospace";
+
+    ctx.fillText(
+        "ATAQUE",
+        1035,
+        620
+    );
+
+    ctx.fillText(
+        "SALTO",
+        1140,
+        635
+    );
+
+    ctx.fillText(
+        "WASD",
+        110,
+        715
+    );
+}
+
+function drawScreenBorder(){
+
+    ctx.strokeStyle = "#666";
+
+    ctx.lineWidth = 14;
+
+    ctx.strokeRect(
+        SCREEN_X,
+        SCREEN_Y,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    );
+
+    ctx.strokeStyle = "#222";
+
+    ctx.lineWidth = 4;
+
+    ctx.strokeRect(
+        SCREEN_X + 4,
+        SCREEN_Y + 4,
+        SCREEN_WIDTH - 8,
+        SCREEN_HEIGHT - 8
+    );
+}
+

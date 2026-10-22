@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UwUNTU CTF</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="arcade-body">
+
+    <div class="arcade-cabinet">
+        <div class="arcade-marquee">
+            <h1>UwUNTU CTF</h1>
+        </div>
+        <p class="arcade-subtitle">
+            Fabiancho lleva tanto tiempo enseñando Hacking Ético que ya sólo queda el esqueleto.
+        </p>
+
+        <div class="arcade-stage" id="arcade-stage">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Explicación de controles actualizada -->
+        <div class="arcade-controls-help">
+            <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
+            <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
+            <strong>F</strong> → GOLPE &nbsp;|&nbsp;
+            <strong>E</strong> → Abrir Nivel (en el mapa)
+        </div>
+
+        <div class="arcade-panel">
+            <div class="joystick-base" id="joystick-base">
+                <div class="joystick-stick" id="joystick-stick"></div>
+                <div class="joystick-ball" id="joystick-ball"></div>
+            </div>
+
+            <div class="arcade-buttons">
+                <div class="arcade-btn jump-btn" id="btn-jump-visual">SALTO</div>
+                <div class="arcade-btn hit-btn" id="btn-atk-visual">GOLPE</div>
+            </div>
+        </div>
+
+        {% block footer %}{% endblock %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/arcade_shell.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

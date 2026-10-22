@@ -1,0 +1,727 @@
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+
+    margin:0;
+
+    background:#0f0f0f;
+
+    font-family:monospace;
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+}
+
+/* ========================= */
+/* CABINA ARCADE */
+/* ========================= */
+
+#arcade{
+
+    width:1400px;
+
+    height:900px;
+
+    background:linear-gradient(
+        180deg,
+        #5d3d1f,
+        #3a2414
+    );
+
+    border-radius:20px;
+
+    box-shadow:
+    0 0 40px #000,
+    inset 0 0 20px rgba(255,255,255,0.05);
+
+    position:relative;
+}
+
+/* ========================= */
+/* MARQUESINA */
+/* ========================= */
+
+#marquee{
+
+    height:90px;
+
+    background:linear-gradient(
+        180deg,
+        #cf9a4f,
+        #99642a
+    );
+
+    color:white;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    text-align:center;
+
+    border-bottom:4px solid #222;
+}
+
+#marquee h1{
+
+    margin:0;
+
+    font-size:34px;
+
+    letter-spacing:3px;
+}
+
+#marquee p{
+
+    margin:0;
+
+    font-size:13px;
+}
+
+/* ========================= */
+/* NAV */
+/* ========================= */
+
+nav{
+
+    position:absolute;
+
+    top:105px;
+
+    right:25px;
+
+    z-index:100;
+}
+
+nav a{
+
+    color:white;
+
+    text-decoration:none;
+
+    margin-left:20px;
+
+    font-weight:bold;
+}
+
+/* ========================= */
+/* PANTALLA */
+/* ========================= */
+
+#screen-frame{
+
+    margin:20px;
+
+    height:650px;
+
+    background:#202020;
+
+    border:15px solid #565656;
+
+    border-radius:4px;
+
+    overflow:hidden;
+
+    box-shadow:
+    inset 0 0 40px rgba(0,0,0,0.9);
+}
+
+#screen{
+
+    width:100%;
+    height:100%;
+
+    background:#181818;
+
+    overflow:hidden;
+
+    position:relative;
+}
+
+/* ========================= */
+/* PANEL */
+/* ========================= */
+
+#panel{
+
+    position:absolute;
+
+    left:0;
+
+    right:0;
+
+    bottom:0;
+
+    height:110px;
+
+    background:linear-gradient(
+        180deg,
+        #9d6b34,
+        #6d4721
+    );
+
+    border-top:3px solid #222;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding-left:70px;
+
+    padding-right:70px;
+}
+
+/* ========================= */
+/* JOYSTICK */
+/* ========================= */
+
+#joystick{
+
+    width:120px;
+
+    height:120px;
+
+    position:relative;
+}
+
+#stick-base{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:50%;
+
+    background:#202020;
+
+    position:absolute;
+
+    left:40px;
+
+    top:55px;
+}
+
+#stick{
+
+    width:8px;
+
+    height:55px;
+
+    background:#d8d8d8;
+
+    position:absolute;
+
+    left:57px;
+
+    top:10px;
+}
+
+#stick-head{
+
+    width:22px;
+
+    height:22px;
+
+    border-radius:50%;
+
+    background:#d01414;
+
+    position:absolute;
+
+    left:50px;
+
+    top:0;
+
+    box-shadow:
+    0 0 12px rgba(255,0,0,.4);
+}
+
+/* ========================= */
+/* BOTONES */
+/* ========================= */
+
+.buttons{
+
+    display:flex;
+
+    gap:25px;
+}
+
+.button{
+
+    width:55px;
+
+    height:55px;
+
+    border-radius:50%;
+
+    border:3px solid rgba(0,0,0,0.5);
+}
+
+.red{
+
+    background:#b00000;
+
+    box-shadow:
+    0 0 18px rgba(255,0,0,.4);
+}
+
+.blue{
+
+    background:#0060a8;
+
+    box-shadow:
+    0 0 18px rgba(0,140,255,.4);
+}
+
+/* ========================= */
+/* CANVAS */
+/* ========================= */
+
+canvas{
+
+    display:block;
+
+    margin:auto;
+
+    image-rendering:pixelated;
+}
+
+
+#screen{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+}
+
+#game{
+
+    width:100%;
+
+    height:100%;
+
+    display:block;
+
+    image-rendering:pixelated;
+
+    background:#121212;
+}
+
+
+#screen{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+}
+
+#game{
+
+    width:100%;
+
+    height:100%;
+
+    display:block;
+
+    image-rendering:pixelated;
+
+    background:#121212;
+}
+
+
+
+/* ---- Fachada de máquina arcade (pantalla de inicio) ---- */
+body.arcade-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 12px;
+    box-sizing: border-box;
+    background: radial-gradient(circle at 50% 20%, #161b22 0%, #05060a 70%);
+    font-family: monospace;
+}
+
+.arcade-cabinet {
+    width: 720px;
+    max-width: 96vw;
+    border-radius: 22px 22px 10px 10px;
+    background: linear-gradient(180deg, #1b2230 0%, #0d1117 100%);
+    box-shadow: 0 0 60px rgba(88, 166, 255, 0.25), inset 0 0 0 2px #30363d;
+    padding: 26px;
+    box-sizing: border-box;
+}
+
+.arcade-marquee {
+    background: linear-gradient(90deg, #58a6ff, #ff2fd6);
+    border-radius: 12px;
+    padding: 22px 12px;
+    text-align: center;
+    box-shadow: 0 0 26px rgba(88, 166, 255, 0.5);
+}
+.arcade-marquee h1 {
+    margin: 0;
+    color: #0d1117;
+    font-size: 2.6em;
+    letter-spacing: 6px;
+}
+.arcade-subtitle {
+    text-align: center;
+    color: #8b949e;
+    font-size: 0.95em;
+    margin: 14px 6px 6px;
+    font-style: italic;
+}
+
+.arcade-stage {
+    margin-top: 20px;
+    min-height: 260px;
+    background: #000;
+    border: 3px solid #30363d;
+    border-radius: 12px;
+    box-shadow: inset 0 0 40px rgba(88, 166, 255, 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    color: var(--cyan, #58f5ff);
+    text-shadow: 0 0 10px var(--cyan, #58f5ff);
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 24px;
+}
+
+.arcade-screen-text {
+    font-size: 1.25em;
+    line-height: 1.6;
+}
+
+.arcade-panel {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.joystick-base {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #2b3240, #0d1117 75%);
+    box-shadow: inset 0 0 16px rgba(0,0,0,0.6), 0 0 14px rgba(88,166,255,0.2);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.joystick-stick {
+    width: 14px;
+    height: 52px;
+    background: linear-gradient(180deg, #58a6ff, #1d4e80);
+    border-radius: 5px;
+    position: absolute;
+    bottom: 65px;
+    transform-origin: bottom center;
+    transition: transform 0.08s ease-out;
+    box-shadow: 0 0 10px rgba(88,166,255,0.5);
+}
+.joystick-ball {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff2fd6, #8a1a74);
+    position: absolute;
+    bottom: 110px;
+    transition: transform 0.08s ease-out;
+    box-shadow: 0 0 14px rgba(255,47,214,0.6);
+}
+
+.arcade-buttons {
+    display: flex;
+    gap: 20px;
+}
+.arcade-btn {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #0d1117;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.arcade-btn.jump-btn {
+    background: radial-gradient(circle at 35% 30%, #3ddc84, #1a7a44);
+    box-shadow: 0 5px 0 #0f5c30, 0 0 12px rgba(61,220,132,0.4);
+}
+.arcade-btn.hit-btn {
+    background: radial-gradient(circle at 35% 30%, #ff5a5a, #a81f1f);
+    box-shadow: 0 5px 0 #6e1313, 0 0 12px rgba(255,90,90,0.4);
+}
+.arcade-btn.pressed {
+    transform: translateY(5px);
+    box-shadow: 0 0 12px rgba(255,255,255,0.35);
+}
+
+.arcade-actions {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 380px;
+}
+.arcade-actions a, .arcade-actions button {
+    flex: 1;
+    text-align: center;
+    padding: 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 1.1em;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+.btn-play {
+    background: var(--panel, #161b22);
+    color: var(--green, #3ddc84);
+    border: 1px solid var(--green, #3ddc84);
+}
+.btn-play:hover { box-shadow: 0 0 16px var(--green, #3ddc84); }
+.btn-exit {
+    background: var(--panel, #161b22);
+    color: var(--magenta, #ff2fd6);
+    border: 1px solid var(--magenta, #ff2fd6);
+}
+.btn-exit:hover { box-shadow: 0 0 16px var(--magenta, #ff2fd6); }
+
+.arcade-controls-help {
+    margin-top: 18px;
+    color: #8b949e;
+    font-size: 0.85em;
+    line-height: 1.8;
+    text-align: center;
+    border-top: 1px solid #30363d;
+    padding-top: 14px;
+}
+.arcade-controls-help strong { color: #58a6ff; }
+
+.arcade-footer-link {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.85em;
+    color: #8b949e;
+}
+
+/* ---- Ajuste de tamaño de textos (+25%) ----
+   Excluidos: .arcade-marquee h1 (UwUNTU CTF),
+              .arcade-screen-text (¿Listo para el reto?),
+              .arcade-actions a / .arcade-actions button (JUGAR/SALIR) */
+.arcade-subtitle {
+    font-size: 1.1875em;   /* 0.95em * 1.25 */
+}
+.arcade-controls-help {
+    font-size: 1.0625em;   /* 0.85em * 1.25 */
+}
+.arcade-footer-link {
+    font-size: 1.0625em;   /* 0.85em * 1.25 */
+}
+.arcade-btn {
+    font-size: 1em;        /* 0.8em * 1.25 */
+}
+
+/* ---- Estilos del Mapa (Hub) ---- */
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    background-color: #0d1117;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameCanvas {
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(88, 166, 255, 0.2);
+    background-color: #111;
+    /* Efecto CRT sutil opcional */
+    image-rendering: pixelated; 
+}
+
+.hud {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 25px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+    color: #58a6ff;
+    font-family: monospace;
+    font-size: 1.1em;
+    pointer-events: none;
+    z-index: 10;
+}
+.hud a { pointer-events: auto; }
+
+.level-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #161b22;
+    border: 2px solid #ff2fd6;
+    box-shadow: 0 0 30px rgba(255, 47, 214, 0.4);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    color: #fff;
+    font-family: monospace;
+    z-index: 100;
+    width: 350px;
+}
+.level-popup.hidden { display: none; }
+.level-popup h2 { color: #ff2fd6; margin-top: 0; letter-spacing: 2px; }
+.level-popup p { color: #8b949e; margin-bottom: 20px; }
+.popup-buttons { display: flex; gap: 15px; justify-content: center; }
+
+/* Ajustes para que los niveles quepan dentro de la pantalla del arcade */
+.arcade-stage {
+    padding: 0; /* Quitamos padding para que el canvas llegue a los bordes */
+    overflow: hidden; /* Evita que los elementos se salgan */
+    position: relative; /* Para el HUD absoluto */
+}
+.arcade-stage > * {
+    width: 100%;
+    height: 100%;
+}
+/* Ajuste para cuando el stage contiene la pantalla de inicio (index) */
+.arcade-stage:has(.arcade-screen-text) {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ---- Ampliación de la máquina arcade y pantalla de juego ---- */
+.arcade-cabinet {
+    width: 1000px; /* Antes 720px */
+    max-width: 98vw;
+}
+
+.arcade-stage {
+    min-height: 500px; /* Antes 260px. Ahora tiene espacio para el canvas */
+    height: 500px;
+}
+
+/* Ajustamos el tamaño del joystick y botones un poco más para que no se vean perdidos en el gabinete grande */
+.joystick-base { width: 150px; height: 150px; }
+.joystick-stick { height: 60px; bottom: 75px; }
+.joystick-ball { width: 44px; height: 44px; bottom: 130px; }
+.arcade-btn { width: 90px; height: 90px; font-size: 1.1em; }
+.arcade-buttons { gap: 24px; }
+.arcade-actions { max-width: 450px; }
+
+/* ---- Recalibración Global (Gabinete más grande y pantalla amplia) ---- */
+.arcade-cabinet {
+    width: 1100px; 
+    max-width: 98vw;
+}
+
+.arcade-stage {
+    min-height: 550px; 
+    height: 550px;
+    padding: 0; 
+}
+
+/* Reajuste del Index para que JUGAR/SALIR y la pregunta no se descuadren */
+.arcade-stage:has(.arcade-screen-text) {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+}
+.arcade-screen-text {
+    font-size: 1.5em; /* Un poco más grande para la nueva pantalla */
+}
+.arcade-actions {
+    width: 100%;
+    max-width: 500px;
+}
+.arcade-actions a, .arcade-actions button {
+    padding: 20px;
+    font-size: 1.2em;
+}
+
+/* ---- Interfaz del Mapa (HUD y Botones +50%) ---- */
+.hud-map {
+    position: absolute; top: 15px; left: 15px; right: 15px;
+    display: flex; justify-content: space-between;
+    font-family: monospace; font-size: 1.2em; /* Aumentado */
+    color: #58a6ff;
+    pointer-events: none;
+    z-index: 2;
+    text-shadow: 0 0 5px #000;
+}
+.hud-map a { 
+    pointer-events: auto; 
+    color: #ff2fd6; 
+    text-decoration: none; 
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #ff2fd6;
+}
+.hud-map a:hover { background: rgba(255, 47, 214, 0.2); }
+
+/* Popup del nivel (más grande) */
+.level-popup {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(22, 27, 34, 0.95);
+    border: 3px solid #ff2fd6;
+    box-shadow: 0 0 30px rgba(255, 47, 214, 0.8);
+    padding: 25px; border-radius: 12px;
+    text-align: center; color: #fff; font-family: monospace;
+    width: 80%; max-width: 400px; z-index: 100;
+}
+.level-popup h2 { color: #ff2fd6; margin-top: 0; font-size: 1.5em; }
+.level-popup p { color: #8b949e; font-size: 1.1em; margin-bottom: 20px; }
+.popup-buttons { display: flex; gap: 15px; justify-content: center; }
+/* Botones ENTRAR/CANCELAR un 50% más grandes */
+.popup-buttons button { 
+    padding: 15px 30px; 
+    font-size: 1.2em; 
+    border-radius: 8px;
+}

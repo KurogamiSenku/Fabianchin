@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div style="display:none;">FLAG{primera_bandera_oculta_en_el_codigo}</div>
+
+    <div class="arcade-screen-text">¿Listo para el reto?</div>
+    
+    <!-- Mini Canvas más grande para Fabiancho 450% -->
+    <div style="width: 100%; display: flex; justify-content: center; margin-bottom: 10px;">
+        <canvas id="indexCanvas" width="600" height="350" style="background: rgba(0,0,0,0.5); border: 1px solid #30363d; border-radius: 8px;"></canvas>
+    </div>
+
+    <div class="arcade-actions">
+        <a href="{{ url_for('map_view') }}" class="btn-play">JUGAR</a>
+        <button class="btn-exit" id="btn-exit">SALIR</button>
+    </div>
+
+    <script>
+        document.getElementById('btn-exit').addEventListener('click', async () => {
+            if (!confirm('¿Apagar el servidor del CTF?')) return;
+            try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
+            document.getElementById('arcade-stage').innerHTML = '<div style="color:#58a6ff; text-align:center; font-family:monospace;">Servidor apagado.<br>Puedes cerrar esta pestaña.</div>';
+        });
+    </script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/index_showcase.js') }}"></script>
+{% endblock %}
+

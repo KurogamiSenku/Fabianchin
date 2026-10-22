@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}CTF - Enviar Flag{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>🚩 ENVIAR FLAG 🚩</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <p class="{{ 'flash-ok' if category == 'ok' else 'flash-error' }}">{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form class="flag-form" method="POST" action="{{ url_for('submit_flag') }}">
+        <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off">
+        <button type="submit">Enviar</button>
+    </form>
+</div>
+{% endblock %}
