@@ -27,5 +27,5 @@ DEV_UNLOCK_ALL = True
 
 # Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
 LEVEL_FLAGS = {
-    5: "FLAG{bomberman_command_injection}",
+    5: "FLAG{bomberman_sql_injection}",
 }
