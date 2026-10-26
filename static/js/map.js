@@ -461,7 +461,7 @@ function updateRats(dt, time) {
         if (ratWallCollision(rat.x, rat.y)) { rat.x = 1000; rat.y = 1200; }
 
         const rcx = rat.x + RAT_SIZE/2, rcy = rat.y + RAT_SIZE/2;
-        const pcx = player.x + PLAYER_SIZE/2, pcy = player.y + PLAYER_SIZE/2;
+        const pcx = player.x + PLAYER_SIZE/2, pcy = player.y + PLAYER_SIZE - 10;  // pies del jugador (colisión real)
         const dx = pcx - rcx, dy = pcy - rcy;
         const dist = Math.hypot(dx, dy);
 
@@ -523,7 +523,7 @@ function updateEnemies(dt, time) {
         const enemyCenterX = enemy.x + ENEMY_SIZE/2;
         const enemyCenterY = enemy.y + ENEMY_SIZE/2;
         const playerCenterX = player.x + PLAYER_SIZE/2;
-        const playerCenterY = player.y + PLAYER_SIZE/2;
+        const playerCenterY = player.y + PLAYER_SIZE - 10;  // punto de colisión real (pies), no el centro del sprite
 
         const dx = playerCenterX - enemyCenterX;
         const dy = playerCenterY - enemyCenterY;
