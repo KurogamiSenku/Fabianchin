@@ -27,14 +27,17 @@ for (let r=0;r<ROWS;r++){ grid[r]=[]; for (let c=0;c<COLS;c++){
 }}
 const TERM = { c:13, r:8 }; grid[TERM.r][TERM.c]=0;
 
-const PSIZE=72, HB=18, SPEED=3.0;
+const PSIZE=96, HB=18, SPEED=3.0;
 const player = { x:1*TILE+(TILE-PSIZE)/2, y:1*TILE+(TILE-PSIZE)/2,
     facing:'down', moving:false, animFrame:0, animTimer:0, bvx:0, bvy:0 };
 
-// --- Enemigo Bomberman ---
-const ESIZE=46, EHB=16, ESPEED=1.7;
-const enemy = { x:7*TILE+1, y:5*TILE+1, facing:'left', animFrame:0, animTimer:0,
-    bombTimer:2600, bombs:[] };
+// --- Enemigos Bomberman (3, para molestar) ---
+const ESIZE=56, EHB=16, ESPEED=1.7;
+function mkEnemy(c, r, delay){
+    return { x:c*TILE+(TILE-ESIZE)/2, y:r*TILE+(TILE-ESIZE)/2,
+        facing:'left', animFrame:Math.random()*3, animTimer:0, bombTimer:delay, bombs:[] };
+}
+const enemies = [ mkEnemy(7,5,2200), mkEnemy(11,3,3400), mkEnemy(3,7,4200) ];
 
 const keys = { up:false, down:false, left:false, right:false };
 let challengeOpen = false;
@@ -98,36 +101,34 @@ function updatePlayer(dt){
 
 function updateEnemy(dt){
     if (challengeOpen) return;
-    const ecx=enemy.x+ESIZE/2, ecy=enemy.y+ESIZE/2;
     const pcx=player.x+PSIZE/2, pcy=player.y+PSIZE-10;
-    const dx=pcx-ecx, dy=pcy-ecy, dist=Math.hypot(dx,dy)||1;
-    const mvx=(dx/dist)*ESPEED, mvy=(dy/dist)*ESPEED;
-    if (!enemyHitsWall(enemy.x+mvx, enemy.y)) enemy.x+=mvx;
-    if (!enemyHitsWall(enemy.x, enemy.y+mvy)) enemy.y+=mvy;
-    enemy.facing = dx<0?'left':'right';
-    enemy.animTimer+=dt;
-    if (enemy.animTimer>140){ enemy.animFrame++; enemy.animTimer=0; }
+    for (const enemy of enemies){
+        const ecx=enemy.x+ESIZE/2, ecy=enemy.y+ESIZE/2;
+        const dx=pcx-ecx, dy=pcy-ecy, dist=Math.hypot(dx,dy)||1;
+        const mvx=(dx/dist)*ESPEED, mvy=(dy/dist)*ESPEED;
+        if (!enemyHitsWall(enemy.x+mvx, enemy.y)) enemy.x+=mvx;
+        if (!enemyHitsWall(enemy.x, enemy.y+mvy)) enemy.y+=mvy;
+        enemy.facing = dx<0?'left':'right';
+        enemy.animTimer+=dt;
+        if (enemy.animTimer>140){ enemy.animFrame++; enemy.animTimer=0; }
 
-    // soltar bombas cuando el jugador está cerca
-    enemy.bombTimer-=dt;
-    if (enemy.bombTimer<=0 && dist<360){
-        enemy.bombs.push({ x:ecx, y:ecy, fuse:1300, exploded:false, et:0 });
-        enemy.bombTimer=2600+Math.random()*1200;
-    }
-    for (const b of enemy.bombs){
-        if (!b.exploded){
-            b.fuse-=dt;
-            if (b.fuse<=0){
-                b.exploded=true; b.et=0;
-                const bdx=pcx-b.x, bdy=pcy-b.y, bd=Math.hypot(bdx,bdy);
-                if (bd<130 && bd>0){   // solo EMPUJA, no mata
-                    player.bvx += (bdx/bd)*14;
-                    player.bvy += (bdy/bd)*14;
+        enemy.bombTimer-=dt;
+        if (enemy.bombTimer<=0 && dist<360){
+            enemy.bombs.push({ x:ecx, y:ecy, fuse:1300, exploded:false, et:0 });
+            enemy.bombTimer=2600+Math.random()*1400;
+        }
+        for (const b of enemy.bombs){
+            if (!b.exploded){
+                b.fuse-=dt;
+                if (b.fuse<=0){
+                    b.exploded=true; b.et=0;
+                    const bdx=pcx-b.x, bdy=pcy-b.y, bd=Math.hypot(bdx,bdy);
+                    if (bd<130 && bd>0){ player.bvx += (bdx/bd)*14; player.bvy += (bdy/bd)*14; }
                 }
-            }
-        } else { b.et+=dt; }
+            } else { b.et+=dt; }
+        }
+        enemy.bombs = enemy.bombs.filter(b=>!(b.exploded && b.et>4*80));
     }
-    enemy.bombs = enemy.bombs.filter(b=>!(b.exploded && b.et>4*80));
 }
 
 function drawTile(c,r){
@@ -165,19 +166,19 @@ function draw(){
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) drawTile(c,r);
     drawTerminal();
 
-    // enemigo + sombra
-    ctx.fillStyle='rgba(0,0,0,.45)';
-    ctx.beginPath(); ctx.ellipse(enemy.x+ESIZE/2, enemy.y+ESIZE-4, 13,5,0,0,Math.PI*2); ctx.fill();
-    drawSprite(bombWalk, enemy.x, enemy.y, ESIZE, enemy.facing, 20, 30, Math.floor(enemy.animFrame)%3);
-
-    // bombas y explosiones
-    for (const b of enemy.bombs){
-        if (!b.exploded){
-            const fi=Math.floor(Date.now()/150)%3, s=40;
-            if (bombImg.complete) ctx.drawImage(bombImg, fi*20,0,20,20, b.x-s/2, b.y-s/2, s, s);
-        } else {
-            const fi=Math.min(Math.floor(b.et/80),3), s=120;
-            if (explImg.complete) ctx.drawImage(explImg, fi*38,0,38,34, b.x-s/2, b.y-s/2, s, s*(34/38));
+    // enemigos + sombras + sus bombas
+    for (const enemy of enemies){
+        ctx.fillStyle='rgba(0,0,0,.45)';
+        ctx.beginPath(); ctx.ellipse(enemy.x+ESIZE/2, enemy.y+ESIZE-4, 14,5,0,0,Math.PI*2); ctx.fill();
+        drawSprite(bombWalk, enemy.x, enemy.y, ESIZE, enemy.facing, 20, 30, Math.floor(enemy.animFrame)%3);
+        for (const b of enemy.bombs){
+            if (!b.exploded){
+                const fi=Math.floor(Date.now()/150)%3, s=42;
+                if (bombImg.complete) ctx.drawImage(bombImg, fi*20,0,20,20, b.x-s/2, b.y-s/2, s, s);
+            } else {
+                const fi=Math.min(Math.floor(b.et/80),3), s=120;
+                if (explImg.complete) ctx.drawImage(explImg, fi*38,0,38,34, b.x-s/2, b.y-s/2, s, s*(34/38));
+            }
         }
     }
 
