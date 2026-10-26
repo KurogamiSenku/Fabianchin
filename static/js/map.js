@@ -163,7 +163,8 @@ const MARKERS = {
     contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92,  roam:100 },
     megaman:    { img: loadImg('/static/img/markers/megaman_walk.png'), fw:25, fh:28, frames:3, fps:8,  size:82, roam:100 },
     bomberman:  { img: loadImg('/static/img/markers/bomberman.png'),  fw:20, fh:30, frames:3, fps:6,  size:86,  chase:300 },
-    pokemon:    { img: loadImg('/static/img/markers/pokemon.png'),     fw:24, fh:27, frames:3, fps:6,  size:84,  roam:90 }
+    // dir4: hoja de 4 filas (abajo, izq, der, arriba) x 4 frames; la fila se elige por la dirección
+    pokemon:    { img: loadImg('/static/img/markers/pokemon.png'),     fw:49, fh:67, frames:4, fps:7,  size:96,  roam:95, dir4:true }
 };
 
 // Efectos de Bomberman (bomba y explosión)
@@ -230,6 +231,9 @@ function updateMarkers(dt) {
                 level._vx *= -1; level._vy *= -1;
             }
             if (Math.abs(level._vx) > 0.05) level._facing = level._vx < 0 ? 'left' : 'right';
+            // dirección de 4 vías para hojas direccionales (fila: 0 abajo,1 izq,2 der,3 arriba)
+            if (Math.abs(level._vx) > Math.abs(level._vy)) level._dir = level._vx < 0 ? 1 : 2;
+            else level._dir = level._vy < 0 ? 3 : 0;
         }
     });
 }
@@ -846,14 +850,15 @@ function draw() {
             const fi = Math.floor(player.time / (1000 / mk.fps)) % mk.frames;
             const scale = mk.size / mk.fh;
             const dw = mk.fw * scale, dh = mk.size;
+            const sy = mk.dir4 ? (level._dir || 0) * mk.fh : 0;   // fila por dirección
             ctx.save();
             if (!isUnlocked) ctx.globalAlpha = 0.45;   // bloqueado = atenuado
             ctx.shadowBlur = 18; ctx.shadowColor = coreColor;
-            if (level._facing === 'left') {
+            if (!mk.dir4 && level._facing === 'left') {
                 ctx.translate(mx + dw/2, my - dh/2); ctx.scale(-1, 1);
                 ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, 0, 0, dw, dh);
             } else {
-                ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, mx - dw/2, my - dh/2, dw, dh);
+                ctx.drawImage(mk.img, fi * mk.fw, sy, mk.fw, mk.fh, mx - dw/2, my - dh/2, dw, dh);
             }
             ctx.restore();
             ctx.shadowBlur = 0;
