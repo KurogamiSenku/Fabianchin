@@ -17,7 +17,7 @@ const HITBOX_OFFSET_X = (PLAYER_SIZE / 2) - HITBOX_RADIUS_X;
 const HITBOX_OFFSET_Y = (PLAYER_SIZE - 10) - HITBOX_RADIUS_Y; 
 
 const PLAYER_SPEED = 11; 
-const JUMP_FORCE = -24; 
+const JUMP_FORCE = -16;
 const GRAVITY = 1.6; 
 
 const ENEMY_SIZE = 218; 

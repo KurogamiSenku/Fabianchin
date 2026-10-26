@@ -67,8 +67,9 @@
         function fitCabinet(){
             var cab = document.querySelector('.arcade-cabinet');
             if(!cab) return;
-            cab.style.transform = 'none';
-            // Medimos la caja real incluyendo las piezas que sobresalen (marquesina y controles)
+            // Lo ponemos centrado a escala 1 para medir su tamaño real
+            cab.style.transform = 'translate(-50%,-50%) scale(1)';
+            // Medimos incluyendo las piezas que sobresalen (marquesina y controles)
             var parts = document.querySelectorAll('.arcade-cabinet, .arcade-marquee, .panel-frame');
             var L=Infinity,T=Infinity,R=-Infinity,B=-Infinity;
             parts.forEach(function(e){
@@ -80,7 +81,7 @@
             if(w<=0||h<=0) return;
             var availW=window.innerWidth-28, availH=window.innerHeight-28;
             var s=Math.min(availW/w, availH/h, 1);
-            cab.style.transform='scale('+s+')';
+            cab.style.transform='translate(-50%,-50%) scale('+s+')';
         }
         window.addEventListener('resize', fitCabinet);
         window.addEventListener('load', fitCabinet);
