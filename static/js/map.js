@@ -138,13 +138,13 @@ let WALLS = [
 // --- NIVELES ACTUALIZADOS CON TUS POSICIONES ---
 // Solo niveles con sprite temático. Cada uno tiene su transición de entrada (fx).
 const LEVELS = [
-    { id: 1,  name: "Nivel 1: Mario",     desc: "Reconocimiento", x: 498,  y: 392,  marker: "mario_coin", fx: "mario" },
-    { id: 2,  name: "Nivel 2: Contra",    desc: "Enumeración web", x: 956, y: 273,  marker: "contra",     fx: "contra" },
-    { id: 3,  name: "Nivel 3: Mega Man",  desc: "La máscara",     x: 1310, y: 264,  marker: "megaman",    fx: "megaman" },
-    { id: 5,  name: "Nivel 5: Bomberman", desc: "File Upload",    x: 250,  y: 500,  marker: "bomberman",  fx: "bomberman" },
-    { id: 8,  name: "Nivel 8: DOOM",      desc: "Cmd Injection",  x: 1900, y: 500,  marker: "doom",       fx: "doom" },
-    { id: 9,  name: "Nivel 9: Sonic",     desc: "SSH Acceso",     x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic" },
-    { id: 14, name: "Nivel 14: Pokémon",  desc: "Reto final",     x: 2076, y: 1199, marker: "pokemon",    fx: "pokemon" }
+    { id: 1,  name: "Mario",     desc: "", x: 498,  y: 392,  marker: "mario_coin", fx: "mario" },
+    { id: 2,  name: "Contra",    desc: "", x: 956,  y: 273,  marker: "contra",     fx: "contra" },
+    { id: 3,  name: "Mega Man",  desc: "", x: 1310, y: 264,  marker: "megaman",    fx: "megaman" },
+    { id: 5,  name: "Bomberman", desc: "", x: 250,  y: 500,  marker: "bomberman",  fx: "bomberman" },
+    { id: 8,  name: "DOOM",      desc: "", x: 1900, y: 500,  marker: "doom",       fx: "doom" },
+    { id: 9,  name: "Sonic",     desc: "", x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic" },
+    { id: 14, name: "Pokémon",   desc: "", x: 2076, y: 1199, marker: "pokemon",    fx: "pokemon" }
 ];
 
 // --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
@@ -345,7 +345,9 @@ window.addEventListener('keydown', (e) => {
             const isUnlocked = UNLOCKED_LEVELS.includes(closestLevel.id) || closestLevel.id === 1;
             const popup = document.getElementById('level-popup');
             document.getElementById('popup-title').innerText = closestLevel.name;
-            document.getElementById('popup-desc').innerText = closestLevel.desc;
+            const descEl = document.getElementById('popup-desc');
+            descEl.innerText = closestLevel.desc || "";
+            descEl.style.display = closestLevel.desc ? "" : "none";
             const btnEnter = document.getElementById('btn-enter-level');
             if (isUnlocked) {
                 btnEnter.innerText = "ENTRAR"; btnEnter.style.color = "var(--green)"; btnEnter.style.borderColor = "var(--green)";

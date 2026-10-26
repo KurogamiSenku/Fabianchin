@@ -73,14 +73,14 @@ def submit_flag():
 
 @app.route("/map")
 def map_view():
-    # Sembramos el nivel 1 si es la primera vez
-    if "unlocked" not in session:
+    if getattr(config, "DEV_UNLOCK_ALL", False):
+        # Modo desarrollo: todos los niveles desbloqueados
+        session["unlocked"] = list(config.PROGRESSION)
+    elif "unlocked" not in session:
         session["unlocked"] = [1]
-    else:
-        # Aseguramos que el 1 siempre esté presente
-        if 1 not in session["unlocked"]:
-            session["unlocked"].insert(0, 1)
-            session.modified = True
+    elif 1 not in session["unlocked"]:
+        session["unlocked"].insert(0, 1)
+        session.modified = True
 
     return render_template(
         "map.html",
@@ -90,10 +90,11 @@ def map_view():
 
 @app.route("/level/<int:level_id>")
 def level_view(level_id):
-    # Debe estar desbloqueado (el 1 siempre lo está)
-    unlocked = session.get("unlocked", [1])
-    if level_id != 1 and level_id not in unlocked:
-        return render_template("levels/locked.html", level_id=level_id), 403
+    # En modo desarrollo se salta el candado para poder probar directo
+    if not getattr(config, "DEV_UNLOCK_ALL", False):
+        unlocked = session.get("unlocked", [1])
+        if level_id != 1 and level_id not in unlocked:
+            return render_template("levels/locked.html", level_id=level_id), 403
     template = LEVEL_TEMPLATES.get(level_id)
     if not template:
         return render_template("levels/coming_soon.html", level_id=level_id)

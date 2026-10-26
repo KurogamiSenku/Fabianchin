@@ -21,6 +21,10 @@ FLAGS = {
 # --- Progresión del mapa (ids numéricos, solo niveles con sprite) ---
 PROGRESSION = [1, 2, 3, 5, 8, 9, 14]
 
+# MODO DESARROLLO: desbloquea TODOS los niveles para poder probarlos directo.
+# Pon esto en False cuando quieras la progresión real (desbloqueo por flags).
+DEV_UNLOCK_ALL = True
+
 # Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
 LEVEL_FLAGS = {
     5: "FLAG{bomberman_command_injection}",
