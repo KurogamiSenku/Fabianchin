@@ -30,9 +30,13 @@ const plats = [
     {x:1660, y:250, w:140, h:20},
     {x:2000, y:215, w:120, h:20},
     {x:2500, y:250, w:150, h:20},
+    // puentes de tablas sobre el agua (estética Contra)
+    {x:600,  y:318, w:140, h:14, bridge:true},
+    {x:1380, y:318, w:140, h:14, bridge:true},
+    {x:2220, y:318, w:140, h:14, bridge:true},
 ];
 // zonas de agua (huecos entre segmentos de suelo): caer ahí = reaparecer
-const WATER_Y = 390;
+const WATER_Y = 384;
 
 const PW=40, PH=66, PSIZE=92;   // caja de colisión vs sprite dibujado
 const player = { x:40, y:250, vx:0, vy:0, facing:'right', onGround:false,
@@ -127,28 +131,63 @@ function updateSoldiers(dt){
     }
 }
 
+function hill(cam, par, base, amp, step, color){
+    ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(0,cv.height);
+    const off=(cam*par)%step;
+    for (let x=-off; x<=cv.width+step; x+=step){
+        ctx.lineTo(x, base); ctx.lineTo(x+step/2, base-amp);
+    }
+    ctx.lineTo(cv.width,cv.height); ctx.closePath(); ctx.fill();
+}
 function drawBg(cam){
-    // cielo
+    // cielo nocturno de jungla
     const g=ctx.createLinearGradient(0,0,0,cv.height);
-    g.addColorStop(0,'#0a1830'); g.addColorStop(0.6,'#143a2a'); g.addColorStop(1,'#0d2a1e');
+    g.addColorStop(0,'#071327'); g.addColorStop(0.5,'#0c2a2c'); g.addColorStop(1,'#0a2218');
     ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
-    // montañas parallax
-    ctx.fillStyle='#0e2740';
-    for (let i=-1;i<8;i++){ const mx=i*400 - (cam*0.3)%400; ctx.beginPath();
-        ctx.moveTo(mx,200); ctx.lineTo(mx+200,90); ctx.lineTo(mx+400,200); ctx.closePath(); ctx.fill(); }
-    // agua (al fondo, donde no hay suelo)
-    ctx.fillStyle='#0b4a6b';
-    ctx.fillRect(0, WATER_Y, cv.width, cv.height-WATER_Y);
+    // luna
+    ctx.fillStyle='#d7e3c8'; ctx.beginPath(); ctx.arc(cv.width-90,70,26,0,Math.PI*2); ctx.fill();
+    // capas de selva (parallax)
+    hill(cam,0.15, 230, 120, 260, '#0f2e3a');
+    hill(cam,0.30, 250, 150, 200, '#123a30');
+    hill(cam,0.50, 275, 120, 150, '#16492f');
+    // copas de árboles cercanas
+    ctx.fillStyle='#0d3322';
+    for (let i=-1;i<10;i++){ const tx=i*150 - (cam*0.5)%150; ctx.beginPath();
+        ctx.arc(tx,290,46,Math.PI,0); ctx.fill(); }
+    // agua
+    const w=ctx.createLinearGradient(0,WATER_Y,0,cv.height);
+    w.addColorStop(0,'#1d7fa8'); w.addColorStop(1,'#0b4a6b');
+    ctx.fillStyle=w; ctx.fillRect(0, WATER_Y, cv.width, cv.height-WATER_Y);
+    // reflejo
+    ctx.fillStyle='rgba(255,255,255,.08)';
+    for (let i=0;i<cv.width;i+=40){ ctx.fillRect(i+((Date.now()/80)%40), WATER_Y+10, 18, 2); }
 }
 function drawPlat(p, cam){
     const x=p.x-cam;
     if (x>cv.width || x+p.w<0) return;
-    // tierra
-    ctx.fillStyle='#6b4a28'; ctx.fillRect(x,p.y,p.w,p.h);
-    ctx.fillStyle='#7d5730'; ctx.fillRect(x+2,p.y+6,p.w-4,p.h-6);
-    // césped arriba
-    ctx.fillStyle='#3ddc84'; ctx.fillRect(x,p.y,p.w,8);
-    ctx.fillStyle='#2ea968'; ctx.fillRect(x,p.y+8,p.w,4);
+    if (p.bridge){
+        // puente de tablas con cuerdas (estética Contra)
+        ctx.strokeStyle='#5b3c1c'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x+p.w,p.y); ctx.stroke();
+        for (let i=0;i<=p.w;i+=12){
+            ctx.fillStyle=(i/12)%2?'#8a5a2c':'#9c6a34';
+            ctx.fillRect(x+i, p.y, 10, p.h);
+        }
+        ctx.strokeStyle='#3a2612'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(x,p.y+p.h); ctx.lineTo(x+p.w,p.y+p.h); ctx.stroke();
+        return;
+    }
+    // acantilado: tierra + roca + césped encima
+    ctx.fillStyle='#5a3d22'; ctx.fillRect(x,p.y,p.w,p.h);
+    ctx.fillStyle='#6b4a28'; ctx.fillRect(x+2,p.y+8,p.w-4,p.h-8);
+    // vetas de roca
+    ctx.fillStyle='rgba(0,0,0,.18)';
+    for (let i=10;i<p.w;i+=46) ctx.fillRect(x+i, p.y+16, 3, p.h-18);
+    // césped con borde irregular
+    ctx.fillStyle='#3ddc84'; ctx.fillRect(x,p.y,p.w,9);
+    ctx.fillStyle='#2ea968'; ctx.fillRect(x,p.y+9,p.w,5);
+    ctx.fillStyle='#3ddc84';
+    for (let i=0;i<p.w;i+=10) ctx.fillRect(x+i, p.y-3, 5, 4);
 }
 function drawGuard(cam){
     const x=GUARD.x-cam, y=GUARD.y;
