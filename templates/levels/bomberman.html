@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nivel 5: Bomberman — El laberinto de los comandos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+  :root{
+    --bg:#0b0f16; --panel:#121a26; --edge:#223049; --grid:#17324d;
+    --cyan:#58a6ff; --mag:#ff2fd6; --grn:#3ddc84; --amber:#ffb454; --red:#ff5a5a;
+    --ink:#0d1117; --muted:#8b949e; --term-bg:#05080e; --term-fg:#9ef7c3;
+    --pixel:'Press Start 2P', monospace; --mono:'Courier New', ui-monospace, monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;}
+  body{
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      radial-gradient(circle at 50% 0%, #10203a, var(--bg) 70%);
+    color:#e6edf3; font-family:var(--mono);
+    padding-block:22px;
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+  }
+  .wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
+  header{text-align:center;}
+  .eyebrow{color:var(--amber);font-family:var(--pixel);font-size:11px;letter-spacing:1px;}
+  h1{font-family:var(--pixel);font-size:18px;line-height:1.5;margin:14px 0 6px;color:var(--cyan);}
+  .tag{color:var(--muted);font-size:.95rem;}
+  .card{background:var(--panel);border:3px solid #000;box-shadow:inset -4px -4px 0 rgba(0,0,0,.4),inset 4px 4px 0 rgba(255,255,255,.04);border-radius:10px;padding:18px;}
+  .card h2{font-family:var(--pixel);font-size:12px;color:var(--amber);margin:0 0 12px;letter-spacing:1px;}
+  .mission p{margin:.3rem 0;line-height:1.55;}
+  .mission .npc{color:var(--grn);}
+  label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:6px;letter-spacing:1px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  input[type=text]{
+    flex:1;min-width:0;background:var(--term-bg);color:#e6edf3;border:2px solid var(--edge);
+    border-radius:6px;padding:12px 12px;font-family:var(--mono);font-size:1rem;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 2px rgba(88,166,255,.25);}
+  button{
+    font-family:var(--pixel);font-size:10px;letter-spacing:1px;cursor:pointer;color:var(--ink);
+    border:3px solid #000;border-radius:8px;padding:12px 16px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25),0 4px 0 #000;
+    transition:transform .06s;
+  }
+  button:active{transform:translateY(4px);box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25);}
+  .btn-run{background:var(--amber);}
+  .btn-flag{background:var(--grn);}
+  .prompt{color:var(--cyan);}
+  pre.term{
+    background:var(--term-bg);color:var(--term-fg);border:2px solid var(--edge);border-radius:6px;
+    padding:14px;margin:12px 0 0;min-height:120px;max-height:320px;overflow:auto;
+    white-space:pre-wrap;word-break:break-word;font-size:.92rem;line-height:1.5;
+  }
+  details{margin-top:10px;}
+  summary{cursor:pointer;color:var(--cyan);font-size:.9rem;}
+  .hint{color:var(--muted);font-size:.9rem;line-height:1.6;margin:8px 0 0;padding-left:8px;border-left:2px solid var(--edge);}
+  .flag-msg{margin-top:12px;font-weight:bold;min-height:1.2em;}
+  .ok{color:var(--grn);} .err{color:var(--red);}
+  .back{display:inline-block;color:var(--mag);text-decoration:none;border:2px solid var(--mag);border-radius:6px;padding:8px 14px;font-size:.85rem;}
+  .back:hover{background:rgba(255,47,214,.15);}
+  .win{display:none;text-align:center;border-color:var(--grn);box-shadow:0 0 30px rgba(61,220,132,.3),inset 0 0 0 2px var(--grn);}
+  .win.show{display:block;}
+  .win h2{color:var(--grn);}
+  @media(max-width:520px){ h1{font-size:14px;} .card h2{font-size:10px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">NIVEL 5</div>
+    <h1>BOMBERMAN</h1>
+    <div class="tag">El laberinto de los comandos · <strong>Command Injection</strong></div>
+  </header>
+
+  <div class="card mission">
+    <h2>▸ Misión</h2>
+    <p class="npc">NPC — Técnico del laberinto:</p>
+    <p>«La salida está sellada por un <strong>bloque-terminal</strong>. La única consola activa
+       es el <strong>diagnóstico de red</strong> que hace <code>ping</code> a los dispositivos…
+       y el que lo programó tenía prisa.»</p>
+    <p>Objetivo: la <strong>flag</strong> está escondida en algún archivo del sistema.
+       Consíguela y envíala para destruir el bloque.</p>
+  </div>
+
+  <div class="card">
+    <h2>▸ Consola de diagnóstico de red</h2>
+    <label for="host">Host a diagnosticar (ping):</label>
+    <div class="row">
+      <input type="text" id="host" placeholder="p. ej. 127.0.0.1" autocomplete="off" spellcheck="false">
+      <button class="btn-run" id="run">DIAGNOSTICAR</button>
+    </div>
+    <pre class="term" id="out">$ esperando un host para diagnosticar…</pre>
+
+    <details>
+      <summary>¿Atascado? Pistas progresivas</summary>
+      <p class="hint"><strong>1.</strong> Prueba un ping normal, como <code>127.0.0.1</code>. Funciona. Ahora pregúntate: ¿qué pasa si el campo <em>no</em> filtra caracteres especiales?</p>
+      <p class="hint"><strong>2.</strong> En una shell, <code>;</code> separa comandos. <code>127.0.0.1 ; ls</code> ejecutaría <code>ping</code> <em>y luego</em> <code>ls</code>. Otros operadores: <code>&amp;&amp;</code>, <code>|</code>.</p>
+      <p class="hint"><strong>3.</strong> Enumera: <code>ls</code>, luego <code>cat notas.txt</code>. El administrador deja cosas en <code>/opt</code>…</p>
+      <p class="hint"><strong>4.</strong> Cuando encuentres el archivo de la flag, léelo con <code>cat</code> y su ruta completa.</p>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>▸ Enviar flag</h2>
+    <div class="row">
+      <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+      <button class="btn-flag" id="send">ENVIAR</button>
+    </div>
+    <div class="flag-msg" id="flagmsg"></div>
+  </div>
+
+  <div class="card win" id="win">
+    <h2>✦ ¡BLOQUE DESTRUIDO! ✦</h2>
+    <p>Has resuelto el laberinto de los comandos. El siguiente nivel quedó desbloqueado.</p>
+    <a class="back" href="/map">← Volver al mapa</a>
+  </div>
+
+  <div style="text-align:center;">
+    <a class="back" href="/map">← Volver al mapa</a>
+  </div>
+</div>
+
+<script>
+const out=document.getElementById('out');
+const hostIn=document.getElementById('host');
+
+async function diagnosticar(){
+  const host=hostIn.value;
+  out.textContent='$ ping '+host+'\n…';
+  try{
+    const r=await fetch('/level/bomberman/ping',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'host='+encodeURIComponent(host)});
+    const d=await r.json();
+    out.textContent='$ ping '+host+'\n'+d.output;
+    out.scrollTop=out.scrollHeight;
+  }catch(e){ out.textContent='Error de conexión con la consola.'; }
+}
+document.getElementById('run').onclick=diagnosticar;
+hostIn.addEventListener('keydown',e=>{ if(e.key==='Enter') diagnosticar(); });
+
+const flagIn=document.getElementById('flag');
+const flagmsg=document.getElementById('flagmsg');
+async function enviarFlag(){
+  const flag=flagIn.value.trim();
+  if(!flag){ return; }
+  try{
+    const r=await fetch('/level/bomberman/submit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'flag='+encodeURIComponent(flag)});
+    const d=await r.json();
+    flagmsg.textContent=d.message;
+    flagmsg.className='flag-msg '+(d.ok?'ok':'err');
+    if(d.ok){ document.getElementById('win').classList.add('show'); document.getElementById('win').scrollIntoView({behavior:'smooth'}); }
+  }catch(e){ flagmsg.textContent='Error al enviar la flag.'; flagmsg.className='flag-msg err'; }
+}
+document.getElementById('send').onclick=enviarFlag;
+flagIn.addEventListener('keydown',e=>{ if(e.key==='Enter') enviarFlag(); });
+</script>
+</body>
+</html>

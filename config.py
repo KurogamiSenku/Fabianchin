@@ -17,3 +17,11 @@ FLAGS = {
     "level1": "FLAG{primera_bandera_oculta_en_el_codigo}",
     "level2": "FLAG{enumeracion_web_completada}",
 }
+
+# --- Progresión del mapa (ids numéricos, solo niveles con sprite) ---
+PROGRESSION = [1, 2, 3, 5, 8, 9, 14]
+
+# Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
+LEVEL_FLAGS = {
+    5: "FLAG{bomberman_command_injection}",
+}

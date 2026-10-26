@@ -7,12 +7,19 @@ from flask import (
 import config
 from levels.level1 import bp as level1_bp
 from levels.level2 import bp as level2_bp
+from levels.bomberman import bp as bomberman_bp
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
 
 app.register_blueprint(level1_bp)
 app.register_blueprint(level2_bp)
+app.register_blueprint(bomberman_bp)
+
+# Mapea id de nivel -> plantilla del reto (solo los que ya están construidos)
+LEVEL_TEMPLATES = {
+    5: "levels/bomberman.html",
+}
 
 
 # ---------- Helpers ----------
@@ -79,6 +86,18 @@ def map_view():
         "map.html",
         unlocked_levels=session["unlocked"],
     )
+
+
+@app.route("/level/<int:level_id>")
+def level_view(level_id):
+    # Debe estar desbloqueado (el 1 siempre lo está)
+    unlocked = session.get("unlocked", [1])
+    if level_id != 1 and level_id not in unlocked:
+        return render_template("levels/locked.html", level_id=level_id), 403
+    template = LEVEL_TEMPLATES.get(level_id)
+    if not template:
+        return render_template("levels/coming_soon.html", level_id=level_id)
+    return render_template(template, level_id=level_id)
 
 
 @app.route("/api/unlock_level/<int:level_id>", methods=["POST"])
