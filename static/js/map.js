@@ -759,10 +759,10 @@ function draw() {
         
         ctx.shadowBlur = 20; ctx.shadowColor = isUnlocked ? '#ffd700' : '#ff5a5a';
         ctx.beginPath(); ctx.arc(level.x, coinY, 30, 0, Math.PI * 2); ctx.fillStyle = coreColor; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
-        ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 14px monospace'; ctx.fillText(level.name, level.x, coinY - 45);
+        ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
+        ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 20px monospace'; ctx.fillText(level.name, level.x, coinY - 45);
         const dist = Math.hypot(player.x + PLAYER_SIZE/2 - level.x, player.y + PLAYER_SIZE/2 - level.y);
-        if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
+        if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 22px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
     });
 
     enemies.forEach(enemy => {

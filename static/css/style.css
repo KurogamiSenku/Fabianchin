@@ -802,13 +802,13 @@ body.arcade-body{ background:#1a1033; overflow:hidden; }
     background:linear-gradient(118deg, transparent 28%, rgba(255,255,255,.28) 33% 38%, transparent 42%, transparent 60%, rgba(255,255,255,.16) 63% 67%, transparent 71%); }
 .arcade-body .arcade-marquee h1{
     position:relative; z-index:1; margin:0; font-family:var(--pixel);
-    color:var(--cab-ink); font-size:36px; line-height:1.4; letter-spacing:2px;
+    color:var(--cab-ink); font-size:46px; line-height:1.4; letter-spacing:2px;
     text-shadow:2px 2px 0 rgba(255,255,255,.3); }
 
 /* Placa grabada para el texto de Fabiancho */
 .arcade-body .arcade-subtitle{
-    text-align:center; color:#c3ccd8; font-size:1.2em; font-style:italic; line-height:1.55;
-    margin:18px 0 0; padding:15px 18px;
+    text-align:center; color:#c3ccd8; font-size:1.45em; font-style:italic; line-height:1.55;
+    margin:18px 0 0; padding:18px 22px;
     background:#0b1017; border:3px solid #000; border-radius:8px;
     box-shadow:inset 2px 2px 0 rgba(0,0,0,.55), inset -2px -2px 0 rgba(255,255,255,.04); }
 
@@ -822,12 +822,12 @@ body.arcade-body{ background:#1a1033; overflow:hidden; }
     background:repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 2px, transparent 2px 4px); mix-blend-mode:multiply; }
 .arcade-body .arcade-screen-text{
     font-family:var(--pixel); color:#58a6ff; text-shadow:2px 2px 0 #10243a;
-    font-size:19px; line-height:1.8; }
+    font-size:25px; line-height:1.8; }
 .arcade-body #indexCanvas{ border:3px solid #000 !important; border-radius:0 !important; image-rendering:pixelated; }
 
 /* Botones JUGAR / SALIR: redondeados con bisel pixel */
 .arcade-body .arcade-actions a, .arcade-body .arcade-actions button{
-    font-family:var(--pixel); font-size:16px; letter-spacing:1px; padding:20px 16px;
+    font-family:var(--pixel); font-size:21px; letter-spacing:1px; padding:24px 20px;
     background:#0c1119; border:3px solid #000; border-radius:12px;
     box-shadow:inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.12), 0 4px 0 #000; }
 .arcade-body .arcade-actions a.btn-play{ color:#3ddc84; }
@@ -836,7 +836,14 @@ body.arcade-body{ background:#1a1033; overflow:hidden; }
     transform:translateY(4px);
     box-shadow:inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.12); }
 
-.arcade-body .arcade-controls-help{ border-top:3px solid #000; font-size:1.3em; line-height:2; padding-top:18px; }
+.arcade-body .arcade-controls-help{ border-top:3px solid #000; font-size:1.7em; line-height:2; padding-top:20px; }
+
+/* Textos del MAPA más grandes (HUD y popup de nivel) */
+.arcade-body .hud-map{ font-size:1.8em; }
+.arcade-body .hud-map a{ padding:8px 16px; }
+.arcade-body .level-popup h2{ font-size:2.2em; }
+.arcade-body .level-popup p{ font-size:1.5em; }
+.arcade-body .popup-buttons button{ font-size:1.5em; padding:18px 36px; }
 
 /* Controles en TRAPECIO (el marco negro lo da .panel-frame) */
 .arcade-body .panel-frame{
@@ -856,10 +863,10 @@ body.arcade-body{ background:#1a1033; overflow:hidden; }
     background:radial-gradient(circle at 35% 30%, #ff2fd6, #8a1a74);
     border:3px solid #000; box-shadow:inset -3px -3px 0 rgba(0,0,0,.35); }
 .arcade-body .arcade-btn{
-    width:120px; height:120px;
+    width:144px; height:144px;
     border:4px solid #000;
     box-shadow:inset -4px -4px 0 rgba(0,0,0,.4), inset 4px 4px 0 rgba(255,255,255,.2), 0 4px 0 #000;
-    font-family:var(--pixel); font-size:11px; }
+    font-family:var(--pixel); font-size:13px; }
 .arcade-body .arcade-btn.jump-btn{ background:radial-gradient(circle at 35% 30%, #3ddc84, #1a7a44); }
 .arcade-body .arcade-btn.hit-btn{ background:radial-gradient(circle at 35% 30%, #ff5a5a, #a81f1f); }
 .arcade-body .arcade-btn.pressed{ transform:translateY(4px); }
