@@ -45,12 +45,14 @@ let lastSafe = { x:40, y:250 };
 
 const GUARD = { x:3180, y:330-70 };   // puesto de guardia sobre el suelo final
 
-// Soldados Contra que patrullan y empujan
+// Soldados Contra que patrullan, empujan y disparan bolas
+const SOLDIER_Y = 330 - 68;   // más arriba (antes quedaban hundidos en el suelo)
 const soldiers = [
-    { x:1000, y:330-38, dir:1, min:760,  max:1340, f:0, ft:0 },
-    { x:1800, y:330-38, dir:-1,min:1520, max:2180, f:0, ft:0 },
-    { x:2700, y:330-38, dir:1, min:2380, max:3100, f:0, ft:0 },
+    { x:1000, y:SOLDIER_Y, dir:1, min:760,  max:1340, f:0, ft:0, fire:1600 },
+    { x:1800, y:SOLDIER_Y, dir:-1,min:1520, max:2180, f:0, ft:0, fire:2600 },
+    { x:2700, y:SOLDIER_Y, dir:1, min:2380, max:3100, f:0, ft:0, fire:3400 },
 ];
+const bullets = [];   // bolas disparadas
 
 const keys = { left:false, right:false, up:false };
 let challengeOpen = false;
@@ -125,10 +127,30 @@ function updateSoldiers(dt){
         s.x += s.dir*1.4;
         if (s.x<s.min){ s.x=s.min; s.dir=1; } if (s.x>s.max){ s.x=s.max; s.dir=-1; }
         s.ft+=dt; if (s.ft>130){ s.f++; s.ft=0; }
-        // empuje al contacto
-        const scx=s.x+16, scy=s.y+19, dx=pcx-scx, dy=pcy-scy, d=Math.hypot(dx,dy);
-        if (d<46 && d>0){ player.bvx += (dx/d)*8; player.vy += -2; }
+        const scx=s.x+19, scy=s.y+30, dx=pcx-scx, dy=pcy-scy, d=Math.hypot(dx,dy)||1;
+        // mira hacia el jugador si está cerca
+        if (Math.abs(dx)<560) s.dir = dx<0?-1:1;
+        // empuje al contacto directo
+        if (d<48){ player.bvx += (dx/d)*8; player.vy += -2; }
+        // disparar una bola hacia el jugador
+        s.fire -= dt;
+        if (s.fire<=0 && Math.abs(dx)<560){
+            const sp=4.3;
+            bullets.push({ x:scx, y:scy, vx:(dx/d)*sp, vy:(dy/d)*sp*0.5, ttl:2200 });
+            s.fire = 1700 + Math.random()*1300;
+        }
     }
+    // mover/colisionar bolas
+    for (const b of bullets){
+        b.x += b.vx; b.y += b.vy; b.ttl -= dt;
+        const bdx=pcx-b.x, bdy=pcy-b.y;
+        if (Math.hypot(bdx,bdy) < 34){   // impacto: EMPUJA (no mata)
+            player.bvx += (b.vx>0?1:-1)*11;
+            player.vy  += -4;
+            b.ttl = 0;
+        }
+    }
+    for (let i=bullets.length-1;i>=0;i--){ if (bullets[i].ttl<=0) bullets.splice(i,1); }
 }
 
 function hill(cam, par, base, amp, step, color){
@@ -212,11 +234,21 @@ function draw(){
     for (const p of plats) drawPlat(p, cam);
     drawGuard(cam);
 
-    // soldados
+    // soldados (sombra en el suelo, aunque el sprite esté más arriba)
     for (const s of soldiers){
         const x=s.x-cam; if (x>cv.width||x+40<0) continue;
-        ctx.fillStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(x+16, s.y+38, 14,4,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(x+19, 328, 15,4,0,0,Math.PI*2); ctx.fill();
         drawSprite(soldierImg, (Math.floor(s.f)%4)*23,0,23,38, x, s.y, 38, 62, s.dir>0);
+    }
+
+    // bolas disparadas
+    for (const b of bullets){
+        const x=b.x-cam; if (x<-20||x>cv.width+20) continue;
+        ctx.save();
+        ctx.shadowBlur=12; ctx.shadowColor='#ffb454';
+        ctx.fillStyle='#ffd24a'; ctx.beginPath(); ctx.arc(x,b.y,8,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#ff8a3d'; ctx.beginPath(); ctx.arc(x,b.y,4,0,Math.PI*2); ctx.fill();
+        ctx.restore();
     }
 
     // Fabiancho
