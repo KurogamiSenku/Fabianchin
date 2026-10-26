@@ -6,6 +6,9 @@
 <style>
   /* El nivel vive dentro de la pantalla del arcade */
   .arcade-stage{ padding:0 !important; }
+  /* Quitar textos del cascarón que sobran en el nivel (evita repetición y da espacio) */
+  .arcade-subtitle{ display:none !important; }
+  .arcade-controls-help{ display:none !important; }
   #level-inner{ width:100%; height:100%; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:8px; padding:10px; min-height:0; }
   #level-inner .ltitle{ font-family:'Press Start 2P',monospace; font-size:10px; color:#ffb454; letter-spacing:1px; flex:0 0 auto; }
@@ -48,10 +51,9 @@
 
 {% block content %}
 <div id="level-inner">
-  <div class="ltitle">NIVEL 5 · BOMBERMAN</div>
   <canvas id="arena" width="720" height="480"></canvas>
   <p class="lhelp">
-    <span class="k">WASD</span>/<span class="k">←↑↓→</span> mover a Fabiancho &nbsp;·&nbsp;
+    <span class="k">WASD</span>/<span class="k">←↑↓→</span> mover &nbsp;·&nbsp;
     llega al <strong>computador</strong> y pulsa <span class="k">E</span> &nbsp;·&nbsp;
     <a href="/map" style="color:#ff2fd6;">← Mapa</a>
   </p>

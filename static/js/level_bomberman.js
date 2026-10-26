@@ -191,6 +191,12 @@ function draw(){
             ctx.drawImage(img,0,0,PSIZE,PSIZE); ctx.restore(); }
         else ctx.drawImage(img, player.x, player.y, PSIZE, PSIZE);
     }
+
+    // Título dentro del mapa (ahorra espacio fuera del canvas)
+    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(cv.width/2-165, 5, 330, 28);
+    ctx.fillStyle='#ffb454'; ctx.font='bold 15px monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('NIVEL 5  ·  BOMBERMAN', cv.width/2, 20);
 }
 
 let last=performance.now();
