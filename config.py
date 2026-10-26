@@ -34,4 +34,5 @@ LEVEL_FLAGS = {
     5: LEVEL5_HALF1 + LEVEL5_HALF2,   # FLAG{bomberman_sqli_e_idor}
     8: "FLAG{doom_sudo_privesc_root}",
     9: "FLAG{sonic_datos_en_metadatos}",
+    14: "FLAG{liga_config_expuesta_pwned}",
 }
