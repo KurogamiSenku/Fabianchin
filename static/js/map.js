@@ -155,13 +155,40 @@ const LEVELS = [
 
 // --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
 // Cada nivel con "marker" dibuja su sprite; los demás siguen con la moneda.
+// roam = radio (px) en el que el personaje pasea; sin roam = quieto (monedas, anillos)
 const MARKERS = {
     mario_coin: { img: loadImg('/static/img/markers/mario_coin.png'), fw:34, fh:35, frames:4, fps:8,  size:66 },
     sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
-    doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104 },
-    contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92 },
-    megaman:    { img: loadImg('/static/img/markers/megaman.png'),    fw:32, fh:24, frames:1, fps:1,  size:78 }
+    doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104, roam:90 },
+    contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92,  roam:100 },
+    megaman:    { img: loadImg('/static/img/markers/megaman.png'),    fw:32, fh:24, frames:1, fps:1,  size:78,  roam:100 }
 };
+
+function updateMarkers(dt) {
+    LEVELS.forEach(level => {
+        const mk = level.marker ? MARKERS[level.marker] : null;
+        if (!mk || !mk.roam) return;
+        if (level._rx === undefined) {
+            level._rx = 0; level._ry = 0; level._vx = 0.6; level._vy = 0.3; level._turn = 0; level._facing = 'right';
+        }
+        level._turn -= dt;
+        if (level._turn <= 0) {   // cambia de rumbo cada cierto tiempo
+            const ang = Math.random() * Math.PI * 2;
+            const sp = 0.5 + Math.random() * 0.5;
+            level._vx = Math.cos(ang) * sp;
+            level._vy = Math.sin(ang) * sp * 0.6;
+            level._turn = 700 + Math.random() * 1400;
+        }
+        level._rx += level._vx; level._ry += level._vy;
+        const d = Math.hypot(level._rx, level._ry);
+        if (d > mk.roam) {   // rebota al borde de su radio
+            level._rx = level._rx / d * mk.roam;
+            level._ry = level._ry / d * mk.roam;
+            level._vx *= -1; level._vy *= -1;
+        }
+        if (Math.abs(level._vx) > 0.05) level._facing = level._vx < 0 ? 'left' : 'right';
+    });
+}
 
 const SPAWN_POINTS = [
     { x: 350, y: 200 }, { x: 700, y: 200 }, { x: 1200, y: 200 }, { x: 1800, y: 200 },
@@ -443,6 +470,7 @@ function update(dt, time) {
 
     updateEnemies(dt, time);
     updateRats(dt, time);
+    updateMarkers(dt);
 
     // Tope del empuje: por fuerte o numeroso que sea el grupo, no te manda volando
     const bmag = Math.hypot(player.bounceVx, player.bounceVy);
@@ -768,14 +796,21 @@ function draw() {
         
         const mk = level.marker ? MARKERS[level.marker] : null;
         if (mk && mk.img.complete && mk.img.naturalWidth > 0) {
-            // Sprite temático animado
+            // Sprite temático animado (y que pasea, si tiene roam)
+            const mx = level.x + (level._rx || 0);
+            const my = coinY + (level._ry || 0);
             const fi = Math.floor(player.time / (1000 / mk.fps)) % mk.frames;
             const scale = mk.size / mk.fh;
             const dw = mk.fw * scale, dh = mk.size;
             ctx.save();
             if (!isUnlocked) ctx.globalAlpha = 0.45;   // bloqueado = atenuado
             ctx.shadowBlur = 18; ctx.shadowColor = coreColor;
-            ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, level.x - dw/2, coinY - dh/2, dw, dh);
+            if (level._facing === 'left') {
+                ctx.translate(mx + dw/2, my - dh/2); ctx.scale(-1, 1);
+                ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, 0, 0, dw, dh);
+            } else {
+                ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, mx - dw/2, my - dh/2, dw, dh);
+            }
             ctx.restore();
             ctx.shadowBlur = 0;
         } else {
