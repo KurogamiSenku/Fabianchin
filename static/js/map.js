@@ -141,7 +141,7 @@ const LEVELS = [
     { id: 2, name: "Nivel 2: Contra", desc: "Enumeración web", x: 956, y: 273, marker: "contra" },
     { id: 3, name: "Nivel 3: Mega Man", desc: "La máscara", x: 1310, y: 264, marker: "megaman" },
     { id: 4, name: "Nivel 4: Castlevania", desc: "Manipulación", x: 1610, y: 372 },
-    { id: 5, name: "Nivel 5: Bomberman", desc: "File Upload", x: 250, y: 500 },
+    { id: 5, name: "Nivel 5: Bomberman", desc: "File Upload", x: 250, y: 500, marker: "bomberman" },
     { id: 6, name: "Nivel 6: Metal Slug", desc: "Burp Suite", x: 963, y: 501 },
     { id: 7, name: "Nivel 7: Ghosts'n Goblins", desc: "Cookies", x: 1300, y: 500 },
     { id: 8, name: "Nivel 8: DOOM", desc: "Cmd Injection", x: 1900, y: 500, marker: "doom" },
@@ -161,32 +161,75 @@ const MARKERS = {
     sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
     doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104, roam:90 },
     contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92,  roam:100 },
-    megaman:    { img: loadImg('/static/img/markers/megaman_walk.png'), fw:25, fh:28, frames:3, fps:8,  size:82, roam:100 }
+    megaman:    { img: loadImg('/static/img/markers/megaman_walk.png'), fw:25, fh:28, frames:3, fps:8,  size:82, roam:100 },
+    bomberman:  { img: loadImg('/static/img/markers/bomberman.png'),  fw:20, fh:30, frames:3, fps:6,  size:86,  chase:300 }
 };
 
+// Efectos de Bomberman (bomba y explosión)
+const BOMB = { img: loadImg('/static/img/markers/bomb.png'),      fw:20, fh:20, frames:3, size:42 };
+const EXPL = { img: loadImg('/static/img/markers/explosion.png'), fw:40, fh:39, frames:5, size:130, ms:70 };
+
 function updateMarkers(dt) {
+    const px = player.x + PLAYER_SIZE/2, py = player.y + PLAYER_SIZE - 10;  // pies del jugador
     LEVELS.forEach(level => {
         const mk = level.marker ? MARKERS[level.marker] : null;
-        if (!mk || !mk.roam) return;
+        if (!mk) return;
         if (level._rx === undefined) {
-            level._rx = 0; level._ry = 0; level._vx = 0.6; level._vy = 0.3; level._turn = 0; level._facing = 'right';
+            level._rx = 0; level._ry = 0; level._vx = 0.6; level._vy = 0.3; level._turn = 0;
+            level._facing = 'right'; level._bombs = []; level._bombTimer = 2200;
         }
-        level._turn -= dt;
-        if (level._turn <= 0) {   // cambia de rumbo cada cierto tiempo
-            const ang = Math.random() * Math.PI * 2;
-            const sp = 0.5 + Math.random() * 0.5;
-            level._vx = Math.cos(ang) * sp;
-            level._vy = Math.sin(ang) * sp * 0.6;
-            level._turn = 700 + Math.random() * 1400;
+
+        if (mk.chase) {
+            // --- BOMBERMAN: persigue al jugador dentro de un radio (leash) y suelta bombas ---
+            const curX = level.x + level._rx, curY = level.y + level._ry;
+            const tx = px - curX, ty = py - curY, pdist = Math.hypot(tx, ty);
+            const SP = 1.5;
+            if (pdist < 540 && pdist > 50) {
+                level._rx += (tx/pdist)*SP; level._ry += (ty/pdist)*SP;
+                level._facing = tx < 0 ? 'left' : 'right';
+            } else {   // vuelve hacia su punto
+                const d = Math.hypot(level._rx, level._ry);
+                if (d > 4) { level._rx -= level._rx/d*SP*0.6; level._ry -= level._ry/d*SP*0.6; }
+            }
+            const hd = Math.hypot(level._rx, level._ry);
+            if (hd > mk.chase) { level._rx = level._rx/hd*mk.chase; level._ry = level._ry/hd*mk.chase; }
+
+            level._bombTimer -= dt;
+            if (level._bombTimer <= 0 && pdist < 440) {
+                level._bombs.push({ x: level.x + level._rx, y: level.y + level._ry, fuse: 1300, exploded: false, et: 0 });
+                level._bombTimer = 2200 + Math.random()*900;
+            }
+            for (const b of level._bombs) {
+                if (!b.exploded) {
+                    b.fuse -= dt;
+                    if (b.fuse <= 0) {
+                        b.exploded = true; b.et = 0;
+                        const bdx = px - b.x, bdy = py - b.y, bd = Math.hypot(bdx, bdy);
+                        if (bd < 150 && bd > 0) {   // la explosión solo EMPUJA, no mata
+                            const a = Math.atan2(bdy, bdx);
+                            player.bounceVx += Math.cos(a)*42;
+                            player.bounceVy += Math.sin(a)*42;
+                        }
+                    }
+                } else { b.et += dt; }
+            }
+            level._bombs = level._bombs.filter(b => !(b.exploded && b.et > EXPL.frames*EXPL.ms));
+
+        } else if (mk.roam) {
+            level._turn -= dt;
+            if (level._turn <= 0) {
+                const ang = Math.random() * Math.PI * 2, sp = 0.5 + Math.random() * 0.5;
+                level._vx = Math.cos(ang) * sp; level._vy = Math.sin(ang) * sp * 0.6;
+                level._turn = 700 + Math.random() * 1400;
+            }
+            level._rx += level._vx; level._ry += level._vy;
+            const d = Math.hypot(level._rx, level._ry);
+            if (d > mk.roam) {
+                level._rx = level._rx / d * mk.roam; level._ry = level._ry / d * mk.roam;
+                level._vx *= -1; level._vy *= -1;
+            }
+            if (Math.abs(level._vx) > 0.05) level._facing = level._vx < 0 ? 'left' : 'right';
         }
-        level._rx += level._vx; level._ry += level._vy;
-        const d = Math.hypot(level._rx, level._ry);
-        if (d > mk.roam) {   // rebota al borde de su radio
-            level._rx = level._rx / d * mk.roam;
-            level._ry = level._ry / d * mk.roam;
-            level._vx *= -1; level._vy *= -1;
-        }
-        if (Math.abs(level._vx) > 0.05) level._facing = level._vx < 0 ? 'left' : 'right';
     });
 }
 
@@ -822,6 +865,22 @@ function draw() {
         ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.name, level.x, coinY - 45);
         const dist = Math.hypot(player.x + PLAYER_SIZE/2 - level.x, player.y + PLAYER_SIZE/2 - level.y);
         if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 22px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
+    });
+
+    // Bombas y explosiones de Bomberman
+    LEVELS.forEach(level => {
+        if (!level._bombs || !level._bombs.length) return;
+        level._bombs.forEach(b => {
+            if (!b.exploded) {
+                const fi = Math.floor(player.time / 150) % BOMB.frames;
+                const sc = BOMB.size / BOMB.fh, dw = BOMB.fw*sc, dh = BOMB.size;
+                if (BOMB.img.complete) ctx.drawImage(BOMB.img, fi*BOMB.fw, 0, BOMB.fw, BOMB.fh, b.x - dw/2, b.y - dh/2, dw, dh);
+            } else {
+                const fi = Math.min(Math.floor(b.et / EXPL.ms), EXPL.frames - 1);
+                const sc = EXPL.size / EXPL.fh, dw = EXPL.fw*sc, dh = EXPL.size;
+                if (EXPL.img.complete) ctx.drawImage(EXPL.img, fi*EXPL.fw, 0, EXPL.fw, EXPL.fh, b.x - dw/2, b.y - dh/2, dw, dh);
+            }
+        });
     });
 
     enemies.forEach(enemy => {
