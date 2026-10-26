@@ -136,21 +136,15 @@ let WALLS = [
 ];
 
 // --- NIVELES ACTUALIZADOS CON TUS POSICIONES ---
+// Solo niveles con sprite temático. Cada uno tiene su transición de entrada (fx).
 const LEVELS = [
-    { id: 1, name: "Nivel 1: Mario", desc: "Reconocimiento", x: 498, y: 392, marker: "mario_coin" },
-    { id: 2, name: "Nivel 2: Contra", desc: "Enumeración web", x: 956, y: 273, marker: "contra" },
-    { id: 3, name: "Nivel 3: Mega Man", desc: "La máscara", x: 1310, y: 264, marker: "megaman" },
-    { id: 4, name: "Nivel 4: Castlevania", desc: "Manipulación", x: 1610, y: 372 },
-    { id: 5, name: "Nivel 5: Bomberman", desc: "File Upload", x: 250, y: 500, marker: "bomberman" },
-    { id: 6, name: "Nivel 6: Metal Slug", desc: "Burp Suite", x: 963, y: 501 },
-    { id: 7, name: "Nivel 7: Ghosts'n Goblins", desc: "Cookies", x: 1300, y: 500 },
-    { id: 8, name: "Nivel 8: DOOM", desc: "Cmd Injection", x: 1900, y: 500, marker: "doom" },
-    { id: 9, name: "Nivel 9: Sonic", desc: "SSH Acceso", x: 465, y: 1362, marker: "sonic_ring" },
-    { id: 10, name: "Nivel 10: Prince", desc: "Linux System", x: 800, y: 950 },
-    { id: 11, name: "Nivel 11: Earthworm", desc: "Docker", x: 1300, y: 950 },
-    { id: 12, name: "Nivel 12: Kirby", desc: "Esteganografía", x: 1770, y: 1082 },
-    { id: 13, name: "Nivel 13: Ninja Gaiden", desc: "Audio", x: 1047, y: 1406 },
-    { id: 14, name: "Nivel 14: Pokémon", desc: "Reto final", x: 2076, y: 1199, marker: "pokemon" }
+    { id: 1,  name: "Nivel 1: Mario",     desc: "Reconocimiento", x: 498,  y: 392,  marker: "mario_coin", fx: "mario" },
+    { id: 2,  name: "Nivel 2: Contra",    desc: "Enumeración web", x: 956, y: 273,  marker: "contra",     fx: "contra" },
+    { id: 3,  name: "Nivel 3: Mega Man",  desc: "La máscara",     x: 1310, y: 264,  marker: "megaman",    fx: "megaman" },
+    { id: 5,  name: "Nivel 5: Bomberman", desc: "File Upload",    x: 250,  y: 500,  marker: "bomberman",  fx: "bomberman" },
+    { id: 8,  name: "Nivel 8: DOOM",      desc: "Cmd Injection",  x: 1900, y: 500,  marker: "doom",       fx: "doom" },
+    { id: 9,  name: "Nivel 9: Sonic",     desc: "SSH Acceso",     x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic" },
+    { id: 14, name: "Nivel 14: Pokémon",  desc: "Reto final",     x: 2076, y: 1199, marker: "pokemon",    fx: "pokemon" }
 ];
 
 // --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
@@ -170,6 +164,9 @@ const MARKERS = {
 // Efectos de Bomberman (bomba y explosión)
 const BOMB = { img: loadImg('/static/img/markers/bomb.png'),      fw:20, fh:20, frames:3, size:42 };
 const EXPL = { img: loadImg('/static/img/markers/explosion.png'), fw:38, fh:34, frames:4, size:140, ms:80 };
+
+// Sprite del entrenador lanzando la Pokéball (transición de Pokémon)
+const POKE_THROW = loadImg('/static/img/markers/poke_battle/t3.png');
 
 function updateMarkers(dt) {
     const px = player.x + PLAYER_SIZE/2, py = player.y + PLAYER_SIZE - 10;  // pies del jugador
@@ -352,7 +349,12 @@ window.addEventListener('keydown', (e) => {
             const btnEnter = document.getElementById('btn-enter-level');
             if (isUnlocked) {
                 btnEnter.innerText = "ENTRAR"; btnEnter.style.color = "var(--green)"; btnEnter.style.borderColor = "var(--green)";
-                btnEnter.onclick = () => { window.location.href = `/level/${closestLevel.id}`; };
+                btnEnter.onclick = () => {
+                    document.getElementById('level-popup').classList.add('hidden');
+                    if (transition) return;   // ya en transición
+                    if (closestLevel.fx) startTransition(closestLevel.fx, closestLevel.id);
+                    else window.location.href = `/level/${closestLevel.id}`;
+                };
             } else {
                 btnEnter.innerText = "BLOQUEADO"; btnEnter.style.color = "var(--magenta)"; btnEnter.style.borderColor = "var(--magenta)";
                 btnEnter.onclick = null;
@@ -450,15 +452,152 @@ canvas.addEventListener('mouseup', (e) => {
 });
 
 let lastTime = performance.now();
+// ====================================================================
+//  TRANSICIONES DE ENTRADA POR NIVEL (todo dibujado por JS)
+// ====================================================================
+const TRANS_DUR = { mario:1100, sonic:1000, contra:1000, bomberman:1900, doom:1200, megaman:1000, pokemon:1700 };
+let transition = null;
+
+function startTransition(type, levelId) {
+    transition = { type, levelId, t0: performance.now(), navigated: false, blocks: null };
+    if (type === 'doom') {
+        // malla de bloques con tiempo de caída aleatorio
+        const cols = 16, rows = 8;
+        transition.blocks = [];
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+            transition.blocks.push({ c, r, cols, rows, delay: Math.random() });
+    }
+}
+
+function roundedStar(c, cx, cy, R, r, pts) {
+    c.beginPath();
+    for (let i = 0; i < pts * 2; i++) {
+        const rad = (i % 2 === 0) ? R : r;
+        const a = (Math.PI / pts) * i - Math.PI / 2;
+        const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.closePath();
+}
+
+function drawTransition(time) {
+    if (!transition) return;
+    const W = VIEW_WIDTH, H = VIEW_HEIGHT;
+    const dur = TRANS_DUR[transition.type] || 1100;
+    let p = (time - transition.t0) / dur;
+    if (p > 1) p = 1;
+    const t = transition.type;
+
+    if (t === 'mario') {
+        // Iris de estrella que se cierra (negro cubriendo, hueco-estrella que encoge)
+        const maxR = Math.hypot(W, H) / 2 + 40;
+        const R = (1 - p) * maxR;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, 0, W, H);
+        roundedStar(ctx, W/2, H/2, R, R*0.45, 5);
+        ctx.fillStyle = '#000'; ctx.fill('evenodd');
+        ctx.restore();
+        if (R > 2) { ctx.save(); ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 5;
+            roundedStar(ctx, W/2, H/2, R, R*0.45, 5); ctx.stroke(); ctx.restore(); }
+
+    } else if (t === 'sonic') {
+        // Círculo que se expande desde el centro
+        const R = p * (Math.hypot(W, H) / 2 + 20);
+        ctx.fillStyle = '#0a1a3a';
+        ctx.beginPath(); ctx.arc(W/2, H/2, R, 0, Math.PI*2); ctx.fill();
+        ctx.lineWidth = 8; ctx.strokeStyle = '#2ec4ff';
+        ctx.beginPath(); ctx.arc(W/2, H/2, R, 0, Math.PI*2); ctx.stroke();
+
+    } else if (t === 'contra') {
+        // Franjas diagonales / / / / que se completan una a una
+        const N = 10, shown = p * N;
+        const bw = (W + H) / N;
+        ctx.save(); ctx.fillStyle = '#111';
+        for (let i = 0; i < N; i++) {
+            const fill = Math.max(0, Math.min(1, shown - i));
+            if (fill <= 0) continue;
+            const x0 = -H + i * bw;
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.moveTo(x0, H); ctx.lineTo(x0 + H, 0);
+            ctx.lineTo(x0 + H + bw*fill, 0); ctx.lineTo(x0 + bw*fill, H);
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+
+    } else if (t === 'bomberman') {
+        // Cuenta regresiva 3, 2, 1
+        ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H);
+        const n = 3 - Math.floor(p * 3);
+        const sub = (p * 3) % 1;                 // 0..1 dentro de cada número
+        const scale = 1.4 - sub * 0.5;
+        ctx.save(); ctx.translate(W/2, H/2); ctx.scale(scale, scale);
+        ctx.globalAlpha = Math.min(1, (1 - sub) * 2.2);
+        ctx.font = 'bold 190px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 10; ctx.strokeStyle = '#000'; ctx.strokeText(n > 0 ? n : 1, 0, 0);
+        ctx.fillStyle = '#ffd24a'; ctx.fillText(n > 0 ? n : 1, 0, 0);
+        ctx.restore();
+
+    } else if (t === 'doom') {
+        // Cuadros desmoronándose (la pantalla se rompe en bloques que caen)
+        const bw = W / 16, bh = H / 8;
+        ctx.fillStyle = '#000';
+        for (const b of transition.blocks) {
+            const local = (p - b.delay * 0.55) / 0.45;
+            if (local <= 0) continue;
+            const fall = Math.min(1, local);
+            const y = b.r * bh + (fall < 1 ? 0 : 0);
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, local * 1.5);
+            const drop = (local > 1 ? (local - 1) * 400 : 0);
+            ctx.fillRect(b.c * bw, b.r * bh + drop, bw + 1, bh + 1);
+            ctx.restore();
+        }
+        if (p > 0.8) { ctx.globalAlpha = (p - 0.8) / 0.2; ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1; }
+
+    } else if (t === 'megaman') {
+        // Barrido de energía azul + destello
+        const x = p * W;
+        const grad = ctx.createLinearGradient(x - 160, 0, x, 0);
+        grad.addColorStop(0, 'rgba(10,20,40,0)'); grad.addColorStop(1, '#0a1428');
+        ctx.fillStyle = '#0a1428'; ctx.fillRect(0, 0, x, H);
+        ctx.fillStyle = grad; ctx.fillRect(x - 160, 0, 160, H);
+        ctx.fillStyle = 'rgba(88,166,255,0.9)'; ctx.fillRect(x - 10, 0, 14, H);
+
+    } else if (t === 'pokemon') {
+        // Entrenador lanza la Pokéball → destello → entra
+        ctx.fillStyle = 'rgba(0,0,0,' + Math.min(0.85, p*1.3) + ')'; ctx.fillRect(0, 0, W, H);
+        if (POKE_THROW.complete && POKE_THROW.naturalWidth > 0) {
+            const h = 360, w = h * (POKE_THROW.width / POKE_THROW.height);
+            const slide = p < 0.5 ? (1 - p/0.5) : 0;
+            const px = W*0.62 - w/2 + slide * 260;
+            ctx.globalAlpha = Math.min(1, p*3);
+            ctx.drawImage(POKE_THROW, px, H/2 - h/2, w, h);
+            ctx.globalAlpha = 1;
+        }
+        if (p > 0.6) {   // destello blanco de la Pokéball que cubre
+            const fp = (p - 0.6) / 0.4;
+            ctx.fillStyle = 'rgba(255,255,255,' + fp + ')'; ctx.fillRect(0, 0, W, H);
+        }
+    }
+
+    if (p >= 1 && !transition.navigated) {
+        transition.navigated = true;
+        window.location.href = `/level/${transition.levelId}`;
+    }
+}
+
 function gameLoop(time) {
     const dt = time - lastTime; lastTime = time;
     player.time = time;
     update(dt, time); draw();
+    drawTransition(time);
     requestAnimationFrame(gameLoop);
 }
 
 function update(dt, time) {
     if (EDIT_MODE) return;
+    if (transition) { keys.up = keys.down = keys.left = keys.right = false; player.isMoving = false; return; }
 
     let dx = 0, dy = 0;
     if (keys.up) { dy -= 1; player.facing = 'up'; }
