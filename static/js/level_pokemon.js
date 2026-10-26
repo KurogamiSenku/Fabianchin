@@ -43,16 +43,16 @@ for (let y=0;y<MH;y++) for (let x=0;x<MW;x++){ if (MAP[y][x]==='S'){ spawn={x,y}
 const player = { gx:spawn.x+0.5, gy:spawn.y+0.5, facing:'right', moving:false, animFrame:0, animTimer:0 };
 const cam = { x:0, y:0 };
 
-// Aldeanos (diseño propio) y carteles con frases
+// Aldeanos (personajes ORIGINALES variados) y carteles con frases
 const npcs = [
-    { gx:2.5, gy:1.5,  robe:'#e85d5d', hat:'#b03030', say:"¡Bienvenido a la Liga, retador!" },
-    { gx:15.5, gy:1.5, robe:'#4d8de8', hat:'#2b5bb0', say:"Dicen que el admin es descuidado con sus respaldos..." },
-    { gx:2.5, gy:6.5,  robe:'#3ddc84', hat:'#1a7a44', say:"Correlaciona lo que encuentres. Nada es casualidad." },
-    { gx:16.5, gy:6.5, robe:'#e8c04d', hat:'#b08a30', say:"El Centro de la Liga está al fondo. ¡Suerte!" },
-    { gx:3.5, gy:11.5, robe:'#b06ad0', hat:'#7e45b0', say:"Un buen hacker lee hasta los archivos .bak." },
-    { gx:16.5, gy:11.5,robe:'#5ad0c0', hat:'#2a9e90', say:"Yo nunca confiaría en una config con debug = true." },
-    { gx:5.5, gy:14.5, robe:'#ff9a4d', hat:'#c06a20', say:"Si entras como admin, la Liga es tuya." },
-    { gx:15.5, gy:14.5,robe:'#9aa0e8', hat:'#5a60b0', say:"Las credenciales filtradas abren muchas puertas." },
+    { gx:2.5, gy:1.5,  kind:'villager', robe:'#e85d5d', hat:'#b03030', say:"¡Bienvenido a la Liga, retador!" },
+    { gx:15.5, gy:1.5, kind:'robot',    c1:'#8a94a6', c2:'#58f5ff', say:"BIP. El admin olvidó borrar sus respaldos. BOP." },
+    { gx:2.5, gy:6.5,  kind:'wizard',   c1:'#5a3ea8', c2:'#ffd24a', say:"Correlaciona lo que encuentres. Nada es casualidad." },
+    { gx:16.5, gy:6.5, kind:'guard',    c1:'#6b7682', c2:'#c0c8d2', say:"El Centro de la Liga está al fondo. ¡Suerte!" },
+    { gx:3.5, gy:11.5, kind:'merchant', c1:'#c98a3e', c2:'#e8c04d', say:"Un buen hacker lee hasta los archivos .bak." },
+    { gx:16.5, gy:11.5,kind:'slime',    c1:'#4fd96a', c2:'#2a9e50', say:"¡Blob! Yo nunca pondría debug = true." },
+    { gx:5.5, gy:14.5, kind:'villager', robe:'#ff9a4d', hat:'#c06a20', say:"Si entras como admin, la Liga es tuya." },
+    { gx:15.5, gy:14.5,kind:'robot',    c1:'#6a74a6', c2:'#ff7ad6', say:"BIP. Credenciales filtradas = puertas abiertas." },
 ];
 const signs = [
     { gx:8.5, gy:6.5,  say:"CARTEL: Torneo de la Liga — solo administradores autorizados." },
@@ -153,13 +153,52 @@ function drawLamp(gx,gy){
     ctx.beginPath(); ctx.arc(s.x,s.y-38,6,0,Math.PI*2); ctx.fill();
 }
 function drawNpc(n){
-    const s=isoToScreen(n.gx,n.gy);
-    ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x,s.y+3,10,4,0,0,Math.PI*2); ctx.fill();
-    // cuerpo (túnica) + cabeza + sombrero (aldeano original)
-    ctx.fillStyle=n.robe; ctx.beginPath(); ctx.moveTo(s.x-9,s.y+2); ctx.lineTo(s.x+9,s.y+2); ctx.lineTo(s.x+6,s.y-16); ctx.lineTo(s.x-6,s.y-16); ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#f1c9a5'; ctx.beginPath(); ctx.arc(s.x,s.y-20,7,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle=n.hat; ctx.beginPath(); ctx.moveTo(s.x-9,s.y-23); ctx.lineTo(s.x+9,s.y-23); ctx.lineTo(s.x,s.y-34); ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#000'; ctx.fillRect(s.x-3,s.y-21,1.5,1.5); ctx.fillRect(s.x+2,s.y-21,1.5,1.5);
+    const s=isoToScreen(n.gx,n.gy), x=s.x, y=s.y;
+    const bob=Math.sin(Date.now()/400 + n.gx)*1.5;
+    ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x,y+4,12,5,0,0,Math.PI*2); ctx.fill();
+    const k=n.kind||'villager';
+    if (k==='villager'){
+        ctx.fillStyle=n.robe; ctx.beginPath(); ctx.moveTo(x-10,y+2); ctx.lineTo(x+10,y+2); ctx.lineTo(x+7,y-18); ctx.lineTo(x-7,y-18); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#f1c9a5'; ctx.beginPath(); ctx.arc(x,y-23+bob,8,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=n.hat; ctx.beginPath(); ctx.moveTo(x-10,y-26+bob); ctx.lineTo(x+10,y-26+bob); ctx.lineTo(x,y-39+bob); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#000'; ctx.fillRect(x-3,y-24+bob,2,2); ctx.fillRect(x+2,y-24+bob,2,2);
+    } else if (k==='robot'){
+        ctx.fillStyle=n.c1; ctx.fillRect(x-10,y-18,20,20);                 // cuerpo
+        ctx.fillStyle='#5b6473'; ctx.fillRect(x-12,y-12,4,10); ctx.fillRect(x+8,y-12,4,10); // brazos
+        ctx.fillStyle=n.c1; ctx.fillRect(x-9,y-34+bob,18,16);              // cabeza
+        ctx.strokeStyle='#30363d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,y-34+bob); ctx.lineTo(x,y-40+bob); ctx.stroke();
+        ctx.fillStyle=n.c2; ctx.fillRect(x-6,y-30+bob,12,5);               // visor
+        ctx.fillStyle='#fff'; ctx.fillRect(x-4,y-29+bob,3,3);
+    } else if (k==='wizard'){
+        ctx.fillStyle=n.c1; ctx.beginPath(); ctx.moveTo(x-11,y+2); ctx.lineTo(x+11,y+2); ctx.lineTo(x+6,y-20); ctx.lineTo(x-6,y-20); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#f1c9a5'; ctx.beginPath(); ctx.arc(x,y-24+bob,7,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#d8d8d8'; ctx.fillRect(x-7,y-20,14,4);              // barba
+        ctx.fillStyle=n.c1; ctx.beginPath(); ctx.moveTo(x-10,y-27+bob); ctx.lineTo(x+10,y-27+bob); ctx.lineTo(x+3,y-48+bob); ctx.closePath(); ctx.fill(); // gorro largo
+        ctx.fillStyle=n.c2; ctx.beginPath(); ctx.arc(x+3,y-48+bob,2.5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#6b4a28'; ctx.fillRect(x+11,y-30,2,32); ctx.fillStyle=n.c2; ctx.beginPath(); ctx.arc(x+12,y-32,4,0,Math.PI*2); ctx.fill(); // báculo
+    } else if (k==='guard'){
+        ctx.fillStyle=n.c1; ctx.fillRect(x-9,y-18,18,20);                 // armadura
+        ctx.fillStyle=n.c2; ctx.fillRect(x-9,y-18,18,4);
+        ctx.fillStyle=n.c1; ctx.beginPath(); ctx.arc(x,y-26+bob,8,Math.PI,0); ctx.fill(); // casco
+        ctx.fillRect(x-8,y-26+bob,16,6);
+        ctx.fillStyle='#1a1f28'; ctx.fillRect(x-6,y-24+bob,12,3);         // visera
+        ctx.fillStyle='#8f6b3a'; ctx.fillRect(x+10,y-36,3,38);            // lanza
+        ctx.fillStyle='#c0c8d2'; ctx.beginPath(); ctx.moveTo(x+11.5,y-42); ctx.lineTo(x+8,y-36); ctx.lineTo(x+15,y-36); ctx.closePath(); ctx.fill();
+    } else if (k==='merchant'){
+        ctx.fillStyle=n.c1; ctx.fillRect(x-10,y-16,20,18);               // delantal
+        ctx.fillStyle=n.c2; ctx.fillRect(x-10,y-10,20,3);
+        ctx.fillStyle='#f1c9a5'; ctx.beginPath(); ctx.arc(x,y-22+bob,7,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=n.c2; ctx.fillRect(x-9,y-26+bob,18,4);              // gorro plano
+        ctx.fillStyle='#000'; ctx.fillRect(x-3,y-23+bob,2,2); ctx.fillRect(x+2,y-23+bob,2,2);
+        ctx.fillStyle='#8f5330'; ctx.fillRect(x-16,y-2,8,6);             // cajita de venta
+    } else if (k==='slime'){
+        const sq=Math.sin(Date.now()/250+n.gx)*2;
+        ctx.fillStyle=n.c2; ctx.beginPath(); ctx.ellipse(x,y-2,13,10+sq,0,Math.PI,0); ctx.fill();
+        ctx.fillStyle=n.c1; ctx.beginPath(); ctx.ellipse(x,y-6-sq,12,11+sq,0,Math.PI,0); ctx.fill();
+        ctx.fillRect(x-12,y-6-sq,24,6);
+        ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x-4,y-9,2.5,0,Math.PI*2); ctx.arc(x+4,y-9,2.5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(x-4,y-9,1.2,0,Math.PI*2); ctx.arc(x+4,y-9,1.2,0,Math.PI*2); ctx.fill();
+    }
 }
 function drawSign(sg){
     const s=isoToScreen(sg.gx,sg.gy);

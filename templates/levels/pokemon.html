@@ -32,6 +32,17 @@
   .win{ display:none; margin-top:14px; text-align:center; color:#ffd24a; font-weight:bold; font-size:1.05rem; } .win.show{ display:block; }
   .win a, .flagbox a{ color:#ff2fd6; }
   .dl{ display:inline-block; margin-top:4px; color:#58a6ff; }
+
+  /* Jumpscare ORIGINAL (bestia dibujada por código) al completar la flag final */
+  #jumpscare{ position:fixed; inset:0; z-index:100000; display:none; background:#000;
+    align-items:center; justify-content:center; }
+  #jumpscare.show{ display:flex; }
+  #jumpscare svg{ width:min(90vw,90vh); height:min(90vw,90vh); animation:jsShake .07s infinite; }
+  #jumpscare.flash{ animation:jsFlash .12s steps(1) infinite; }
+  @keyframes jsShake{ 0%{transform:translate(-8px,6px) scale(1.02)} 25%{transform:translate(7px,-7px) scale(1.05)}
+    50%{transform:translate(-6px,-5px) scale(1.0)} 75%{transform:translate(8px,7px) scale(1.06)} 100%{transform:translate(-7px,5px) scale(1.03)} }
+  @keyframes jsFlash{ 0%{background:#000} 50%{background:#5a0000} 100%{background:#000} }
+  @media(prefers-reduced-motion:reduce){ #jumpscare svg{animation:none;} #jumpscare.flash{animation:none;background:#200;} }
 </style>
 {% endblock %}
 
@@ -83,6 +94,38 @@
     </div>
   </div>
 </div>
+
+<!-- Jumpscare ORIGINAL: bestia dibujada por código (no usa video de terceros) -->
+<div id="jumpscare" aria-hidden="true">
+  <svg viewBox="0 0 200 200">
+    <!-- cabeza -->
+    <path d="M100 8 C40 8 18 60 22 110 C26 160 60 196 100 196 C140 196 174 160 178 110 C182 60 160 8 100 8 Z" fill="#0c0d12"/>
+    <path d="M100 8 C40 8 18 60 22 110 C26 160 60 196 100 196 C140 196 174 160 178 110 C182 60 160 8 100 8 Z" fill="none" stroke="#2a0000" stroke-width="3"/>
+    <!-- cuernos -->
+    <path d="M40 30 L18 2 L54 24 Z" fill="#14151c"/>
+    <path d="M160 30 L182 2 L146 24 Z" fill="#14151c"/>
+    <!-- ojos brillantes -->
+    <g>
+      <ellipse cx="68" cy="92" rx="22" ry="26" fill="#fff"/>
+      <ellipse cx="132" cy="92" rx="22" ry="26" fill="#fff"/>
+      <circle cx="68" cy="96" r="9" fill="#e00"/>
+      <circle cx="132" cy="96" r="9" fill="#e00"/>
+      <circle cx="68" cy="96" r="3.5" fill="#000"/>
+      <circle cx="132" cy="96" r="3.5" fill="#000"/>
+    </g>
+    <!-- fauces con dientes -->
+    <path d="M52 140 Q100 120 148 140 Q130 186 100 186 Q70 186 52 140 Z" fill="#300"/>
+    <g fill="#f4f4f4">
+      <path d="M60 142 l8 20 l8 -18 Z"/><path d="M78 144 l7 22 l7 -20 Z"/>
+      <path d="M96 145 l7 24 l7 -22 Z"/><path d="M114 144 l7 22 l7 -20 Z"/>
+      <path d="M132 142 l8 18 l8 -20 Z"/>
+    </g>
+    <g fill="#e8e8e8">
+      <path d="M64 182 l7 -16 l7 16 Z"/><path d="M84 184 l7 -16 l7 16 Z"/>
+      <path d="M104 184 l7 -16 l7 16 Z"/><path d="M124 182 l7 -16 l7 16 Z"/>
+    </g>
+  </svg>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -102,6 +145,25 @@ document.getElementById('login').onclick=acceder;
 document.getElementById('p').addEventListener('keydown',e=>{if(e.key==='Enter')acceder();});
 document.getElementById('close').onclick=()=>window._closeChallenge();
 
+// --- Jumpscare original: grito por WebAudio + bestia que salta ---
+function screech(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC();
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type='sawtooth'; o.frequency.setValueAtTime(900,ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(120,ac.currentTime+1.1);
+    g.gain.setValueAtTime(0.0001,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.4,ac.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+1.3);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+1.35);
+  }catch(e){}
+}
+function jumpscare(done){
+  const js=document.getElementById('jumpscare');
+  js.classList.add('show','flash'); screech();
+  setTimeout(()=>{ js.classList.remove('show','flash'); if(done) done(); }, 1500);
+}
+
 const flagmsg=document.getElementById('flagmsg');
 async function enviarFlag(){
   const flag=document.getElementById('flag').value.trim(); if(!flag)return;
@@ -109,7 +171,7 @@ async function enviarFlag(){
     const r=await fetch('/level/pokemon/submit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'flag='+encodeURIComponent(flag)});
     const d=await r.json();
     flagmsg.textContent=d.message; flagmsg.className='msg '+(d.ok?'ok':'err');
-    if(d.ok) document.getElementById('win').classList.add('show');
+    if(d.ok){ jumpscare(()=>document.getElementById('win').classList.add('show')); }
   }catch(e){ flagmsg.textContent='Error al enviar.'; flagmsg.className='msg err'; }
 }
 document.getElementById('send').onclick=enviarFlag;
