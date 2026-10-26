@@ -391,28 +391,25 @@ function update(dt, time) {
     player.isMoving = (dx !== 0 || dy !== 0);
     const timeSinceAttack = time - player.attackStartTime;
     
-    if (Math.abs(player.bounceVx) > 0.5 || Math.abs(player.bounceVy) > 0.5) {
-        let newX = player.x + player.bounceVx;
-        let newY = player.y + player.bounceVy;
-        
-        if (!checkWallCollision(newX, player.y)) player.x = newX;
-        else player.bounceVx = 0;
-        
-        if (!checkWallCollision(player.x, newY)) player.y = newY;
-        else player.bounceVy = 0;
-        
-        player.bounceVx *= 0.85;
-        player.bounceVy *= 0.85;
-    } else {
-        if (!(player.isAttacking && timeSinceAttack < 150)) {
-            let newX = player.x + (dx * PLAYER_SPEED);
-            if (!checkWallCollision(newX, player.y)) player.x = newX;
-            else player.bounceVx = 0;
-        }
-        let newY = player.y + (dy * PLAYER_SPEED);
-        if (!checkWallCollision(player.x, newY)) player.y = newY;
-        else player.bounceVy = 0;
+    // Movimiento: el input SIEMPRE se aplica, con el rebote SUMADO encima.
+    // Así, aunque te rodeen y empujen, puedes empujar de vuelta y salir de la esquina.
+    let moveX = player.bounceVx;
+    let moveY = player.bounceVy;
+    if (!(player.isAttacking && timeSinceAttack < 150)) {   // breve plante al iniciar el golpe
+        moveX += dx * PLAYER_SPEED;
+        moveY += dy * PLAYER_SPEED;
     }
+
+    let newX = player.x + moveX;
+    if (!checkWallCollision(newX, player.y)) player.x = newX;
+    else player.bounceVx = 0;
+
+    let newY = player.y + moveY;
+    if (!checkWallCollision(player.x, newY)) player.y = newY;
+    else player.bounceVy = 0;
+
+    player.bounceVx *= 0.85;
+    player.bounceVy *= 0.85;
 
     if (player.x < 0) { player.x = 0; player.bounceVx = Math.abs(player.bounceVx) * 0.5; }
     if (player.x > WORLD_WIDTH - PLAYER_SIZE) { player.x = WORLD_WIDTH - PLAYER_SIZE; player.bounceVx = -Math.abs(player.bounceVx) * 0.5; }
@@ -690,10 +687,11 @@ function checkAttackHit() {
         if (enemy.isDead) return;
         const enemyCenterX = enemy.x + ENEMY_SIZE/2;
         const enemyCenterY = enemy.y + ENEMY_SIZE/2;
-        
-        if (enemyCenterX > attackX && enemyCenterX < attackX + attackW &&
-            enemyCenterY > attackY && enemyCenterY < attackY + attackH) {
-            
+        const eh = ENEMY_HITBOX/2;
+        // Golpe conecta con el CUERPO del enemigo (AABB), no solo su centro exacto
+        if (enemyCenterX - eh < attackX + attackW && enemyCenterX + eh > attackX &&
+            enemyCenterY - eh < attackY + attackH && enemyCenterY + eh > attackY) {
+
             enemy.isDead = true; enemy.deathTimer = 0; enemy.animFrame = 0;
             const angle = Math.atan2(enemyCenterY - (player.y + PLAYER_SIZE/2), enemyCenterX - (player.x + PLAYER_SIZE/2));
             enemy.vx = Math.cos(angle) * 30; enemy.vy = Math.sin(angle) * 30;
@@ -704,8 +702,9 @@ function checkAttackHit() {
     rats.forEach(rat => {
         if (rat.isDead) return;
         const rcx = rat.x + RAT_SIZE/2, rcy = rat.y + RAT_SIZE/2;
-        if (rcx > attackX && rcx < attackX + attackW &&
-            rcy > attackY && rcy < attackY + attackH) {
+        const rh = RAT_HITBOX/2;
+        if (rcx - rh < attackX + attackW && rcx + rh > attackX &&
+            rcy - rh < attackY + attackH && rcy + rh > attackY) {
             rat.isDead = true; rat.deathTimer = 0; rat.animFrame = 0;
         }
     });
