@@ -7,27 +7,31 @@ const cv = document.getElementById('arena');
 const ctx = cv.getContext('2d');
 cv.width = 760; cv.height = 460;
 
-const TW = 64, TH = 32, BUILD_H = 54;
+const TW = 91, TH = 45, BUILD_H = 77;   // tiles 42% más grandes = vista más cercana
 
 function loadImg(src){ const i=new Image(); i.src=src; return i; }
 const sprites = { idle:[], walk:[] };
 for (let i=1;i<=4;i++) sprites.idle.push(loadImg(`/static/img/skeli_fixed/idle/idle${i}.png`));
 for (let i=1;i<=6;i++) sprites.walk.push(loadImg(`/static/img/skeli_fixed/walk/walk${i}.png`));
 
-// Mapa 14x12 (filas de igual largo): G césped, P camino, W agua, B/L edificio, S spawn
+// Mapa 20x16 (más amplio): G césped, P camino, W agua, B/L edificio, S spawn
 const MAPSTR = [
-    "WWWWWWWWWWWWWW",
-    "WGGGGGPGGGGGGW",
-    "WGBBGGPGGBBGGW",
-    "WGBBGGPGGBBGGW",
-    "WGGGGGPGGGGGGW",
-    "WPPPPPPPPPPPGW",
-    "WGGGGGPGGGGGGW",
-    "WGBGGGPGLLGGGW",
-    "WGBGGGPGLLGGGW",
-    "WGGGGSPGGGGGGW",
-    "WGGGGGGGGGGGGW",
-    "WWWWWWWWWWWWWW",
+    "WWWWWWWWWWWWWWWWWWWW",
+    "WGGGGGGPGGGGGGPGGGGW",
+    "WGBBGGGPGGBBGGPGGBGW",
+    "WGBBGGGPGGBBGGPGGBGW",
+    "WGGGGGGPGGGGGGPGGGGW",
+    "WPPPPPPPPPPPPPPPPPGW",
+    "WGGGGGGPGGGGGGPGGGGW",
+    "WGGBBGGPGGGGGGPGGGGW",
+    "WGGBBGGPGGLLGGPGGBGW",
+    "WGGGGGGPGGLLGGPGGBGW",
+    "WPPPPPPPPPPPPPPGGGGW",
+    "WGGGGGGPGGGGGGGGGGGW",
+    "WGBGGGGPGGBBGGGGGGGW",
+    "WGBGGGGSGGBBGGGGGGGW",
+    "WGGGGGGGGGGGGGGGGGGW",
+    "WWWWWWWWWWWWWWWWWWWW",
 ];
 const MAP = MAPSTR.map(r=>r.split(""));
 const MH = MAP.length, MW = MAP[0].length;
@@ -41,19 +45,23 @@ const cam = { x:0, y:0 };
 
 // Aldeanos (diseño propio) y carteles con frases
 const npcs = [
-    { gx:2.5, gy:4.5, robe:'#e85d5d', hat:'#b03030', say:"¡Bienvenido a la Liga, retador!" },
-    { gx:11.5, gy:4.5, robe:'#4d8de8', hat:'#2b5bb0', say:"Dicen que el admin es descuidado con sus respaldos..." },
-    { gx:3.5, gy:6.5, robe:'#3ddc84', hat:'#1a7a44', say:"Correlaciona lo que encuentres. Nada es casualidad." },
-    { gx:11.5, gy:7.5, robe:'#e8c04d', hat:'#b08a30', say:"El Centro de la Liga está al fondo. ¡Suerte!" },
-    { gx:4.5, gy:10.5, robe:'#b06ad0', hat:'#7e45b0', say:"Un buen hacker lee hasta los archivos .bak." },
+    { gx:2.5, gy:1.5,  robe:'#e85d5d', hat:'#b03030', say:"¡Bienvenido a la Liga, retador!" },
+    { gx:15.5, gy:1.5, robe:'#4d8de8', hat:'#2b5bb0', say:"Dicen que el admin es descuidado con sus respaldos..." },
+    { gx:2.5, gy:6.5,  robe:'#3ddc84', hat:'#1a7a44', say:"Correlaciona lo que encuentres. Nada es casualidad." },
+    { gx:16.5, gy:6.5, robe:'#e8c04d', hat:'#b08a30', say:"El Centro de la Liga está al fondo. ¡Suerte!" },
+    { gx:3.5, gy:11.5, robe:'#b06ad0', hat:'#7e45b0', say:"Un buen hacker lee hasta los archivos .bak." },
+    { gx:16.5, gy:11.5,robe:'#5ad0c0', hat:'#2a9e90', say:"Yo nunca confiaría en una config con debug = true." },
+    { gx:5.5, gy:14.5, robe:'#ff9a4d', hat:'#c06a20', say:"Si entras como admin, la Liga es tuya." },
+    { gx:15.5, gy:14.5,robe:'#9aa0e8', hat:'#5a60b0', say:"Las credenciales filtradas abren muchas puertas." },
 ];
 const signs = [
-    { gx:6.5, gy:1.5, say:"CARTEL: Torneo de la Liga — solo administradores autorizados." },
-    { gx:6.5, gy:6.5, say:"CARTEL: Config del servidor en mantenimiento. No tocar." },
-    { gx:10.5, gy:10.5, say:"CARTEL: Rota tus credenciales. (nadie lo hace)" },
+    { gx:8.5, gy:6.5,  say:"CARTEL: Torneo de la Liga — solo administradores autorizados." },
+    { gx:12.5, gy:6.5, say:"CARTEL: Config del servidor en mantenimiento. No tocar." },
+    { gx:6.5, gy:11.5, say:"CARTEL: Rota tus credenciales. (nadie lo hace)" },
+    { gx:13.5, gy:13.5,say:"CARTEL: ¿Perdido? El respaldo .bak quedó accesible." },
 ];
-const trees = [ [1.5,1.5],[12.5,1.5],[1.5,10.5],[12.5,6.5],[5.5,10.5],[12.5,9.5] ];
-const lamps = [ [6.5,2.5],[6.5,8.5],[9.5,5.5] ];
+const trees = [ [1.5,1.5],[18.5,1.5],[1.5,14.5],[18.5,14.5],[5.5,8.5],[16.5,3.5],[8.5,14.5],[13.5,2.5],[1.5,8.5] ];
+const lamps = [ [7.5,3.5],[7.5,9.5],[14.5,5.5],[14.5,12.5] ];
 
 const keys = {};
 let challengeOpen = false;
@@ -161,7 +169,7 @@ function drawSign(sg){
     ctx.fillStyle='#5b3a22'; for (let i=0;i<3;i++) ctx.fillRect(s.x-10,s.y-31+i*4,20,1);
 }
 function drawPlayer(){
-    const s=isoToScreen(player.gx,player.gy), PSIZE=78;
+    const s=isoToScreen(player.gx,player.gy), PSIZE=110;
     ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(s.x,s.y+6,16,7,0,0,Math.PI*2); ctx.fill();
     const list=player.moving?sprites.walk:sprites.idle;
     const img=list[Math.floor(player.animFrame)%list.length]||sprites.idle[0];
