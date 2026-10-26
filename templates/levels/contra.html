@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+  .arcade-stage{ padding:0 !important; }
+  .arcade-subtitle{ display:none !important; }
+  #level-inner{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:10px; }
+  #arena{ max-width:100%; max-height:100%; height:auto; image-rendering:pixelated;
+    border:4px solid #000; border-radius:8px; background:#0d2a1e; box-shadow:0 0 24px rgba(0,0,0,.6); }
+
+  .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.78); display:none;
+    align-items:flex-start; justify-content:center; padding:20px; overflow:auto; z-index:9999; }
+  .sql-overlay.show{ display:flex; }
+  .sql-modal{ background:#121a26; border:3px solid #000; border-radius:12px; max-width:620px; width:100%; margin:auto;
+    box-shadow:0 0 40px rgba(88,166,255,.25),inset 0 0 0 2px #223049; padding:20px; font-family:'Courier New',monospace; color:#e6edf3; }
+  .sql-modal h2{ font-family:'Press Start 2P',monospace; font-size:12px; color:#ffb454; margin:0 0 6px; letter-spacing:1px; }
+  .sql-modal .sub{ color:#8b949e; font-size:.9rem; margin:0 0 14px; }
+  .sql-modal label{ display:block; font-size:.82rem; color:#8b949e; margin:10px 0 5px; letter-spacing:1px; }
+  .sql-modal input[type=text]{ width:100%; background:#05080e; color:#e6edf3; border:2px solid #223049; border-radius:6px; padding:11px; font-family:'Courier New',monospace; font-size:1rem; }
+  input[type=file]{ color:#e6edf3; font-family:'Courier New',monospace; font-size:.9rem; }
+  .warn{ color:#ffb454; font-size:.82rem; margin-top:6px; min-height:1em; }
+  .sbtns{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center; }
+  .sql-modal button{ font-family:'Press Start 2P',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; color:#0d1117;
+    border:3px solid #000; border-radius:8px; padding:12px 15px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25),0 4px 0 #000; }
+  .sql-modal button:active{ transform:translateY(4px); }
+  .btn-login{ background:#ffb454; } .btn-flag{ background:#3ddc84; } .btn-close{ background:#8b949e; }
+  pre.q{ background:#05080e; color:#9ef7c3; border:2px solid #223049; border-radius:6px; padding:11px; margin:12px 0 0;
+    white-space:pre-wrap; word-break:break-word; font-size:.86rem; line-height:1.5; }
+  .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; } .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
+  .flagbox{ margin-top:16px; padding-top:14px; border-top:2px solid #223049; }
+  .sql-modal details{ margin-top:12px; } .sql-modal summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
+  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
+  .win{ display:none; margin-top:14px; text-align:center; color:#3ddc84; font-weight:bold; } .win.show{ display:block; }
+  .win a, .flagbox a{ color:#ff2fd6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="level-inner">
+  <canvas id="arena" width="760" height="420"></canvas>
+</div>
+{% endblock %}
+
+{% block controls_help %}
+  <strong>A D / ←→</strong> → Correr &nbsp;|&nbsp;
+  <strong>W / Espacio</strong> → Saltar &nbsp;|&nbsp;
+  <strong>E</strong> → Puesto de guardia &nbsp;|&nbsp;
+  <a href="/map" style="color:#ff2fd6;">← Mapa</a>
+{% endblock %}
+
+{% block after_cabinet %}
+<div class="sql-overlay" id="challenge">
+  <div class="sql-modal">
+    <h2>▸ Puesto de guardia — Acreditación</h2>
+    <p class="sub">Sube tu <strong>credencial de acceso</strong> para tomar la base. El sistema solo admite imágenes.</p>
+
+    <label for="cred">Credencial (solo .jpg / .png)</label>
+    <input type="file" id="cred" accept="image/png,image/jpeg">
+    <div class="warn" id="warn"></div>
+
+    <div class="sbtns">
+      <button class="btn-login" id="subir">SUBIR CREDENCIAL</button>
+      <button class="btn-close" id="close">CERRAR</button>
+    </div>
+
+    <pre class="q" id="out">// La respuesta del puesto aparecerá aquí.</pre>
+    <div class="msg" id="upmsg"></div>
+
+    <details>
+      <summary>¿Atascado? Pistas progresivas</summary>
+      <p class="hint"><strong>1.</strong> El formulario solo deja subir imágenes, pero el puesto procesa la credencial como un <em>script</em>. Necesitas subir algo tipo <code>.php</code>… y el formulario lo bloquea del lado del cliente.</p>
+      <p class="hint"><strong>2.</strong> La validación es del cliente (atributo <code>accept</code> + un chequeo JS). El servidor <strong>no revalida</strong>. Evádela.</p>
+      <p class="hint"><strong>3.</strong> Lo más fiable: desde <strong>F12 → Console</strong>, arma y envía tú mismo la petición con un archivo .php:<br>
+        <code>const fd=new FormData();fd.append('cred',new File(['&lt;?php echo 1;?&gt;'],'cred.php'));fetch('/level/contra/upload',{method:'POST',body:fd}).then(r=&gt;r.json()).then(console.log)</code></p>
+      <p class="hint"><strong>4.</strong> (Alternativa) En F12 → Elements, quítale el atributo <code>accept</code> al input y, en el dialogo, elige "Todos los archivos" para seleccionar un .php; luego SUBIR.</p>
+    </details>
+
+    <div class="flagbox">
+      <label for="flag">Enviar flag</label>
+      <div class="sbtns" style="margin-top:6px;">
+        <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <button class="btn-flag" id="send">ENVIAR</button>
+      </div>
+      <div class="msg" id="flagmsg"></div>
+      <div class="win" id="win">✦ ¡BASE TOMADA! Siguiente nivel desbloqueado. <a href="/map">← Mapa</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/level_contra.js') }}"></script>
+<script>
+// Validación del CLIENTE (a propósito débil): rechaza no-imágenes. Hay que evadirla.
+const warn=document.getElementById('warn'), out=document.getElementById('out'), upmsg=document.getElementById('upmsg');
+const credInput=document.getElementById('cred');
+credInput.addEventListener('change', ()=>{
+  const f=credInput.files[0]; if(!f) return;
+  if(!f.type.startsWith('image/')){ warn.textContent='⚠ Solo se permiten imágenes (.jpg/.png).'; credInput.value=''; }
+  else warn.textContent='';
+});
+async function subir(){
+  const f=credInput.files[0];
+  if(!f){ warn.textContent='Selecciona un archivo primero (o usa la consola).'; return; }
+  const fd=new FormData(); fd.append('cred', f);
+  try{
+    const r=await fetch('/level/contra/upload',{method:'POST',body:fd});
+    const d=await r.json();
+    out.textContent=d.message + ((d.bypass&&d.flag_hint)?('\n\nFLAG: '+d.flag_hint):'');
+    upmsg.textContent = d.bypass?'¡Bypass logrado!':''; upmsg.className='msg '+(d.bypass?'ok':'err');
+  }catch(e){ out.textContent='Error de conexión.'; }
+}
+document.getElementById('subir').onclick=subir;
+document.getElementById('close').onclick=()=>window._closeChallenge();
+
+const flagmsg=document.getElementById('flagmsg');
+async function enviarFlag(){
+  const flag=document.getElementById('flag').value.trim(); if(!flag)return;
+  try{
+    const r=await fetch('/level/contra/submit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'flag='+encodeURIComponent(flag)});
+    const d=await r.json();
+    flagmsg.textContent=d.message; flagmsg.className='msg '+(d.ok?'ok':'err');
+    if(d.ok) document.getElementById('win').classList.add('show');
+  }catch(e){ flagmsg.textContent='Error al enviar.'; flagmsg.className='msg err'; }
+}
+document.getElementById('send').onclick=enviarFlag;
+document.getElementById('flag').addEventListener('keydown',e=>{if(e.key==='Enter')enviarFlag();});
+</script>
+{% endblock %}
