@@ -11,7 +11,14 @@
     {% block head %}{% endblock %}
 </head>
 <body class="arcade-body {% block body_class %}{% endblock %}">
-    {% block backdrop %}{% endblock %}
+    <!-- Fondo retro para TODAS las páginas -->
+    <div class="scene" aria-hidden="true">
+        <div class="sky"></div>
+        <div class="stars"></div>
+        <div class="sun"></div>
+        <div class="glow"></div>
+        <div class="floor"></div>
+    </div>
 
     <div class="arcade-cabinet">
         <div class="arcade-marquee">
@@ -53,6 +60,37 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/arcade_shell.js') }}"></script>
+
+    <!-- Auto-ajuste: escala la cabina para que SIEMPRE quepa en pantalla sin zoom -->
+    <script>
+    (function(){
+        function fitCabinet(){
+            var cab = document.querySelector('.arcade-cabinet');
+            if(!cab) return;
+            cab.style.transform = 'none';
+            // Medimos la caja real incluyendo las piezas que sobresalen (marquesina y controles)
+            var parts = document.querySelectorAll('.arcade-cabinet, .arcade-marquee, .panel-frame');
+            var L=Infinity,T=Infinity,R=-Infinity,B=-Infinity;
+            parts.forEach(function(e){
+                var r=e.getBoundingClientRect();
+                if(r.left<L)L=r.left; if(r.top<T)T=r.top;
+                if(r.right>R)R=r.right; if(r.bottom>B)B=r.bottom;
+            });
+            var w=R-L, h=B-T;
+            if(w<=0||h<=0) return;
+            var availW=window.innerWidth-28, availH=window.innerHeight-28;
+            var s=Math.min(availW/w, availH/h, 1);
+            cab.style.transform='scale('+s+')';
+        }
+        window.addEventListener('resize', fitCabinet);
+        window.addEventListener('load', fitCabinet);
+        if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fitCabinet); }
+        setTimeout(fitCabinet, 60);
+        setTimeout(fitCabinet, 400);
+        fitCabinet();
+    })();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
