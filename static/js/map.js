@@ -161,7 +161,7 @@ const MARKERS = {
     sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
     doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104, roam:90 },
     contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92,  roam:100 },
-    megaman:    { img: loadImg('/static/img/markers/megaman.png'),    fw:32, fh:24, frames:1, fps:1,  size:78,  roam:100 }
+    megaman:    { img: loadImg('/static/img/markers/megaman_walk.png'), fw:25, fh:28, frames:3, fps:8,  size:82, roam:100 }
 };
 
 function updateMarkers(dt) {
