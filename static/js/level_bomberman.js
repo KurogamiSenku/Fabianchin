@@ -27,7 +27,7 @@ for (let r=0;r<ROWS;r++){ grid[r]=[]; for (let c=0;c<COLS;c++){
 }}
 const TERM = { c:13, r:8 }; grid[TERM.r][TERM.c]=0;
 
-const PSIZE=58, HB=18, SPEED=3.0;
+const PSIZE=72, HB=18, SPEED=3.0;
 const player = { x:1*TILE+(TILE-PSIZE)/2, y:1*TILE+(TILE-PSIZE)/2,
     facing:'down', moving:false, animFrame:0, animTimer:0, bvx:0, bvy:0 };
 
