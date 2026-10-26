@@ -22,7 +22,7 @@ const GRAVITY = 1.6;
 
 const ENEMY_SIZE = 218; 
 const ENEMY_SPEED = 3.1; 
-const ENEMY_PUSH_FORCE = 54; 
+const ENEMY_PUSH_FORCE = 42;
 const ENEMY_HITBOX = 73; 
 const ENEMY_SIGHT_RANGE = 900; 
 const ENEMY_SHADOW_OFFSET_Y = -55;
@@ -32,6 +32,10 @@ const RAT_SIZE = 120;          // tamaño en pantalla (más pequeñas que el esq
 const RAT_SPEED = 4.2;         // son más rápidas y escurridizas
 const RAT_HITBOX = 46;
 const RAT_PUSH_FORCE = 34;     // cuánto empujan a Fabiancho al tocarlo
+
+// --- CONTROL DEL EMPUJE (para poder golpear sin salir volando) ---
+const MAX_BOUNCE = 19;         // tope del empuje acumulado: evita salir disparado
+const ATTACK_PUSH_DAMP = 0.18; // mientras Fabiancho golpea, el empuje casi no le afecta
 const RAT_SIGHT_RANGE = 750;
 const RAT_SHADOW_OFFSET_Y = -26;
 const RAT_SHEET_FACES_LEFT = true; // si la rata sale espejada, cambia esto a false
@@ -390,8 +394,8 @@ function update(dt, time) {
         if (!checkWallCollision(player.x, newY)) player.y = newY;
         else player.bounceVy = 0;
         
-        player.bounceVx *= 0.9;
-        player.bounceVy *= 0.9;
+        player.bounceVx *= 0.85;
+        player.bounceVy *= 0.85;
     } else {
         if (!(player.isAttacking && timeSinceAttack < 150)) {
             let newX = player.x + (dx * PLAYER_SPEED);
@@ -432,6 +436,14 @@ function update(dt, time) {
 
     updateEnemies(dt, time);
     updateRats(dt, time);
+
+    // Tope del empuje: por fuerte o numeroso que sea el grupo, no te manda volando
+    const bmag = Math.hypot(player.bounceVx, player.bounceVy);
+    if (bmag > MAX_BOUNCE) {
+        player.bounceVx = player.bounceVx / bmag * MAX_BOUNCE;
+        player.bounceVy = player.bounceVy / bmag * MAX_BOUNCE;
+    }
+
     updateCamera();
 }
 
@@ -469,8 +481,9 @@ function updateRats(dt, time) {
         const minDist = (RAT_HITBOX/2) + (PLAYER_SIZE * 0.25);
         if (dist < minDist && dist > 0) {
             const a = Math.atan2(dy, dx);
-            player.bounceVx += Math.cos(a) * RAT_PUSH_FORCE * 0.6;
-            player.bounceVy += Math.sin(a) * RAT_PUSH_FORCE * 0.6;
+            const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
+            player.bounceVx += Math.cos(a) * RAT_PUSH_FORCE * 0.6 * damp;
+            player.bounceVy += Math.sin(a) * RAT_PUSH_FORCE * 0.6 * damp;
             rat.x -= Math.cos(a) * 1.5;
             rat.y -= Math.sin(a) * 1.5;
         }
@@ -542,7 +555,8 @@ function updateEnemies(dt, time) {
         const minDistForPush = (ENEMY_HITBOX / 2) + (PLAYER_SIZE * 0.3);
         if (dist < minDistForPush && dist > 0) {
             const pushAngle = Math.atan2(dy, dx);
-            const bounceForce = ENEMY_PUSH_FORCE * 0.6;
+            const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
+            const bounceForce = ENEMY_PUSH_FORCE * 0.6 * damp;
             player.bounceVx += Math.cos(pushAngle) * bounceForce;
             player.bounceVy += Math.sin(pushAngle) * bounceForce;
             enemy.x -= Math.cos(pushAngle) * 1.5;
