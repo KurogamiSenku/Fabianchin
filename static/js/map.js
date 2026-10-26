@@ -144,14 +144,21 @@ const LEVELS = [
     { id: 5, name: "Nivel 5: Bomberman", desc: "File Upload", x: 250, y: 500 },
     { id: 6, name: "Nivel 6: Metal Slug", desc: "Burp Suite", x: 963, y: 501 },
     { id: 7, name: "Nivel 7: Ghosts'n Goblins", desc: "Cookies", x: 1300, y: 500 },
-    { id: 8, name: "Nivel 8: DOOM", desc: "Cmd Injection", x: 1900, y: 500 },
-    { id: 9, name: "Nivel 9: Sonic", desc: "SSH Acceso", x: 465, y: 1362 },
+    { id: 8, name: "Nivel 8: DOOM", desc: "Cmd Injection", x: 1900, y: 500, marker: "doom" },
+    { id: 9, name: "Nivel 9: Sonic", desc: "SSH Acceso", x: 465, y: 1362, marker: "sonic_ring" },
     { id: 10, name: "Nivel 10: Prince", desc: "Linux System", x: 800, y: 950 },
     { id: 11, name: "Nivel 11: Earthworm", desc: "Docker", x: 1300, y: 950 },
     { id: 12, name: "Nivel 12: Kirby", desc: "Esteganografía", x: 1770, y: 1082 },
     { id: 13, name: "Nivel 13: Ninja Gaiden", desc: "Audio", x: 1047, y: 1406 },
-    { id: 14, name: "Nivel 14: Final Boss", desc: "Puertos", x: 2076, y: 1199 }
+    { id: 14, name: "Nivel 14: Pokémon", desc: "Reto final", x: 2076, y: 1199 }
 ];
+
+// --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
+// Cada nivel con "marker" dibuja su sprite; los demás siguen con la moneda.
+const MARKERS = {
+    sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
+    doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104 }
+};
 
 const SPAWN_POINTS = [
     { x: 350, y: 200 }, { x: 700, y: 200 }, { x: 1200, y: 200 }, { x: 1800, y: 200 },
@@ -757,10 +764,25 @@ function draw() {
             ctx.beginPath(); ctx.arc(level.x, level.y, 40, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 255, 255, 0.3)'; ctx.fill();
         }
         
-        ctx.shadowBlur = 20; ctx.shadowColor = isUnlocked ? '#ffd700' : '#ff5a5a';
-        ctx.beginPath(); ctx.arc(level.x, coinY, 30, 0, Math.PI * 2); ctx.fillStyle = coreColor; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
-        ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 20px monospace'; ctx.fillText(level.name, level.x, coinY - 45);
+        const mk = level.marker ? MARKERS[level.marker] : null;
+        if (mk && mk.img.complete && mk.img.naturalWidth > 0) {
+            // Sprite temático animado
+            const fi = Math.floor(player.time / (1000 / mk.fps)) % mk.frames;
+            const scale = mk.size / mk.fh;
+            const dw = mk.fw * scale, dh = mk.size;
+            ctx.save();
+            if (!isUnlocked) ctx.globalAlpha = 0.45;   // bloqueado = atenuado
+            ctx.shadowBlur = 18; ctx.shadowColor = coreColor;
+            ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, level.x - dw/2, coinY - dh/2, dw, dh);
+            ctx.restore();
+            ctx.shadowBlur = 0;
+        } else {
+            // Moneda (comportamiento original) para niveles sin sprite
+            ctx.shadowBlur = 20; ctx.shadowColor = isUnlocked ? '#ffd700' : '#ff5a5a';
+            ctx.beginPath(); ctx.arc(level.x, coinY, 30, 0, Math.PI * 2); ctx.fillStyle = coreColor; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
+            ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
+        }
+        ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.name, level.x, coinY - 45);
         const dist = Math.hypot(player.x + PLAYER_SIZE/2 - level.x, player.y + PLAYER_SIZE/2 - level.y);
         if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 22px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
     });
