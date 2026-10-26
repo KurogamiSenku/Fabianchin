@@ -479,7 +479,7 @@ function updateRats(dt, time) {
 
         // Empuje a Fabiancho al contacto (igual filosofía que el esqueleto)
         const minDist = (RAT_HITBOX/2) + (PLAYER_SIZE * 0.25);
-        if (dist < minDist && dist > 0) {
+        if (dist < minDist && dist > 0 && canSee) {   // sin línea de visión (muro en medio) no empuja
             const a = Math.atan2(dy, dx);
             const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
             player.bounceVx += Math.cos(a) * RAT_PUSH_FORCE * 0.6 * damp;
@@ -553,7 +553,7 @@ function updateEnemies(dt, time) {
         }
 
         const minDistForPush = (ENEMY_HITBOX / 2) + (PLAYER_SIZE * 0.3);
-        if (dist < minDistForPush && dist > 0) {
+        if (dist < minDistForPush && dist > 0 && canSee) {   // canSee incluye línea de visión: no empuja a través de muros
             const pushAngle = Math.atan2(dy, dx);
             const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
             const bounceForce = ENEMY_PUSH_FORCE * 0.6 * damp;
