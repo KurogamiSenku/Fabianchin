@@ -39,7 +39,7 @@ for (let y=0;y<MH;y++) for (let x=0;x<MW;x++){
     if (MAP[y][x]==='T'){ term={x:x+0.5,y:y+0.5}; MAP[y][x]='.'; }
 }
 
-const player = { x:spawn.x, y:spawn.y, ang:0, speed:0.055, rot:0.045 };
+const player = { x:spawn.x, y:spawn.y, ang:0, speed:0.055, rot:0.045, kx:0, ky:0 };
 const FOV = Math.PI/3;
 const zbuf = new Float32Array(W);
 
@@ -70,7 +70,7 @@ function tryMove(nx, ny){
     if (!isWall(Math.floor(player.x), Math.floor(ny+ (ny>player.y?r:-r)))) player.y=ny;
 }
 function update(){
-    if (challengeOpen) return;
+    if (challengeOpen){ player.kx=0; player.ky=0; return; }   // consola: todo congelado
     let fwd=0, turn=0, strafe=0;
     if (keys['w']||keys['arrowup']) fwd+=1;
     if (keys['s']||keys['arrowdown']) fwd-=1;
@@ -79,16 +79,19 @@ function update(){
     if (keys['a']) strafe-=1;
     if (keys['d']) strafe+=1;
     player.ang += turn*player.rot;
-    const nx = player.x + Math.cos(player.ang)*fwd*player.speed - Math.sin(player.ang)*strafe*player.speed;
-    const ny = player.y + Math.sin(player.ang)*fwd*player.speed + Math.cos(player.ang)*strafe*player.speed;
-    tryMove(nx, ny);
+    // movimiento de teclas + rebote (knockback) sumados -> SIEMPRE puedes dirigirte
+    const mvx = Math.cos(player.ang)*fwd*player.speed - Math.sin(player.ang)*strafe*player.speed + player.kx;
+    const mvy = Math.sin(player.ang)*fwd*player.speed + Math.cos(player.ang)*strafe*player.speed + player.ky;
+    tryMove(player.x+mvx, player.y+mvy);
+    player.kx*=0.8; player.ky*=0.8;
 
-    // centinelas flotan hacia el jugador lentamente y molestan al contacto
+    // centinelas flotan hacia el jugador; al contacto REBOTAN (sin clavarte)
     for (const s of sentinels){
         const dx=player.x-s.x, dy=player.y-s.y, d=Math.hypot(dx,dy)||1;
         if (d<6){ s.x+=(dx/d)*0.012; s.y+=(dy/d)*0.012; }
-        if (d<0.7){ // empuja al jugador hacia atrás
-            tryMove(player.x-(dx/d)*0.08, player.y-(dy/d)*0.08);
+        if (d<0.7){
+            player.kx += (dx/d)*0.06; player.ky += (dy/d)*0.06;   // impulso corto
+            s.x -= (dx/d)*0.30; s.y -= (dy/d)*0.30;               // el centinela se aparta (anti-atasco)
         }
     }
 }
@@ -183,6 +186,8 @@ function loop(){ update(); render(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
 function openChallenge(){ challengeOpen=true; for (const k in keys) keys[k]=false;
-    document.getElementById('challenge').classList.add('show'); document.getElementById('cmd')?.focus(); }
+    player.kx=0; player.ky=0;
+    document.getElementById('challenge').classList.add('show');
+    setTimeout(()=>{ try{ document.getElementById('cmd').focus(); }catch(e){} }, 50); }
 function closeChallenge(){ challengeOpen=false; document.getElementById('challenge').classList.remove('show'); }
 window._closeChallenge = closeChallenge;
