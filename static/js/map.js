@@ -150,7 +150,7 @@ const LEVELS = [
     { id: 11, name: "Nivel 11: Earthworm", desc: "Docker", x: 1300, y: 950 },
     { id: 12, name: "Nivel 12: Kirby", desc: "Esteganografía", x: 1770, y: 1082 },
     { id: 13, name: "Nivel 13: Ninja Gaiden", desc: "Audio", x: 1047, y: 1406 },
-    { id: 14, name: "Nivel 14: Pokémon", desc: "Reto final", x: 2076, y: 1199 }
+    { id: 14, name: "Nivel 14: Pokémon", desc: "Reto final", x: 2076, y: 1199, marker: "pokemon" }
 ];
 
 // --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
@@ -162,7 +162,8 @@ const MARKERS = {
     doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104, roam:90 },
     contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92,  roam:100 },
     megaman:    { img: loadImg('/static/img/markers/megaman_walk.png'), fw:25, fh:28, frames:3, fps:8,  size:82, roam:100 },
-    bomberman:  { img: loadImg('/static/img/markers/bomberman.png'),  fw:20, fh:30, frames:3, fps:6,  size:86,  chase:300 }
+    bomberman:  { img: loadImg('/static/img/markers/bomberman.png'),  fw:20, fh:30, frames:3, fps:6,  size:86,  chase:300 },
+    pokemon:    { img: loadImg('/static/img/markers/pokemon.png'),     fw:24, fh:27, frames:3, fps:6,  size:84,  roam:90 }
 };
 
 // Efectos de Bomberman (bomba y explosión)
