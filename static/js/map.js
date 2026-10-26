@@ -137,7 +137,7 @@ let WALLS = [
 
 // --- NIVELES ACTUALIZADOS CON TUS POSICIONES ---
 const LEVELS = [
-    { id: 1, name: "Nivel 1: Mario", desc: "Reconocimiento", x: 498, y: 392 },
+    { id: 1, name: "Nivel 1: Mario", desc: "Reconocimiento", x: 498, y: 392, marker: "mario_coin" },
     { id: 2, name: "Nivel 2: Contra", desc: "Enumeración web", x: 956, y: 273 },
     { id: 3, name: "Nivel 3: Mega Man", desc: "La máscara", x: 1310, y: 264 },
     { id: 4, name: "Nivel 4: Castlevania", desc: "Manipulación", x: 1610, y: 372 },
@@ -156,6 +156,7 @@ const LEVELS = [
 // --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
 // Cada nivel con "marker" dibuja su sprite; los demás siguen con la moneda.
 const MARKERS = {
+    mario_coin: { img: loadImg('/static/img/markers/mario_coin.png'), fw:34, fh:35, frames:4, fps:8,  size:66 },
     sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
     doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104 }
 };
