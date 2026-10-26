@@ -778,7 +778,7 @@ body.arcade-body{ background:#1a1033; overflow:hidden; }
 /* Cabina pixel: cuerpo angosto, piezas que sobresalen */
 .arcade-body .arcade-cabinet{
     position:fixed; top:50%; left:50%; z-index:1;  /* centrado fijo: el script lo escala desde aquí */
-    width:880px; max-width:none;   /* más ancho = pantalla horizontal; el auto-fit lo encoge para que quepa */
+    width:1320px; max-width:none;   /* más ancho = pantalla horizontal; el auto-fit lo encoge para que quepa */
     transform-origin:center center;
     background:#141b26; padding:18px;
     overflow:visible;
