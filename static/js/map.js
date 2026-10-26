@@ -25,7 +25,16 @@ const ENEMY_SPEED = 3.1;
 const ENEMY_PUSH_FORCE = 54; 
 const ENEMY_HITBOX = 73; 
 const ENEMY_SIGHT_RANGE = 900; 
-const ENEMY_SHADOW_OFFSET_Y = -55; 
+const ENEMY_SHADOW_OFFSET_Y = -55;
+
+// --- RATAS (segundo enemigo) ---
+const RAT_SIZE = 120;          // tamaño en pantalla (más pequeñas que el esqueleto)
+const RAT_SPEED = 4.2;         // son más rápidas y escurridizas
+const RAT_HITBOX = 46;
+const RAT_PUSH_FORCE = 34;     // cuánto empujan a Fabiancho al tocarlo
+const RAT_SIGHT_RANGE = 750;
+const RAT_SHADOW_OFFSET_Y = -26;
+const RAT_SHEET_FACES_LEFT = true; // si la rata sale espejada, cambia esto a false
 
 const sprites = { idle: [], walk: [], attack: [], jump: [] };
 function loadImg(src) { const img = new Image(); img.src = src; return img; }
@@ -39,6 +48,19 @@ const enemySheets = {
     idle: loadImg('/static/img/enemies/enemy_idle.png'),
     walk: loadImg('/static/img/enemies/enemy_walk.png'),
     death: loadImg('/static/img/enemies/enemy_death.png')
+};
+
+// Hojas de la rata (frames de 64px, 4 columnas por fila)
+const ratSheets = {
+    idle:  loadImg('/static/img/rats/rat_idle.png'),
+    run:   loadImg('/static/img/rats/rat_run.png'),
+    death: loadImg('/static/img/rats/rat_death.png')
+};
+const RAT_FRAME = 64;
+const RAT_CFG = {
+    idle:  { cols: 4, frames: 4 },
+    run:   { cols: 4, frames: 6 },
+    death: { cols: 4, frames: 5 }
 };
 
 const backgroundImg = loadImg('/static/img/background.png');
@@ -126,6 +148,16 @@ const SPAWN_POINTS = [
 let enemies = SPAWN_POINTS.map(sp => ({
     x: sp.x, y: sp.y, vx: 0, vy: 0, isDead: false, deathTimer: 0,
     animFrame: 0, animTimer: 0, facing: 'down', state: 'idle'
+}));
+
+// --- SPAWN DE RATAS ---
+const RAT_SPAWNS = [
+    { x: 600, y: 1350 }, { x: 1500, y: 1300 }, { x: 950, y: 1150 },
+    { x: 1850, y: 1250 }, { x: 500, y: 900 }
+];
+let rats = RAT_SPAWNS.map(sp => ({
+    x: sp.x, y: sp.y, isDead: false, deathTimer: 0,
+    animFrame: 0, animTimer: 0, facing: 'left', state: 'idle'
 }));
 
 // --- SPAWN DE FABIANCHO EN LA PARTE INFERIOR ---
@@ -376,7 +408,62 @@ function update(dt, time) {
     if (player.animTimer > 150) { player.animFrame++; player.animTimer = 0; }
 
     updateEnemies(dt, time);
+    updateRats(dt, time);
     updateCamera();
+}
+
+function updateRats(dt, time) {
+    rats.forEach(rat => {
+        if (rat.isDead) {
+            rat.animTimer += dt;
+            if (rat.animTimer > 90) {
+                if (rat.animFrame < RAT_CFG.death.frames - 1) rat.animFrame++;
+                rat.animTimer = 0;
+            }
+            return;
+        }
+
+        if (ratWallCollision(rat.x, rat.y)) { rat.x = 1000; rat.y = 1200; }
+
+        const rcx = rat.x + RAT_SIZE/2, rcy = rat.y + RAT_SIZE/2;
+        const pcx = player.x + PLAYER_SIZE/2, pcy = player.y + PLAYER_SIZE/2;
+        const dx = pcx - rcx, dy = pcy - rcy;
+        const dist = Math.hypot(dx, dy);
+
+        const canSee = dist < RAT_SIGHT_RANGE && hasLineOfSight(rcx, rcy, pcx, pcy);
+
+        if (canSee && dist > 0) {
+            const mx = (dx/dist) * RAT_SPEED, my = (dy/dist) * RAT_SPEED;
+            if (!ratWallCollision(rat.x + mx, rat.y)) rat.x += mx;
+            if (!ratWallCollision(rat.x, rat.y + my)) rat.y += my;
+            rat.state = 'run';
+            rat.facing = dx < 0 ? 'left' : 'right';
+        } else {
+            rat.state = 'idle';
+        }
+
+        // Empuje a Fabiancho al contacto (igual filosofía que el esqueleto)
+        const minDist = (RAT_HITBOX/2) + (PLAYER_SIZE * 0.25);
+        if (dist < minDist && dist > 0) {
+            const a = Math.atan2(dy, dx);
+            player.bounceVx += Math.cos(a) * RAT_PUSH_FORCE * 0.6;
+            player.bounceVy += Math.sin(a) * RAT_PUSH_FORCE * 0.6;
+            rat.x -= Math.cos(a) * 1.5;
+            rat.y -= Math.sin(a) * 1.5;
+        }
+
+        rat.animTimer += dt;
+        if (rat.animTimer > 90) { rat.animFrame++; rat.animTimer = 0; }
+    });
+}
+
+function ratWallCollision(nx, ny) {
+    const cx = nx + RAT_SIZE/2, cy = ny + RAT_SIZE/2, half = RAT_HITBOX/2;
+    for (let wall of WALLS) {
+        if (cx - half < wall.x + wall.w && cx + half > wall.x &&
+            cy - half < wall.y + wall.h && cy + half > wall.y) return true;
+    }
+    return false;
 }
 
 function updateEnemies(dt, time) {
@@ -568,6 +655,16 @@ function checkAttackHit() {
             enemy.vx = Math.cos(angle) * 30; enemy.vy = Math.sin(angle) * 30;
         }
     });
+
+    // El golpe también mata ratas
+    rats.forEach(rat => {
+        if (rat.isDead) return;
+        const rcx = rat.x + RAT_SIZE/2, rcy = rat.y + RAT_SIZE/2;
+        if (rcx > attackX && rcx < attackX + attackW &&
+            rcy > attackY && rcy < attackY + attackH) {
+            rat.isDead = true; rat.deathTimer = 0; rat.animFrame = 0;
+        }
+    });
 }
 
 function checkWallCollision(nx, ny) {
@@ -659,6 +756,40 @@ function draw() {
         }
     });
 
+    rats.forEach(rat => {
+        // Sombra
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.beginPath();
+        ctx.ellipse(rat.x + RAT_SIZE/2, rat.y + RAT_SIZE + RAT_SHADOW_OFFSET_Y,
+                    RAT_SIZE*0.22, RAT_SIZE*0.08, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        const key = rat.isDead ? 'death' : (rat.state === 'run' ? 'run' : 'idle');
+        const sheet = ratSheets[key];
+        const cfg = RAT_CFG[key];
+        if (!sheet.complete || sheet.naturalWidth === 0) return;
+
+        const fi = Math.floor(rat.animFrame) % cfg.frames;
+        const sx = (fi % cfg.cols) * RAT_FRAME;
+        const sy = Math.floor(fi / cfg.cols) * RAT_FRAME;
+
+        const drawFlipped = RAT_SHEET_FACES_LEFT ? (rat.facing === 'right') : (rat.facing === 'left');
+        if (drawFlipped) {
+            ctx.save();
+            ctx.translate(rat.x + RAT_SIZE, rat.y); ctx.scale(-1, 1);
+            ctx.drawImage(sheet, sx, sy, RAT_FRAME, RAT_FRAME, 0, 0, RAT_SIZE, RAT_SIZE);
+            ctx.restore();
+        } else {
+            ctx.drawImage(sheet, sx, sy, RAT_FRAME, RAT_FRAME, rat.x, rat.y, RAT_SIZE, RAT_SIZE);
+        }
+
+        if (DEBUG_FRAMES) {
+            ctx.strokeStyle = 'lime'; ctx.lineWidth = 2;
+            const half = RAT_HITBOX/2;
+            ctx.strokeRect(rat.x + RAT_SIZE/2 - half, rat.y + RAT_SIZE/2 - half, RAT_HITBOX, RAT_HITBOX);
+        }
+    });
+
     const shadowY = player.y + PLAYER_SIZE - 10;
     const heightFromGround = -player.jumpOffset;
     const shadowScale = Math.max(0.3, 1 - (heightFromGround / 400)); 
@@ -679,6 +810,13 @@ function draw() {
         ctx.drawImage(img, 0, 0, PLAYER_SIZE, PLAYER_SIZE); ctx.restore();
     } else {
         ctx.drawImage(img, player.x, drawY, PLAYER_SIZE, PLAYER_SIZE);
+    }
+
+    // DEBUG: hitbox real de los pies de Fabiancho (tecla 0)
+    if (DEBUG_FRAMES) {
+        ctx.strokeStyle = 'cyan'; ctx.lineWidth = 3;
+        ctx.strokeRect(player.x + HITBOX_OFFSET_X, player.y + HITBOX_OFFSET_Y,
+                       HITBOX_RADIUS_X * 2, HITBOX_RADIUS_Y * 2);
     }
 
     if (EDIT_MODE) {
