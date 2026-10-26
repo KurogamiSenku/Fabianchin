@@ -26,10 +26,17 @@ const plats = [
     // flotantes
     {x:360,  y:250, w:120, h:20},
     {x:880,  y:250, w:120, h:20},
-    {x:1140, y:205, w:120, h:20},
     {x:1660, y:250, w:140, h:20},
-    {x:2000, y:215, w:120, h:20},
     {x:2500, y:250, w:150, h:20},
+    // tarimas ESCALONADAS de la selva (subir de nivel para ir pasando)
+    {x:1080, y:270, w:110, h:18},
+    {x:1230, y:225, w:110, h:18},
+    {x:1380, y:180, w:130, h:18},   // mirador alto sobre el puente
+    {x:1960, y:265, w:110, h:18},
+    {x:2110, y:220, w:110, h:18},
+    {x:2260, y:175, w:120, h:18},
+    {x:2820, y:265, w:110, h:18},
+    {x:2970, y:220, w:120, h:18},
     // puentes de tablas sobre el agua (estética Contra)
     {x:600,  y:318, w:140, h:14, bridge:true},
     {x:1380, y:318, w:140, h:14, bridge:true},
@@ -128,7 +135,7 @@ function updateSoldiers(dt){
     if (challengeOpen) return;
     const pcx=player.x+PW/2, pcy=player.y+PH/2;
     for (const s of soldiers){
-        s.x += s.dir*1.4;
+        s.x += s.dir*2.1;   // recorren más de lado a lado
         if (s.x<s.min){ s.x=s.min; s.dir=1; } if (s.x>s.max){ s.x=s.max; s.dir=-1; }
         s.ft+=dt; if (s.ft>130){ s.f++; s.ft=0; }
         const scx=s.x+19, scy=s.y+30, dx=pcx-scx, dy=pcy-scy, d=Math.hypot(dx,dy)||1;
@@ -164,9 +171,9 @@ function updateSoldiers(dt){
     for (const b of bullets){
         b.x += b.vx; b.y += b.vy; b.ttl -= dt;
         const bdx=pcx-b.x, bdy=pcy-b.y;
-        if (Math.hypot(bdx,bdy) < 34){   // impacto: EMPUJA (no mata)
-            player.bvx += (b.vx>0?1:-1)*11;
-            player.vy  += -4;
+        if (Math.hypot(bdx,bdy) < 34){   // impacto: EMPUJA más fuerte (no mata)
+            player.bvx += (b.vx>0?1:-1)*16;
+            player.vy  += -5.5;
             b.ttl = 0;
         }
     }
