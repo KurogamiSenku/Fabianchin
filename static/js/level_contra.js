@@ -48,9 +48,13 @@ const GUARD = { x:3180, y:330-70 };   // puesto de guardia sobre el suelo final
 // Soldados Contra que patrullan, empujan y disparan bolas
 const SOLDIER_Y = 330 - 68;   // más arriba (antes quedaban hundidos en el suelo)
 const soldiers = [
-    { x:1000, y:SOLDIER_Y, dir:1, min:760,  max:1340, f:0, ft:0, fire:1600 },
-    { x:1800, y:SOLDIER_Y, dir:-1,min:1520, max:2180, f:0, ft:0, fire:2600 },
-    { x:2700, y:SOLDIER_Y, dir:1, min:2380, max:3100, f:0, ft:0, fire:3400 },
+    { x:320,  y:SOLDIER_Y, dir:1, min:60,   max:540,  f:0, ft:0, fire:900 },
+    { x:1000, y:SOLDIER_Y, dir:1, min:760,  max:1340, f:0, ft:0, fire:1300 },
+    { x:1200, y:SOLDIER_Y, dir:-1,min:760,  max:1340, f:0, ft:0, fire:1800 },
+    { x:1700, y:SOLDIER_Y, dir:-1,min:1520, max:2180, f:0, ft:0, fire:1500 },
+    { x:2050, y:SOLDIER_Y, dir:1, min:1520, max:2180, f:0, ft:0, fire:2200 },
+    { x:2550, y:SOLDIER_Y, dir:1, min:2380, max:3080, f:0, ft:0, fire:1100 },
+    { x:2900, y:SOLDIER_Y, dir:-1,min:2380, max:3080, f:0, ft:0, fire:2600 },
 ];
 const bullets = [];   // bolas disparadas
 
@@ -137,7 +141,7 @@ function updateSoldiers(dt){
         if (s.fire<=0 && Math.abs(dx)<560){
             const sp=4.3;
             bullets.push({ x:scx, y:scy, vx:(dx/d)*sp, vy:(dy/d)*sp*0.5, ttl:2200 });
-            s.fire = 1700 + Math.random()*1300;
+            s.fire = 935 + Math.random()*715;   // 45% más rápido que antes (1700+1300 -> *0.55)
         }
     }
     // mover/colisionar bolas
