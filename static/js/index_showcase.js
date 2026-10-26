@@ -37,7 +37,7 @@ if (canvas) {
         
         if(e.key === ' ') {
             e.preventDefault();
-            if (player.onGround) {
+            if (player.onGround && !keys.down) {   // no saltar mientras está agachado
                 player.vy = JUMP_FORCE;
                 player.onGround = false;
                 player.isJumping = true;
@@ -65,6 +65,10 @@ if (canvas) {
         if (keys.right) { dx += 1; player.facing = 'right'; }
         if (keys.up) { player.facing = 'up'; }
         if (keys.down) { player.facing = 'down'; }
+
+        // Agacharse: mantener S / ↓ estando en el suelo. No camina mientras está agachado.
+        player.isCrouching = keys.down && player.onGround;
+        if (player.isCrouching) dx = 0;
 
         player.vx = dx * PLAYER_SPEED;
         player.isMoving = (dx !== 0);
@@ -104,6 +108,9 @@ if (canvas) {
         } else if (player.isAttacking) {
             currentSpriteList = sprites.attack;
             frameIndex = Math.floor(player.animFrame) % 4;
+        } else if (player.isCrouching) {
+            currentSpriteList = sprites.jump;   // jump4 = pose de agacharse
+            frameIndex = 3;
         } else if (player.isMoving) {
             currentSpriteList = sprites.walk;
             frameIndex = Math.floor(player.animFrame) % 6;
