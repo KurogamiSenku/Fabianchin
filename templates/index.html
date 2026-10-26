@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 
+{% block body_class %}is-menu{% endblock %}
+
+{% block backdrop %}
+    <div class="scene" aria-hidden="true">
+        <div class="sky"></div>
+        <div class="stars"></div>
+        <div class="sun"></div>
+        <div class="glow"></div>
+        <div class="floor"></div>
+    </div>
+{% endblock %}
+
 {% block content %}
     <div style="display:none;">FLAG{primera_bandera_oculta_en_el_codigo}</div>
 

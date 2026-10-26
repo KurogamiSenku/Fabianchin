@@ -720,8 +720,160 @@ body.arcade-body {
 .level-popup p { color: #8b949e; font-size: 1.1em; margin-bottom: 20px; }
 .popup-buttons { display: flex; gap: 15px; justify-content: center; }
 /* Botones ENTRAR/CANCELAR un 50% más grandes */
-.popup-buttons button { 
-    padding: 15px 30px; 
-    font-size: 1.2em; 
+.popup-buttons button {
+    padding: 15px 30px;
+    font-size: 1.2em;
     border-radius: 8px;
+}
+
+/* ===================================================================== */
+/*  MENÚ ARCADE (solo index, bajo .is-menu): fondo retro + cabina pixel   */
+/*  No afecta el mapa del juego. El joystick sigue movido por arcade_shell */
+/* ===================================================================== */
+:root{
+    --pixel:'Press Start 2P', monospace;
+    --cab-ink:#0d1117;
+    --cab-sun-a:#ffd24a;
+    --cab-sun-b:#ff2fd6;
+    --cab-grid:#ff39c3;
+}
+
+/* Fondo synthwave detrás de la cabina */
+body.is-menu{ background:#1a1033; overflow:hidden; }
+.is-menu .scene{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.is-menu .sky{ position:absolute; inset:0;
+    background:linear-gradient(180deg, #1a1033 0%, #3b1a52 48%, #5a1f63 60%, #ff2fd6 66%, #120a24 66.5%, #0a0618 100%); }
+.is-menu .stars{ position:absolute; inset:0 0 40% 0; opacity:.85;
+    background-image:
+      radial-gradient(1.4px 1.4px at 12% 18%, #fff 50%, transparent),
+      radial-gradient(1.2px 1.2px at 28% 32%, #cfe6ff 50%, transparent),
+      radial-gradient(1.6px 1.6px at 46% 12%, #fff 50%, transparent),
+      radial-gradient(1.2px 1.2px at 62% 26%, #fff 50%, transparent),
+      radial-gradient(1.5px 1.5px at 78% 16%, #ffd9f6 50%, transparent),
+      radial-gradient(1.2px 1.2px at 88% 34%, #fff 50%, transparent),
+      radial-gradient(1.3px 1.3px at 7% 40%, #fff 50%, transparent),
+      radial-gradient(1.2px 1.2px at 36% 44%, #cfe6ff 50%, transparent); }
+.is-menu .sun{ position:absolute; left:50%; top:30%; transform:translate(-50%,-50%);
+    width:300px; height:300px; border-radius:50%;
+    background:linear-gradient(180deg, var(--cab-sun-a) 0%, #ff8a3d 45%, var(--cab-sun-b) 100%);
+    box-shadow:0 0 90px 20px rgba(255,100,180,.5);
+    -webkit-mask-image:repeating-linear-gradient(180deg, #000 0 16px, transparent 16px 20px, #000 20px 26px, transparent 26px 29px, #000 29px 34px, transparent 34px 36px);
+            mask-image:repeating-linear-gradient(180deg, #000 0 16px, transparent 16px 20px, #000 20px 26px, transparent 26px 29px, #000 29px 34px, transparent 34px 36px);
+    -webkit-mask-size:100% 50%; mask-size:100% 50%;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    -webkit-mask-position:bottom; mask-position:bottom; }
+.is-menu .sun::after{ content:""; position:absolute; inset:0; border-radius:50%;
+    background:linear-gradient(180deg, var(--cab-sun-a), #ff8a3d); clip-path:inset(0 0 50% 0); }
+.is-menu .glow{ position:absolute; left:0; right:0; top:62%; height:4px; background:#fff; filter:blur(6px); opacity:.7; }
+.is-menu .floor{ position:absolute; left:-25%; right:-25%; bottom:0; height:40%;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 calc(10% - 1.5px), var(--cab-grid) calc(10% - 1.5px) 10%),
+      repeating-linear-gradient(0deg, transparent 0 calc(16% - 1.5px), var(--cab-grid) calc(16% - 1.5px) 16%);
+    background-color:#160a26;
+    transform:perspective(320px) rotateX(68deg); transform-origin:bottom center;
+    box-shadow:0 0 60px rgba(255,57,195,.35); animation:floorMove 6s linear infinite; }
+@keyframes floorMove{ from{background-position:0 0, 0 0;} to{background-position:0 0, 0 16%;} }
+@media (prefers-reduced-motion: reduce){ .is-menu .floor{animation:none;} }
+
+/* Cabina pixel: cuerpo angosto, piezas que sobresalen */
+.is-menu .arcade-cabinet{
+    position:relative; z-index:1;
+    width:540px; max-width:96vw;
+    background:#141b26; padding:18px;
+    overflow:visible;
+    border:4px solid #000; border-radius:0;
+    box-shadow:0 0 0 4px #2b3446, 10px 10px 0 0 rgba(0,0,0,.55); }
+
+/* Marquesina: más grande, sobresale, techo inclinado + brillo */
+.is-menu .arcade-marquee{
+    position:relative; margin:24px -56px 0;
+    background:linear-gradient(90deg, #58a6ff 0 50%, #ff2fd6 50% 100%);
+    border:4px solid #000; border-radius:0; padding:32px 12px; text-align:center;
+    overflow:hidden;
+    box-shadow:inset -4px -4px 0 rgba(0,0,0,.35), inset 4px 4px 0 rgba(255,255,255,.25), 6px 6px 0 rgba(0,0,0,.45); }
+.is-menu .arcade-marquee::before{
+    content:""; position:absolute; left:-4px; right:-4px; top:-21px; height:22px;
+    background:linear-gradient(180deg,#263042,#141b26);
+    border:4px solid #000; border-bottom:none;
+    clip-path:polygon(7% 0, 93% 0, 100% 100%, 0 100%); }
+.is-menu .arcade-marquee::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(118deg, transparent 28%, rgba(255,255,255,.28) 33% 38%, transparent 42%, transparent 60%, rgba(255,255,255,.16) 63% 67%, transparent 71%); }
+.is-menu .arcade-marquee h1{
+    position:relative; z-index:1; margin:0; font-family:var(--pixel);
+    color:var(--cab-ink); font-size:23px; line-height:1.4; letter-spacing:1px;
+    text-shadow:1px 1px 0 rgba(255,255,255,.3); }
+
+/* Placa grabada para el texto de Fabiancho */
+.is-menu .arcade-subtitle{
+    text-align:center; color:#c3ccd8; font-size:.9em; font-style:italic; line-height:1.55;
+    margin:16px 0 0; padding:11px 14px;
+    background:#0b1017; border:3px solid #000; border-radius:8px;
+    box-shadow:inset 2px 2px 0 rgba(0,0,0,.55), inset -2px -2px 0 rgba(255,255,255,.04); }
+
+/* Pantalla con scanlines CRT (solo reskin; el layout lo mantiene la regla :has existente) */
+.is-menu .arcade-stage{
+    background:#05070c; border:4px solid #000; border-radius:0;
+    box-shadow:inset 0 0 0 3px #1d2635, inset 0 0 36px rgba(88,166,255,.22);
+    position:relative; }
+.is-menu .arcade-stage::after{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 2px, transparent 2px 4px); mix-blend-mode:multiply; }
+.is-menu .arcade-screen-text{
+    font-family:var(--pixel); color:#58a6ff; text-shadow:2px 2px 0 #10243a;
+    font-size:13px; line-height:1.8; }
+.is-menu #indexCanvas{ border:3px solid #000 !important; border-radius:0 !important; image-rendering:pixelated; }
+
+/* Botones JUGAR / SALIR: redondeados con bisel pixel */
+.is-menu .arcade-actions a, .is-menu .arcade-actions button{
+    font-family:var(--pixel); font-size:11px; letter-spacing:1px;
+    background:#0c1119; border:3px solid #000; border-radius:12px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.12), 0 4px 0 #000; }
+.is-menu .arcade-actions a.btn-play{ color:#3ddc84; }
+.is-menu .arcade-actions button.btn-exit{ color:#ff2fd6; }
+.is-menu .arcade-actions a:active, .is-menu .arcade-actions button:active{
+    transform:translateY(4px);
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.12); }
+
+.is-menu .arcade-controls-help{ border-top:3px solid #000; }
+
+/* Controles en TRAPECIO (el marco negro lo da .panel-frame) */
+.is-menu .panel-frame{
+    margin:20px -56px 0; background:#000; padding:4px;
+    clip-path:polygon(7% 0, 93% 0, 100% 100%, 0 100%); }
+.is-menu .arcade-panel{
+    background:linear-gradient(180deg, #161d29, #0a0e15);
+    padding:24px 56px 20px;
+    clip-path:polygon(7% 0, 93% 0, 100% 100%, 0 100%); }
+
+/* Reskin pixel de la palanca y botones (sin tocar geometría ni el movimiento por teclas) */
+.is-menu .joystick-base{
+    border:4px solid #000; border-radius:50%;
+    box-shadow:inset -4px -4px 0 rgba(0,0,0,.45), inset 4px 4px 0 rgba(255,255,255,.08); }
+.is-menu .joystick-stick{ background:#58a6ff; border:3px solid #000; border-radius:3px; }
+.is-menu .joystick-ball{
+    background:radial-gradient(circle at 35% 30%, #ff2fd6, #8a1a74);
+    border:3px solid #000; box-shadow:inset -3px -3px 0 rgba(0,0,0,.35); }
+.is-menu .arcade-btn{
+    border:4px solid #000;
+    box-shadow:inset -4px -4px 0 rgba(0,0,0,.4), inset 4px 4px 0 rgba(255,255,255,.2), 0 4px 0 #000;
+    font-family:var(--pixel); font-size:8px; }
+.is-menu .arcade-btn.jump-btn{ background:radial-gradient(circle at 35% 30%, #3ddc84, #1a7a44); }
+.is-menu .arcade-btn.hit-btn{ background:radial-gradient(circle at 35% 30%, #ff5a5a, #a81f1f); }
+.is-menu .arcade-btn.pressed{ transform:translateY(4px); }
+
+/* Zócalo inferior con ranura de monedas */
+.is-menu .plinth{
+    margin-top:14px; height:40px; position:relative;
+    background:linear-gradient(180deg, #1b2230, #0d1117);
+    border:4px solid #000; border-radius:4px 4px 10px 10px;
+    box-shadow:inset 3px 3px 0 rgba(255,255,255,.05); }
+.is-menu .plinth .coins{ position:absolute; right:18px; top:50%; transform:translateY(-50%); display:flex; gap:8px; }
+.is-menu .plinth .coins i{ width:10px; height:20px; background:linear-gradient(180deg,#ff8a3d,#a81f1f); border:3px solid #000; display:block; }
+
+@media (max-width:560px){
+    .is-menu .arcade-marquee{ margin-left:-16px; margin-right:-16px; }
+    .is-menu .arcade-marquee h1{ font-size:14px; }
+    .is-menu .panel-frame{ margin-left:-16px; margin-right:-16px; }
+    .is-menu .sun{ width:200px; height:200px; }
 }
