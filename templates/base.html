@@ -59,6 +59,9 @@
         {% block footer %}{% endblock %}
     </div>
 
+    {# Contenido fuera de la cabina (p. ej. overlays que no deben escalarse) #}
+    {% block after_cabinet %}{% endblock %}
+
     <script src="{{ url_for('static', filename='js/arcade_shell.js') }}"></script>
 
     <!-- Auto-ajuste: escala la cabina para que SIEMPRE quepa en pantalla sin zoom -->

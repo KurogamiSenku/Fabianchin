@@ -1,100 +1,76 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nivel 5: Bomberman — El laberinto de los comandos</title>
+{% extends "base.html" %}
+
+{% block head %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <style>
-  :root{
-    --bg:#0b0f16; --panel:#121a26; --edge:#223049;
-    --cyan:#58a6ff; --mag:#ff2fd6; --grn:#3ddc84; --amber:#ffb454; --red:#ff5a5a;
-    --ink:#0d1117; --muted:#8b949e; --term-bg:#05080e; --term-fg:#9ef7c3;
-    --pixel:'Press Start 2P', monospace; --mono:'Courier New', ui-monospace, monospace;
-    color-scheme:dark;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;min-height:100%;}
-  body{
-    background:radial-gradient(circle at 50% 0%, #10203a, var(--bg) 70%);
-    color:#e6edf3; font-family:var(--mono);
-    padding-block:18px;
-    padding-left:max(16px,env(safe-area-inset-left,0px));
-    padding-right:max(16px,env(safe-area-inset-right,0px));
-  }
-  .wrap{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:14px;align-items:center;}
-  header{text-align:center;}
-  .eyebrow{color:var(--amber);font-family:var(--pixel);font-size:11px;letter-spacing:1px;}
-  h1{font-family:var(--pixel);font-size:17px;line-height:1.5;margin:12px 0 6px;color:var(--cyan);}
-  .tag{color:var(--muted);font-size:.95rem;}
-  .arena-box{position:relative;width:100%;max-width:720px;}
-  canvas{width:100%;height:auto;display:block;border:4px solid #000;border-radius:8px;
-    box-shadow:0 0 30px rgba(0,0,0,.6);image-rendering:pixelated;background:#122b21;}
-  .help{color:var(--muted);font-size:.9rem;text-align:center;line-height:1.7;}
-  .help .k{display:inline-block;background:#0d1420;border:1px solid var(--edge);border-radius:4px;padding:1px 7px;color:#e6edf3;margin:0 1px;}
-  .back{display:inline-block;color:var(--mag);text-decoration:none;border:2px solid var(--mag);border-radius:6px;padding:8px 14px;font-size:.85rem;}
-  .back:hover{background:rgba(255,47,214,.15);}
+  /* El nivel vive dentro de la pantalla del arcade */
+  .arcade-stage{ padding:0 !important; }
+  #level-inner{ width:100%; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:10px; padding:14px; }
+  #level-inner .ltitle{ font-family:'Press Start 2P',monospace; font-size:11px; color:#ffb454; letter-spacing:1px; }
+  #arena{ width:auto; max-width:100%; max-height:70vh; height:auto; image-rendering:pixelated;
+    border:4px solid #000; border-radius:8px; background:#122b21; box-shadow:0 0 24px rgba(0,0,0,.6); }
+  #level-inner .lhelp{ color:#8b949e; font-size:.85rem; text-align:center; line-height:1.6; }
+  #level-inner .lhelp .k{ display:inline-block; background:#0d1420; border:1px solid #2a3344; border-radius:4px; padding:1px 7px; color:#e6edf3; margin:0 1px; }
 
-  /* Overlay del reto SQLi */
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow:auto;z-index:50;}
-  .overlay.show{display:flex;}
-  .modal{background:var(--panel);border:3px solid #000;border-radius:12px;max-width:620px;width:100%;margin:auto;
-    box-shadow:0 0 40px rgba(88,166,255,.25),inset 0 0 0 2px #223049;padding:20px;}
-  .modal h2{font-family:var(--pixel);font-size:12px;color:var(--amber);margin:0 0 6px;letter-spacing:1px;}
-  .modal .sub{color:var(--muted);font-size:.9rem;margin:0 0 14px;}
-  label{display:block;font-size:.82rem;color:var(--muted);margin:10px 0 5px;letter-spacing:1px;}
-  input[type=text]{width:100%;background:var(--term-bg);color:#e6edf3;border:2px solid var(--edge);border-radius:6px;padding:11px;font-family:var(--mono);font-size:1rem;}
-  input[type=text]:focus{outline:none;border-color:var(--cyan);}
-  .btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-  button{font-family:var(--pixel);font-size:10px;letter-spacing:1px;cursor:pointer;color:var(--ink);
-    border:3px solid #000;border-radius:8px;padding:12px 15px;
-    box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25),0 4px 0 #000;transition:transform .06s;}
-  button:active{transform:translateY(4px);box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25);}
-  .btn-login{background:var(--cyan);} .btn-flag{background:var(--grn);} .btn-close{background:#8b949e;}
-  pre.q{background:var(--term-bg);color:var(--term-fg);border:2px solid var(--edge);border-radius:6px;
-    padding:11px;margin:12px 0 0;white-space:pre-wrap;word-break:break-word;font-size:.86rem;line-height:1.5;}
-  .msg{margin-top:10px;font-weight:bold;min-height:1.2em;}
-  .ok{color:var(--grn);} .err{color:var(--red);}
-  .flagbox{margin-top:16px;padding-top:14px;border-top:2px solid var(--edge);}
-  details{margin-top:12px;} summary{cursor:pointer;color:var(--cyan);font-size:.9rem;}
-  .hint{color:var(--muted);font-size:.88rem;line-height:1.6;margin:8px 0 0;padding-left:8px;border-left:2px solid var(--edge);}
-  .win{display:none;margin-top:14px;text-align:center;color:var(--grn);font-weight:bold;}
-  .win.show{display:block;}
-  @media(max-width:520px){ h1{font-size:13px;} }
+  /* Overlay del reto SQLi (fuera de la cabina para no escalarse) */
+  .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.78); display:none;
+    align-items:flex-start; justify-content:center; padding:20px; overflow:auto; z-index:9999; }
+  .sql-overlay.show{ display:flex; }
+  .sql-modal{ background:#121a26; border:3px solid #000; border-radius:12px; max-width:640px; width:100%; margin:auto;
+    box-shadow:0 0 40px rgba(88,166,255,.25),inset 0 0 0 2px #223049; padding:20px;
+    font-family:'Courier New',monospace; color:#e6edf3; }
+  .sql-modal h2{ font-family:'Press Start 2P',monospace; font-size:12px; color:#ffb454; margin:0 0 6px; letter-spacing:1px; }
+  .sql-modal .sub{ color:#8b949e; font-size:.9rem; margin:0 0 14px; }
+  .sql-modal label{ display:block; font-size:.82rem; color:#8b949e; margin:10px 0 5px; letter-spacing:1px; }
+  .sql-modal input[type=text]{ width:100%; background:#05080e; color:#e6edf3; border:2px solid #223049; border-radius:6px; padding:11px; font-family:'Courier New',monospace; font-size:1rem; }
+  .sql-modal input[type=text]:focus{ outline:none; border-color:#58a6ff; }
+  .warn{ color:#ffb454; font-size:.8rem; margin-top:5px; min-height:1em; }
+  .sbtns{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .sql-modal button{ font-family:'Press Start 2P',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; color:#0d1117;
+    border:3px solid #000; border-radius:8px; padding:12px 15px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25),0 4px 0 #000; }
+  .sql-modal button:active{ transform:translateY(4px); }
+  .btn-login{ background:#58a6ff; } .btn-flag{ background:#3ddc84; } .btn-close{ background:#8b949e; }
+  pre.q{ background:#05080e; color:#9ef7c3; border:2px solid #223049; border-radius:6px; padding:11px; margin:12px 0 0;
+    white-space:pre-wrap; word-break:break-word; font-size:.86rem; line-height:1.5; }
+  .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; }
+  .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
+  .flagbox{ margin-top:16px; padding-top:14px; border-top:2px solid #223049; }
+  .sql-modal details{ margin-top:12px; } .sql-modal summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
+  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
+  .win{ display:none; margin-top:14px; text-align:center; color:#3ddc84; font-weight:bold; }
+  .win.show{ display:block; }
+  .win a, .flagbox a{ color:#ff2fd6; }
 </style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">NIVEL 5</div>
-    <h1>BOMBERMAN</h1>
-    <div class="tag">El laberinto de los comandos</div>
-  </header>
+{% endblock %}
 
-  <div class="arena-box">
-    <canvas id="arena" width="720" height="480"></canvas>
-  </div>
-
-  <p class="help">
+{% block content %}
+<div id="level-inner">
+  <div class="ltitle">NIVEL 5 · BOMBERMAN</div>
+  <canvas id="arena" width="720" height="480"></canvas>
+  <p class="lhelp">
     <span class="k">WASD</span>/<span class="k">←↑↓→</span> mover a Fabiancho &nbsp;·&nbsp;
-    llega al <strong>computador</strong> y pulsa <span class="k">E</span> para acceder al panel.
+    llega al <strong>computador</strong> y pulsa <span class="k">E</span> &nbsp;·&nbsp;
+    <a href="/map" style="color:#ff2fd6;">← Mapa</a>
   </p>
-  <a class="back" href="/map">← Volver al mapa</a>
 </div>
+{% endblock %}
 
-<!-- Reto SQL Injection -->
-<div class="overlay" id="challenge">
-  <div class="modal">
+{% block after_cabinet %}
+<div class="sql-overlay" id="challenge">
+  <div class="sql-modal">
     <h2>▸ Panel de acceso — Bloque-terminal</h2>
     <p class="sub">Solo un administrador puede desactivar el bloque. Entra al panel.</p>
 
     <label for="u">Usuario</label>
-    <input type="text" id="u" placeholder="usuario" autocomplete="off" spellcheck="false">
+    <input type="text" id="u" maxlength="14" placeholder="usuario" autocomplete="off" spellcheck="false">
     <label for="p">Contraseña</label>
-    <input type="text" id="p" placeholder="contraseña" autocomplete="off" spellcheck="false">
+    <input type="text" id="p" maxlength="14" placeholder="contraseña" autocomplete="off" spellcheck="false">
+    <div class="warn" id="warn"></div>
 
-    <div class="btns">
+    <div class="sbtns">
       <button class="btn-login" id="login">ACCEDER</button>
       <button class="btn-close" id="close">CERRAR</button>
     </div>
@@ -104,26 +80,40 @@
 
     <details>
       <summary>¿Atascado? Pistas progresivas</summary>
-      <p class="hint"><strong>1.</strong> Fíjate en la consulta que aparece: tu entrada se mete <em>tal cual</em> dentro de un <code>SELECT ... WHERE user='…' AND pass='…'</code>.</p>
-      <p class="hint"><strong>2.</strong> ¿Qué pasa si cierras la comilla y comentas el resto? En SQL, <code>--</code> comenta hasta el final de la línea.</p>
-      <p class="hint"><strong>3.</strong> En el usuario prueba: <code>admin' --</code> &nbsp;(entras como admin sin saber la clave). O un clásico: <code>' OR '1'='1' --</code></p>
-      <p class="hint"><strong>4.</strong> Al entrar como admin verás su <strong>nota</strong>: ahí está la flag.</p>
+      <p class="hint"><strong>1.</strong> La consulta que aparece mete tu entrada <em>tal cual</em> en <code>... WHERE user='…' AND pass='…'</code>. Para inyectar necesitas una comilla <code>'</code>.</p>
+      <p class="hint"><strong>2.</strong> ¿Notaste que el campo <strong>no te deja escribir la comilla</strong> y tiene límite de caracteres? Eso es validación <em>del lado del cliente</em>… y esa nunca es seguridad real.</p>
+      <p class="hint"><strong>3.</strong> Abre <strong>F12</strong> (DevTools) → pestaña <em>Console</em> y asigna el valor directamente, saltándote el filtro:<br>
+        <code>document.getElementById('u').value = "admin' --"</code><br>
+        Luego pulsa ACCEDER. (También sirve: quitar el <code>maxlength</code> del input en el inspector, o reenviar la petición desde la pestaña Network.)</p>
+      <p class="hint"><strong>4.</strong> Al entrar como admin verás su <strong>nota</strong>: ahí está la flag. Otro payload válido: <code>' OR '1'='1' --</code></p>
     </details>
 
     <div class="flagbox">
       <label for="flag">Enviar flag</label>
-      <div class="btns" style="margin-top:6px;">
+      <div class="sbtns" style="margin-top:6px;">
         <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
         <button class="btn-flag" id="send">ENVIAR</button>
       </div>
       <div class="msg" id="flagmsg"></div>
-      <div class="win" id="win">✦ ¡BLOQUE DESTRUIDO! Siguiente nivel desbloqueado. <a class="back" href="/map" style="margin-left:10px;">← Mapa</a></div>
+      <div class="win" id="win">✦ ¡BLOQUE DESTRUIDO! Siguiente nivel desbloqueado. <a href="/map">← Mapa</a></div>
     </div>
   </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/level_bomberman.js') }}"></script>
 <script>
+// --- Defensa del lado del CLIENTE (a propósito débil): bloquea la comilla ---
+// Obliga a usar F12 para inyectar. El servidor SÍ es vulnerable.
+const warn=document.getElementById('warn');
+function blockQuote(e){
+  if(e.key==="'"){ e.preventDefault(); warn.textContent='⚠ Carácter no permitido por el formulario.';
+    setTimeout(()=>{warn.textContent='';},1500); }
+}
+document.getElementById('u').addEventListener('keydown', blockQuote);
+document.getElementById('p').addEventListener('keydown', blockQuote);
+
 const qout=document.getElementById('qout'), loginmsg=document.getElementById('loginmsg');
 async function acceder(){
   const u=document.getElementById('u').value, p=document.getElementById('p').value;
@@ -131,13 +121,10 @@ async function acceder(){
   try{
     const r=await fetch('/level/bomberman/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
     const d=await r.json();
-    qout.textContent=d.query || '';
+    qout.textContent=d.query||'';
     if(d.error){ loginmsg.textContent=d.error; loginmsg.className='msg err'; return; }
-    loginmsg.textContent=d.message;
-    loginmsg.className='msg '+(d.ok&&d.admin?'ok':(d.ok?'ok':'err'));
-    if(d.admin && d.flag_hint){
-      loginmsg.textContent += '  →  nota del admin: '+d.flag_hint;
-    }
+    loginmsg.textContent=d.message + ((d.admin&&d.flag_hint)?('  →  nota del admin: '+d.flag_hint):'');
+    loginmsg.className='msg '+(d.ok?'ok':'err');
   }catch(e){ loginmsg.textContent='Error de conexión.'; loginmsg.className='msg err'; }
 }
 document.getElementById('login').onclick=acceder;
@@ -157,5 +144,4 @@ async function enviarFlag(){
 document.getElementById('send').onclick=enviarFlag;
 document.getElementById('flag').addEventListener('keydown',e=>{if(e.key==='Enter')enviarFlag();});
 </script>
-</body>
-</html>
+{% endblock %}
