@@ -63,8 +63,8 @@ if (canvas) {
         let dx = 0, dy = 0;
         if (keys.left) { dx -= 1; player.facing = 'left'; }
         if (keys.right) { dx += 1; player.facing = 'right'; }
-        if (keys.up) { player.facing = 'up'; }
-        if (keys.down) { player.facing = 'down'; }
+        // En el showcase (lateral) solo importa izquierda/derecha; no tocamos
+        // facing con up/down para que al agacharse conserve hacia dónde mira.
 
         // Agacharse: mantener S / ↓ estando en el suelo. No camina mientras está agachado.
         player.isCrouching = keys.down && player.onGround;
