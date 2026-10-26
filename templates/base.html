@@ -32,19 +32,21 @@
             {% block content %}{% endblock %}
         </div>
 
-        <!-- Explicación de controles actualizada -->
-        <div class="arcade-controls-help">
-            <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
-            <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
-            <strong>F</strong> → GOLPE &nbsp;|&nbsp;
-            <strong>E</strong> → Abrir Nivel (en el mapa)
-        </div>
-
         <div class="panel-frame">
         <div class="arcade-panel">
             <div class="joystick-base" id="joystick-base">
                 <div class="joystick-stick" id="joystick-stick"></div>
                 <div class="joystick-ball" id="joystick-ball"></div>
+            </div>
+
+            <!-- Controles DENTRO del trapecio (ahorra espacio de pantalla) -->
+            <div class="arcade-controls-help">
+            {% block controls_help %}
+                <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
+                <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
+                <strong>F</strong> → GOLPE &nbsp;|&nbsp;
+                <strong>E</strong> → Abrir Nivel (en el mapa)
+            {% endblock %}
             </div>
 
             <div class="arcade-buttons">
