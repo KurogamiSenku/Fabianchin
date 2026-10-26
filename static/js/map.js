@@ -39,6 +39,16 @@ const RAT_SHEET_FACES_LEFT = true; // si la rata sale espejada, cambia esto a fa
 const sprites = { idle: [], walk: [], attack: [], jump: [] };
 function loadImg(src) { const img = new Image(); img.src = src; return img; }
 
+// --- VELOCIDAD DE ANIMACIÓN POR ESTADO ---
+// dur = milisegundos por frame (más bajo = más rápido/fluido)
+// loop = si la animación se repite (idle/walk) o se queda en el último frame (golpe/salto)
+const ANIM = {
+    idle:   { frames: 4, dur: 170, loop: true  },
+    walk:   { frames: 6, dur: 85,  loop: true  },
+    attack: { frames: 4, dur: 65,  loop: false },
+    jump:   { frames: 4, dur: 110, loop: false }
+};
+
 for(let i=1; i<=4; i++) sprites.idle.push(loadImg(`/static/img/skeli_fixed/idle/idle${i}.png`));
 for(let i=1; i<=6; i++) sprites.walk.push(loadImg(`/static/img/skeli_fixed/walk/walk${i}.png`));
 for(let i=1; i<=4; i++) sprites.attack.push(loadImg(`/static/img/skeli_fixed/attack/attack${i}.png`));
@@ -404,8 +414,21 @@ function update(dt, time) {
         if (player.jumpOffset >= 0) { player.jumpOffset = 0; player.jumpVelocity = 0; player.onGround = true; player.isJumping = false; }
     }
     if (player.isAttacking && timeSinceAttack > 450) player.isAttacking = false;
+
+    // --- Máquina de animación: cada estado avanza a su propia velocidad ---
+    let animState = 'idle';
+    if (player.isJumping)       animState = 'jump';
+    else if (player.isAttacking) animState = 'attack';
+    else if (player.isMoving)    animState = 'walk';
+
+    if (animState !== player.animState) { player.animState = animState; player.animFrame = 0; player.animTimer = 0; }
+    const ad = ANIM[animState];
     player.animTimer += dt;
-    if (player.animTimer > 150) { player.animFrame++; player.animTimer = 0; }
+    while (player.animTimer >= ad.dur) {
+        player.animTimer -= ad.dur;
+        if (ad.loop) player.animFrame = (player.animFrame + 1) % ad.frames;
+        else if (player.animFrame < ad.frames - 1) player.animFrame++;
+    }
 
     updateEnemies(dt, time);
     updateRats(dt, time);
@@ -798,11 +821,9 @@ function draw() {
     const shadowH = (PLAYER_SIZE / 6) * 0.55 * shadowScale;
     ctx.beginPath(); ctx.ellipse(player.x + PLAYER_SIZE/2, shadowY, shadowW, shadowH, 0, 0, Math.PI * 2); ctx.fill();
 
-    let currentSpriteList = sprites.idle; let frameIndex = 0;
-    if (player.isJumping) { currentSpriteList = sprites.jump; frameIndex = Math.floor(player.animFrame / 3) % 4; }
-    else if (player.isAttacking) { currentSpriteList = sprites.attack; frameIndex = Math.floor(player.animFrame) % 4; }
-    else if (player.isMoving) { currentSpriteList = sprites.walk; frameIndex = Math.floor(player.animFrame) % 6; }
-    else { currentSpriteList = sprites.idle; frameIndex = Math.floor(player.animFrame) % 4; }
+    const st = player.animState || 'idle';
+    const currentSpriteList = sprites[st] || sprites.idle;
+    const frameIndex = player.animFrame % (ANIM[st] ? ANIM[st].frames : 4);
     const img = currentSpriteList[frameIndex] || sprites.idle[0];
     const drawY = player.y + player.jumpOffset;
     if (player.facing === 'left') {
