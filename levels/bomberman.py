@@ -18,6 +18,19 @@ import config
 bp = Blueprint("bomberman", __name__, url_prefix="/level/bomberman")
 
 FLAG = config.LEVEL_FLAGS[5]
+HALF1 = config.LEVEL5_HALF1   # primera mitad (por SQLi)
+HALF2 = config.LEVEL5_HALF2   # segunda mitad (por IDOR, sector oculto)
+
+# La nota del admin entrega la 1a mitad y pista hacia el sector oculto
+ADMIN_NOTE = (HALF1 + "   [1/2]   ·   la otra mitad está en el 'sector oculto' "
+              "del panel: está DESACTIVADO en la interfaz (pista: F12).")
+
+# Expedientes para el reto IDOR: cambiar el id para ver el del admin (id=1)
+RECORDS = {
+    1: {"user": "admin",    "nota": HALF2 + "   [2/2]   ·   ¡combina las dos mitades!"},
+    2: {"user": "operador", "nota": "Expediente sin nada util."},
+    3: {"user": "invitado", "nota": "Tu propio expediente de invitado. Nada interesante aqui."},
+}
 
 
 def _build_db():
@@ -28,7 +41,7 @@ def _build_db():
     cur.executemany(
         "INSERT INTO usuarios VALUES (?,?,?,?)",
         [
-            ("admin", "Zx9!bomba_secreta", "admin", FLAG),   # la flag vive en la nota del admin
+            ("admin", "Zx9!bomba_secreta", "admin", ADMIN_NOTE),
             ("operador", "op123", "user", "sin privilegios"),
             ("invitado", "guest", "user", "cuenta de prueba"),
         ],
@@ -80,6 +93,25 @@ def login():
             rows=[{"user": r[0], "role": r[1]} for r in rows],
         )
     return jsonify(result)
+
+
+@bp.route("/record", methods=["GET"])
+def record():
+    """Reto IDOR del sector oculto: el id no se controla, así que cambiarlo
+    deja ver el expediente de otro usuario (el del admin, id=1, trae la 2a mitad)."""
+    raw = request.args.get("id", "3")
+    try:
+        rid = int(raw)
+    except ValueError:
+        return jsonify(ok=False, message="id inválido (debe ser un número).")
+    rec = RECORDS.get(rid)
+    if not rec:
+        return jsonify(ok=False, message=f"No existe el expediente #{rid}.")
+    if rec["user"] == "admin":
+        session.setdefault("found", {})
+        session["found"]["5b"] = True
+        session.modified = True
+    return jsonify(ok=True, id=rid, user=rec["user"], nota=rec["nota"])
 
 
 @bp.route("/submit", methods=["POST"])

@@ -87,11 +87,28 @@
       <p class="hint"><strong>3.</strong> Abre <strong>F12</strong> (DevTools) → pestaña <em>Console</em> y asigna el valor directamente, saltándote el filtro:<br>
         <code>document.getElementById('u').value = "admin' --"</code><br>
         Luego pulsa ACCEDER. (También sirve: quitar el <code>maxlength</code> del input en el inspector, o reenviar la petición desde la pestaña Network.)</p>
-      <p class="hint"><strong>4.</strong> Al entrar como admin verás su <strong>nota</strong>: ahí está la flag. Otro payload válido: <code>' OR '1'='1' --</code></p>
+      <p class="hint"><strong>4.</strong> Al entrar como admin verás su <strong>nota</strong>: ahí está la <strong>primera mitad</strong> de la flag [1/2]. Otro payload válido: <code>' OR '1'='1' --</code></p>
+      <p class="hint"><strong>5.</strong> La nota dice que falta la otra mitad en un <strong>sector oculto</strong>… que está <em>desactivado en la interfaz</em>. Abre <strong>F12 → Elements</strong>, busca <code>id="sector-oculto"</code> y cambia su <code>display:none</code> a <code>block</code> (o quítale el atributo <code>hidden</code>).</p>
     </details>
 
+    <!-- SECTOR OCULTO: desactivado en la interfaz. ¿display:none? (reto IDOR) -->
+    <div class="flagbox" id="sector-oculto" style="display:none">
+      <h2 style="color:#3ddc84;">▸ Sector oculto — Expedientes</h2>
+      <p class="sub">Consulta de expedientes de usuario. Solo deberías ver el tuyo (#3).</p>
+      <label for="rid">ID de expediente</label>
+      <div class="sbtns" style="margin-top:6px;">
+        <input type="text" id="rid" value="3" autocomplete="off" spellcheck="false" style="max-width:120px;">
+        <button class="btn-login" id="verrec">CONSULTAR</button>
+      </div>
+      <pre class="q" id="recout">// El expediente consultado aparecerá aquí.</pre>
+      <details>
+        <summary>Pista del sector oculto</summary>
+        <p class="hint">El <code>id</code> va directo en la URL (<code>/record?id=3</code>) y el servidor no comprueba que sea el tuyo. Cambia el id a <code>1</code> (el admin) para ver su expediente: ahí está la <strong>segunda mitad</strong> [2/2]. Eso es un <strong>IDOR</strong>.</p>
+      </details>
+    </div>
+
     <div class="flagbox">
-      <label for="flag">Enviar flag</label>
+      <label for="flag">Enviar flag (las dos mitades juntas)</label>
       <div class="sbtns" style="margin-top:6px;">
         <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
         <button class="btn-flag" id="send">ENVIAR</button>
@@ -132,6 +149,20 @@ async function acceder(){
 document.getElementById('login').onclick=acceder;
 document.getElementById('p').addEventListener('keydown',e=>{if(e.key==='Enter')acceder();});
 document.getElementById('close').onclick=()=>window._closeChallenge();
+
+// --- Reto IDOR del sector oculto ---
+const recout=document.getElementById('recout');
+async function verRecord(){
+  const id=document.getElementById('rid').value.trim();
+  try{
+    const r=await fetch('/level/bomberman/record?id='+encodeURIComponent(id));
+    const d=await r.json();
+    if(!d.ok){ recout.textContent=d.message; return; }
+    recout.textContent='Expediente #'+d.id+'  ('+d.user+')\n'+d.nota;
+  }catch(e){ recout.textContent='Error de conexión.'; }
+}
+document.getElementById('verrec').onclick=verRecord;
+document.getElementById('rid').addEventListener('keydown',e=>{if(e.key==='Enter')verRecord();});
 
 const flagmsg=document.getElementById('flagmsg');
 async function enviarFlag(){

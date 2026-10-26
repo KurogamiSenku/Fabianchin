@@ -26,6 +26,9 @@ PROGRESSION = [1, 2, 3, 5, 8, 9, 14]
 DEV_UNLOCK_ALL = True
 
 # Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
+# Nivel 5 = flag en DOS mitades: la 1a por SQLi, la 2a por IDOR (sector oculto, F12)
+LEVEL5_HALF1 = "FLAG{bomberman_"
+LEVEL5_HALF2 = "sqli_e_idor}"
 LEVEL_FLAGS = {
-    5: "FLAG{bomberman_sql_injection}",
+    5: LEVEL5_HALF1 + LEVEL5_HALF2,   # FLAG{bomberman_sqli_e_idor}
 }

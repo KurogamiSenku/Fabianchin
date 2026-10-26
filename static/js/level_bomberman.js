@@ -112,6 +112,14 @@ function updateEnemy(dt){
         enemy.animTimer+=dt;
         if (enemy.animTimer>140){ enemy.animFrame++; enemy.animTimer=0; }
 
+        // Empuje al CONTACTO directo (además del empuje de las bombas)
+        const contact = (EHB) + (PSIZE*0.20);
+        if (dist < contact && dist>0){
+            player.bvx += (dx/dist)*7;
+            player.bvy += (dy/dist)*7;
+            enemy.x -= (dx/dist)*1.2; enemy.y -= (dy/dist)*1.2;
+        }
+
         enemy.bombTimer-=dt;
         if (enemy.bombTimer<=0 && dist<360){
             enemy.bombs.push({ x:ecx, y:ecy, fuse:1300, exploded:false, et:0 });
@@ -128,6 +136,23 @@ function updateEnemy(dt){
             } else { b.et+=dt; }
         }
         enemy.bombs = enemy.bombs.filter(b=>!(b.exploded && b.et>4*80));
+    }
+
+    // Separación entre enemigos: si se acercan demasiado, se empujan (no se fusionan)
+    const SEP = ESIZE * 0.85;
+    for (let i=0;i<enemies.length;i++){
+        for (let j=i+1;j<enemies.length;j++){
+            const a=enemies[i], b=enemies[j];
+            const ax=a.x+ESIZE/2, ay=a.y+ESIZE/2, bx=b.x+ESIZE/2, by=b.y+ESIZE/2;
+            const dx=bx-ax, dy=by-ay, d=Math.hypot(dx,dy)||1;
+            if (d < SEP){
+                const push=(SEP-d)/2, nx=dx/d, ny=dy/d;
+                const aox=a.x, aoy=a.y, box=b.x, boy=b.y;
+                a.x-=nx*push; a.y-=ny*push; b.x+=nx*push; b.y+=ny*push;
+                if (enemyHitsWall(a.x,a.y)){ a.x=aox; a.y=aoy; }
+                if (enemyHitsWall(b.x,b.y)){ b.x=box; b.y=boy; }
+            }
+        }
     }
 }
 
