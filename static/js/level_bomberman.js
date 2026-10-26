@@ -6,8 +6,13 @@
 const cv = document.getElementById('arena');
 const ctx = cv.getContext('2d');
 
-const TILE = 48, COLS = 15, ROWS = 10;
-cv.width = COLS * TILE; cv.height = ROWS * TILE;
+// Todo 45% más grande (TILE y sprites), con cámara que sigue a Fabiancho.
+// Las hitboxes escalan igual, así que el comportamiento de colisión no cambia.
+const TILE = 70, COLS = 15, ROWS = 10;
+const WORLD_W = COLS*TILE, WORLD_H = ROWS*TILE;   // 1050 x 700
+const VIEW_W = 760, VIEW_H = 520;
+cv.width = VIEW_W; cv.height = VIEW_H;
+const cam = { x:0, y:0 };
 
 function loadImg(src){ const i = new Image(); i.src = src; return i; }
 const sprites = { idle: [], walk: [] };
@@ -27,12 +32,12 @@ for (let r=0;r<ROWS;r++){ grid[r]=[]; for (let c=0;c<COLS;c++){
 }}
 const TERM = { c:13, r:8 }; grid[TERM.r][TERM.c]=0;
 
-const PSIZE=96, HB=18, SPEED=3.0;
+const PSIZE=139, HB=26, SPEED=4.3;
 const player = { x:1*TILE+(TILE-PSIZE)/2, y:1*TILE+(TILE-PSIZE)/2,
     facing:'down', moving:false, animFrame:0, animTimer:0, bvx:0, bvy:0 };
 
 // --- Enemigos Bomberman (3, para molestar) ---
-const ESIZE=56, EHB=16, ESPEED=1.7;
+const ESIZE=81, EHB=23, ESPEED=2.5;
 function mkEnemy(c, r, delay){
     return { x:c*TILE+(TILE-ESIZE)/2, y:r*TILE+(TILE-ESIZE)/2,
         facing:'left', animFrame:Math.random()*3, animTimer:0, bombTimer:delay, bombs:[] };
@@ -188,6 +193,8 @@ function drawSprite(img,x,y,size,facing,fw,fh,fi){
 
 function draw(){
     ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.save();
+    ctx.translate(-cam.x, -cam.y);   // cámara: todo lo del mundo se dibuja desplazado
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) drawTile(c,r);
     drawTerminal();
 
@@ -198,10 +205,10 @@ function draw(){
         drawSprite(bombWalk, enemy.x, enemy.y, ESIZE, enemy.facing, 20, 30, Math.floor(enemy.animFrame)%3);
         for (const b of enemy.bombs){
             if (!b.exploded){
-                const fi=Math.floor(Date.now()/150)%3, s=42;
+                const fi=Math.floor(Date.now()/150)%3, s=61;
                 if (bombImg.complete) ctx.drawImage(bombImg, fi*20,0,20,20, b.x-s/2, b.y-s/2, s, s);
             } else {
-                const fi=Math.min(Math.floor(b.et/80),3), s=120;
+                const fi=Math.min(Math.floor(b.et/80),3), s=175;
                 if (explImg.complete) ctx.drawImage(explImg, fi*38,0,38,34, b.x-s/2, b.y-s/2, s, s*(34/38));
             }
         }
@@ -218,6 +225,8 @@ function draw(){
         else ctx.drawImage(img, player.x, player.y, PSIZE, PSIZE);
     }
 
+    ctx.restore();   // fin de la cámara
+
     // Título dentro del mapa (ahorra espacio fuera del canvas)
     ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(cv.width/2-165, 5, 330, 28);
     ctx.fillStyle='#ffb454'; ctx.font='bold 15px monospace';
@@ -225,8 +234,17 @@ function draw(){
     ctx.fillText('NIVEL 5  ·  BOMBERMAN', cv.width/2, 20);
 }
 
+function updateCamera(){
+    const tx = player.x + PSIZE/2 - VIEW_W/2;
+    const ty = player.y + PSIZE/2 - VIEW_H/2;
+    cam.x += (tx - cam.x) * 0.12;
+    cam.y += (ty - cam.y) * 0.12;
+    cam.x = Math.max(0, Math.min(WORLD_W - VIEW_W, cam.x));
+    cam.y = Math.max(0, Math.min(WORLD_H - VIEW_H, cam.y));
+}
+
 let last=performance.now();
-function loop(t){ const dt=t-last; last=t; updatePlayer(dt); updateEnemy(dt); draw(); requestAnimationFrame(loop); }
+function loop(t){ const dt=t-last; last=t; updatePlayer(dt); updateEnemy(dt); updateCamera(); draw(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
 function openChallenge(){ challengeOpen=true; keys.up=keys.down=keys.left=keys.right=false;
