@@ -10,6 +10,7 @@ from levels.level2 import bp as level2_bp
 from levels.bomberman import bp as bomberman_bp
 from levels.contra import bp as contra_bp
 from levels.sonic import bp as sonic_bp
+from levels.doom import bp as doom_bp
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
@@ -19,11 +20,13 @@ app.register_blueprint(level2_bp)
 app.register_blueprint(bomberman_bp)
 app.register_blueprint(contra_bp)
 app.register_blueprint(sonic_bp)
+app.register_blueprint(doom_bp)
 
 # Mapea id de nivel -> plantilla del reto (solo los que ya están construidos)
 LEVEL_TEMPLATES = {
     2: "levels/contra.html",
     5: "levels/bomberman.html",
+    8: "levels/doom.html",
     9: "levels/sonic.html",
 }
 

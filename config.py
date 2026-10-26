@@ -32,5 +32,6 @@ LEVEL5_HALF2 = "sqli_e_idor}"
 LEVEL_FLAGS = {
     2: "FLAG{contra_file_upload_bypass}",
     5: LEVEL5_HALF1 + LEVEL5_HALF2,   # FLAG{bomberman_sqli_e_idor}
+    8: "FLAG{doom_sudo_privesc_root}",
     9: "FLAG{sonic_datos_en_metadatos}",
 }

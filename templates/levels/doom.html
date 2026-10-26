@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+  .arcade-stage{ padding:0 !important; }
+  .arcade-subtitle{ display:none !important; }
+  #level-inner{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:6px; }
+  #arena{ width:100%; height:100%; object-fit:contain; image-rendering:pixelated;
+    border:4px solid #000; border-radius:8px; background:#120d0a; box-shadow:0 0 24px rgba(0,0,0,.6); }
+
+  .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.8); display:none;
+    align-items:flex-start; justify-content:center; padding:20px; overflow:auto; z-index:9999; }
+  .sql-overlay.show{ display:flex; }
+  .sql-modal{ background:#0b0f16; border:3px solid #000; border-radius:12px; max-width:660px; width:100%; margin:auto;
+    box-shadow:0 0 40px rgba(255,90,90,.2),inset 0 0 0 2px #2a1a22; padding:18px; font-family:'Courier New',monospace; color:#e6edf3; }
+  .sql-modal h2{ font-family:'Press Start 2P',monospace; font-size:12px; color:#ff5a5a; margin:0 0 10px; letter-spacing:1px; }
+  .term{ background:#05080e; border:2px solid #223049; border-radius:6px; padding:12px; height:260px; overflow:auto;
+    font-size:.9rem; line-height:1.5; white-space:pre-wrap; word-break:break-word; color:#9ef7c3; }
+  .term .u{ color:#58a6ff; }
+  .prompt-row{ display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .prompt-row .ps{ color:#58a6ff; font-size:.9rem; white-space:nowrap; }
+  input[type=text]{ flex:1; min-width:0; background:#05080e; color:#e6edf3; border:2px solid #223049; border-radius:6px; padding:10px; font-family:'Courier New',monospace; font-size:1rem; }
+  input[type=text]:focus{ outline:none; border-color:#ff5a5a; }
+  .sbtns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  .sql-modal button{ font-family:'Press Start 2P',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; color:#0d1117;
+    border:3px solid #000; border-radius:8px; padding:11px 14px; box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25),0 4px 0 #000; }
+  .sql-modal button:active{ transform:translateY(4px); }
+  .btn-flag{ background:#3ddc84; } .btn-close{ background:#8b949e; }
+  .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; } .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
+  details{ margin-top:12px; } summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
+  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
+  .flagbox{ margin-top:14px; padding-top:12px; border-top:2px solid #223049; }
+  .flagbox label{ display:block; color:#8b949e; font-size:.82rem; margin-bottom:5px; }
+  .win{ display:none; margin-top:12px; text-align:center; color:#3ddc84; font-weight:bold; } .win.show{ display:block; }
+  .win a, .flagbox a{ color:#ff2fd6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="level-inner">
+  <canvas id="arena" width="480" height="300"></canvas>
+</div>
+{% endblock %}
+
+{% block controls_help %}
+  <strong>W S</strong> → Avanzar/Retroceder &nbsp;|&nbsp;
+  <strong>← →</strong> → Girar &nbsp;|&nbsp;
+  <strong>A D</strong> → Lateral &nbsp;|&nbsp;
+  <strong>E</strong> → Consola &nbsp;|&nbsp;
+  <a href="/map" style="color:#ff2fd6;">← Mapa</a>
+{% endblock %}
+
+{% block after_cabinet %}
+<div class="sql-overlay" id="challenge">
+  <div class="sql-modal">
+    <h2>▸ Consola — sesión SSH (usuario fabian)</h2>
+    <div class="term" id="term"><span class="u">Conectado por SSH como fabian@profundidad.</span>
+Escribe <b>help</b> para ver comandos. La flag está en /root/flag.txt (solo root).
+</div>
+    <div class="prompt-row">
+      <span class="ps">fabian@doom:~$</span>
+      <input type="text" id="cmd" autocomplete="off" spellcheck="false" placeholder="comando…">
+    </div>
+
+    <details>
+      <summary>¿Atascado? Pistas progresivas</summary>
+      <p class="hint"><strong>1.</strong> Mira quién eres y qué puedes: <code>whoami</code>, <code>id</code>. Lee <code>cat notas.txt</code>.</p>
+      <p class="hint"><strong>2.</strong> <code>cat /root/flag.txt</code> da <em>Permiso denegado</em> (eres usuario normal). Necesitas privilegios de <strong>root</strong>.</p>
+      <p class="hint"><strong>3.</strong> Revisa qué te dejaron ejecutar como root: <code>sudo -l</code>. Hay una <strong>mala configuración</strong>.</p>
+      <p class="hint"><strong>4.</strong> Si puedes correr <code>cat</code> como root sin contraseña: <code>sudo cat /root/flag.txt</code>. Eso es <strong>escalada de privilegios</strong>.</p>
+    </details>
+
+    <div class="flagbox">
+      <label for="flag">Enviar flag</label>
+      <div class="sbtns">
+        <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <button class="btn-flag" id="send">ENVIAR</button>
+        <button class="btn-close" id="close">CERRAR</button>
+      </div>
+      <div class="msg" id="flagmsg"></div>
+      <div class="win" id="win">✦ ¡ROOT! Siguiente nivel desbloqueado. <a href="/map">← Mapa</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/level_doom.js') }}"></script>
+<script>
+const term=document.getElementById('term'), cmdIn=document.getElementById('cmd');
+function printLine(txt, cls){ const span=document.createElement('div'); if(cls)span.className=cls; span.textContent=txt; term.appendChild(span); term.scrollTop=term.scrollHeight; }
+async function runCmd(){
+  const c=cmdIn.value; if(!c.trim()){ return; }
+  printLine('fabian@doom:~$ '+c, 'u'); cmdIn.value='';
+  try{
+    const r=await fetch('/level/doom/shell',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'cmd='+encodeURIComponent(c)});
+    const d=await r.json(); if(d.output) printLine(d.output);
+  }catch(e){ printLine('error de conexión'); }
+}
+cmdIn.addEventListener('keydown',e=>{ if(e.key==='Enter') runCmd(); });
+
+const flagmsg=document.getElementById('flagmsg');
+async function enviarFlag(){
+  const flag=document.getElementById('flag').value.trim(); if(!flag)return;
+  try{
+    const r=await fetch('/level/doom/submit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'flag='+encodeURIComponent(flag)});
+    const d=await r.json();
+    flagmsg.textContent=d.message; flagmsg.className='msg '+(d.ok?'ok':'err');
+    if(d.ok) document.getElementById('win').classList.add('show');
+  }catch(e){ flagmsg.textContent='Error al enviar.'; flagmsg.className='msg err'; }
+}
+document.getElementById('send').onclick=enviarFlag;
+document.getElementById('close').onclick=()=>window._closeChallenge();
+document.getElementById('flag').addEventListener('keydown',e=>{if(e.key==='Enter')enviarFlag();});
+</script>
+{% endblock %}
