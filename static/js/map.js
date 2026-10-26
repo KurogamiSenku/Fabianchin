@@ -167,7 +167,7 @@ const MARKERS = {
 
 // Efectos de Bomberman (bomba y explosión)
 const BOMB = { img: loadImg('/static/img/markers/bomb.png'),      fw:20, fh:20, frames:3, size:42 };
-const EXPL = { img: loadImg('/static/img/markers/explosion.png'), fw:40, fh:39, frames:5, size:130, ms:70 };
+const EXPL = { img: loadImg('/static/img/markers/explosion.png'), fw:38, fh:34, frames:4, size:140, ms:80 };
 
 function updateMarkers(dt) {
     const px = player.x + PLAYER_SIZE/2, py = player.y + PLAYER_SIZE - 10;  // pies del jugador
