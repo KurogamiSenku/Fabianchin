@@ -38,7 +38,7 @@ const plats = [
 // zonas de agua (huecos entre segmentos de suelo): caer ahí = reaparecer
 const WATER_Y = 384;
 
-const PW=40, PH=66, PSIZE=92;   // caja de colisión vs sprite dibujado
+const PW=40, PH=66, PSIZE=115;   // Fabiancho +25% (sprite); hitbox PW/PH sin cambios
 const player = { x:40, y:250, vx:0, vy:0, facing:'right', onGround:false,
     jumping:false, animFrame:0, animTimer:0, bvx:0 };
 let lastSafe = { x:40, y:250 };
@@ -144,6 +144,22 @@ function updateSoldiers(dt){
             s.fire = 935 + Math.random()*715;   // 45% más rápido que antes (1700+1300 -> *0.55)
         }
     }
+    // separación entre soldados (que no se queden unidos en uno)
+    const SEP = 42;
+    for (let i=0;i<soldiers.length;i++){
+        for (let j=i+1;j<soldiers.length;j++){
+            const a=soldiers[i], b=soldiers[j];
+            if (Math.abs(a.y-b.y) > 30) continue;   // solo si están a la misma altura
+            const dx=(b.x+19)-(a.x+19);
+            if (Math.abs(dx)<SEP){
+                const push=(SEP-Math.abs(dx))/2, dir=dx<0?-1:1;
+                a.x-=dir*push; b.x+=dir*push;
+                a.x=Math.max(a.min,Math.min(a.max,a.x));
+                b.x=Math.max(b.min,Math.min(b.max,b.x));
+            }
+        }
+    }
+
     // mover/colisionar bolas
     for (const b of bullets){
         b.x += b.vx; b.y += b.vy; b.ttl -= dt;
@@ -172,6 +188,17 @@ function drawBg(cam){
     ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
     // luna
     ctx.fillStyle='#d7e3c8'; ctx.beginPath(); ctx.arc(cv.width-90,70,26,0,Math.PI*2); ctx.fill();
+    // montañas lejanas con cumbres nevadas (parallax lento)
+    const moff=(cam*0.1)%320;
+    for (let i=-1;i<10;i++){
+        const mx=i*320 - moff, peak=108, by=235;
+        ctx.fillStyle='#223a4e';
+        ctx.beginPath(); ctx.moveTo(mx,by); ctx.lineTo(mx+160,peak); ctx.lineTo(mx+320,by); ctx.closePath(); ctx.fill();
+        // nieve en la cima
+        ctx.fillStyle='#e8eef0';
+        ctx.beginPath(); ctx.moveTo(mx+128,peak+30); ctx.lineTo(mx+160,peak); ctx.lineTo(mx+192,peak+30);
+        ctx.lineTo(mx+176,peak+24); ctx.lineTo(mx+160,peak+34); ctx.lineTo(mx+144,peak+24); ctx.closePath(); ctx.fill();
+    }
     // capas de selva (parallax)
     hill(cam,0.15, 230, 120, 260, '#0f2e3a');
     hill(cam,0.30, 250, 150, 200, '#123a30');
