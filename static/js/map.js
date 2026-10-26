@@ -138,8 +138,8 @@ let WALLS = [
 // --- NIVELES ACTUALIZADOS CON TUS POSICIONES ---
 const LEVELS = [
     { id: 1, name: "Nivel 1: Mario", desc: "Reconocimiento", x: 498, y: 392, marker: "mario_coin" },
-    { id: 2, name: "Nivel 2: Contra", desc: "Enumeración web", x: 956, y: 273 },
-    { id: 3, name: "Nivel 3: Mega Man", desc: "La máscara", x: 1310, y: 264 },
+    { id: 2, name: "Nivel 2: Contra", desc: "Enumeración web", x: 956, y: 273, marker: "contra" },
+    { id: 3, name: "Nivel 3: Mega Man", desc: "La máscara", x: 1310, y: 264, marker: "megaman" },
     { id: 4, name: "Nivel 4: Castlevania", desc: "Manipulación", x: 1610, y: 372 },
     { id: 5, name: "Nivel 5: Bomberman", desc: "File Upload", x: 250, y: 500 },
     { id: 6, name: "Nivel 6: Metal Slug", desc: "Burp Suite", x: 963, y: 501 },
@@ -158,7 +158,9 @@ const LEVELS = [
 const MARKERS = {
     mario_coin: { img: loadImg('/static/img/markers/mario_coin.png'), fw:34, fh:35, frames:4, fps:8,  size:66 },
     sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
-    doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104 }
+    doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104 },
+    contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92 },
+    megaman:    { img: loadImg('/static/img/markers/megaman.png'),    fw:32, fh:24, frames:1, fps:1,  size:78 }
 };
 
 const SPAWN_POINTS = [
