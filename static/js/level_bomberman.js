@@ -156,24 +156,65 @@ function updateEnemy(dt){
     }
 }
 
-function drawTile(c,r){
+function drawTile(targetCtx,c,r){
     const x=c*TILE,y=r*TILE;
     if (grid[r][c]===1){
-        ctx.fillStyle='#5b6473'; ctx.fillRect(x,y,TILE,TILE);
-        ctx.fillStyle='#737d8e'; ctx.fillRect(x+3,y+3,TILE-6,TILE-6);
-        ctx.fillStyle='rgba(255,255,255,.12)'; ctx.fillRect(x+3,y+3,TILE-6,5);
-        ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(x+3,y+TILE-8,TILE-6,5);
+        const block=targetCtx.createLinearGradient(x,y,x+TILE,y+TILE);
+        block.addColorStop(0,'#506b7e'); block.addColorStop(.48,'#30485d'); block.addColorStop(1,'#1b2c40');
+        targetCtx.fillStyle=block; targetCtx.fillRect(x,y,TILE,TILE);
+        targetCtx.fillStyle='#70899a'; targetCtx.fillRect(x+3,y+3,TILE-6,TILE-6);
+        targetCtx.fillStyle='#526e82'; targetCtx.fillRect(x+6,y+8,TILE-12,TILE-14);
+        targetCtx.fillStyle='rgba(209,239,255,.38)'; targetCtx.fillRect(x+6,y+6,TILE-12,2);
+        targetCtx.fillStyle='rgba(4,11,22,.55)'; targetCtx.fillRect(x+6,y+TILE-8,TILE-12,2);
+        targetCtx.fillStyle='#b8d2dc';
+        for(const [rx,ry] of [[7,7],[TILE-9,7],[7,TILE-9],[TILE-9,TILE-9]]){
+            targetCtx.fillRect(x+rx,y+ry,2,2);
+        }
+        targetCtx.strokeStyle='rgba(166,213,235,.16)'; targetCtx.lineWidth=1;
+        targetCtx.strokeRect(x+1.5,y+1.5,TILE-3,TILE-3);
     } else {
-        ctx.fillStyle=((c+r)%2===0)?'#143024':'#122b21'; ctx.fillRect(x,y,TILE,TILE);
+        const floor=targetCtx.createLinearGradient(x,y,x+TILE,y+TILE);
+        floor.addColorStop(0,((c+r)%2===0)?'#143b3c':'#102f37');
+        floor.addColorStop(1,((c+r)%2===0)?'#0d2934':'#122d36');
+        targetCtx.fillStyle=floor; targetCtx.fillRect(x,y,TILE,TILE);
+        targetCtx.strokeStyle='rgba(103,201,194,.12)'; targetCtx.lineWidth=1;
+        targetCtx.strokeRect(x+.5,y+.5,TILE-1,TILE-1);
+        targetCtx.fillStyle='rgba(104,218,206,.22)';
+        targetCtx.fillRect(x+5,y+5,2,2);
+        if((c+r)%3===0) targetCtx.fillRect(x+TILE-8,y+TILE-8,2,2);
     }
 }
+const terrainCanvas=document.createElement('canvas');
+terrainCanvas.width=cv.width; terrainCanvas.height=cv.height;
+const terrainCtx=terrainCanvas.getContext('2d');
+for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) drawTile(terrainCtx,c,r);
+
 function drawTerminal(){
     const x=TERM.c*TILE,y=TERM.r*TILE;
-    ctx.fillStyle='#0a0d14'; ctx.fillRect(x+6,y+30,TILE-12,TILE-34);
-    ctx.fillStyle='#1b2433'; ctx.fillRect(x+6,y+6,TILE-12,30);
-    ctx.fillStyle=Math.floor(Date.now()/500)%2?'#3ddc84':'#2ea968'; ctx.fillRect(x+10,y+10,TILE-20,20);
-    ctx.fillStyle='#0d1117'; ctx.font='10px monospace'; ctx.textAlign='center'; ctx.fillText('SQL',x+TILE/2,y+24);
-    if (nearTerminal() && !challengeOpen){ ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.fillText('[E]',x+TILE/2,y-6); }
+    const pulse=.5+.5*Math.sin(Date.now()/260);
+    ctx.save();
+    ctx.shadowColor='#44f5cf'; ctx.shadowBlur=10+12*pulse;
+    ctx.fillStyle='#101d2c'; ctx.fillRect(x+4,y+4,TILE-8,TILE-8);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#263a4d'; ctx.fillRect(x+7,y+7,TILE-14,24);
+    ctx.fillStyle='#66f2ce'; ctx.fillRect(x+10,y+10,TILE-20,16);
+    ctx.fillStyle='#07131e'; ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('SQL',x+TILE/2,y+18);
+    ctx.fillStyle='#536b7d'; ctx.fillRect(x+10,y+34,TILE-20,4);
+    ctx.fillStyle='#ffb454'; ctx.fillRect(x+12,y+40,5,3);
+    ctx.fillStyle='#54e5c4'; ctx.fillRect(x+TILE-17,y+40,5,3);
+    ctx.strokeStyle='rgba(124,255,224,.8)'; ctx.lineWidth=1;
+    ctx.strokeRect(x+4.5,y+4.5,TILE-9,TILE-9);
+    if (nearTerminal() && !challengeOpen){
+        const label='[ E ] ABRIR';
+        ctx.font='bold 9px monospace';
+        const labelWidth=ctx.measureText(label).width+14;
+        const labelX=x+TILE/2-labelWidth/2, labelY=y-20;
+        ctx.fillStyle='rgba(4,14,24,.94)'; ctx.fillRect(labelX,labelY,labelWidth,15);
+        ctx.strokeStyle='#ffb454'; ctx.strokeRect(labelX+.5,labelY+.5,labelWidth-1,14);
+        ctx.fillStyle='#ffe0a6'; ctx.textBaseline='middle'; ctx.fillText(label,x+TILE/2,labelY+8);
+    }
+    ctx.restore();
 }
 function drawSprite(img,x,y,size,facing,fw,fh,fi){
     if (!img.complete || !img.naturalWidth) return;
@@ -188,7 +229,8 @@ function drawSprite(img,x,y,size,facing,fw,fh,fi){
 
 function draw(){
     ctx.clearRect(0,0,cv.width,cv.height);
-    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) drawTile(c,r);
+    ctx.fillStyle='#07111d'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.drawImage(terrainCanvas,0,0);
     drawTerminal();
 
     // enemigos + sombras + sus bombas
@@ -199,6 +241,10 @@ function draw(){
         for (const b of enemy.bombs){
             if (!b.exploded){
                 const fi=Math.floor(Date.now()/150)%3, s=42;
+                const danger=Math.max(0,Math.min(1,1-b.fuse/1300));
+                ctx.strokeStyle=`rgba(255,${Math.round(174-95*danger)},${Math.round(64-35*danger)},${.3+.6*danger})`;
+                ctx.lineWidth=2;
+                ctx.beginPath(); ctx.arc(b.x,b.y,17+danger*5,0,Math.PI*2); ctx.stroke();
                 if (bombImg.complete) ctx.drawImage(bombImg, fi*20,0,20,20, b.x-s/2, b.y-s/2, s, s);
             } else {
                 const fi=Math.min(Math.floor(b.et/80),3), s=120;
@@ -219,10 +265,18 @@ function draw(){
     }
 
     // Título dentro del mapa (ahorra espacio fuera del canvas)
-    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(cv.width/2-165, 5, 330, 28);
-    ctx.fillStyle='#ffb454'; ctx.font='bold 15px monospace';
+    const hudX=cv.width/2-174, hudY=5, hudW=348, hudH=35;
+    ctx.fillStyle='rgba(5,13,24,.94)'; ctx.fillRect(hudX,hudY,hudW,hudH);
+    ctx.strokeStyle='rgba(89,208,221,.75)'; ctx.lineWidth=1;
+    ctx.strokeRect(hudX+.5,hudY+.5,hudW-1,hudH-1);
+    ctx.fillStyle='#ffb454'; ctx.fillRect(hudX+7,hudY+7,3,hudH-14);
+    ctx.fillStyle='#ffb454'; ctx.font='bold 14px monospace';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('NIVEL 5  ·  BOMBERMAN', cv.width/2, 20);
+    ctx.fillText('SECTOR 05  /  BOMBERMAN', cv.width/2, hudY+13);
+    ctx.fillStyle='#78b7c8'; ctx.font='bold 8px monospace';
+    ctx.fillText('INFILTRACIÓN  ·  SQLI / IDOR', cv.width/2, hudY+28);
+    ctx.strokeStyle='rgba(118,220,218,.7)'; ctx.lineWidth=2;
+    ctx.strokeRect(1,1,cv.width-2,cv.height-2);
 }
 
 let last=performance.now();

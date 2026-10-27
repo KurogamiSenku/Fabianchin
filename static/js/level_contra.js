@@ -9,6 +9,14 @@ cv.width = 760; cv.height = 420;
 
 const WORLD_W = 3400;
 const GRAV = 0.7, JUMP = -13.5, SPEED = 3.4;
+const sceneryCanvas = document.createElement('canvas');
+sceneryCanvas.width = WORLD_W;
+sceneryCanvas.height = cv.height;
+const sceneryCtx = sceneryCanvas.getContext('2d');
+const terrainCanvas = document.createElement('canvas');
+terrainCanvas.width = WORLD_W;
+terrainCanvas.height = cv.height;
+const terrainCtx = terrainCanvas.getContext('2d');
 
 function loadImg(src){ const i = new Image(); i.src = src; return i; }
 const sprites = { idle:[], walk:[], jump:[] };
@@ -19,49 +27,54 @@ const soldierImg = loadImg('/static/img/markers/contra.png');  // 4 frames 23x38
 
 // --- Plataformas (jungla con huecos de agua) ---
 const plats = [
-    {x:0,    y:330, w:600,  h:120},
-    {x:740,  y:330, w:640,  h:120},
-    {x:1520, y:330, w:700,  h:120},
-    {x:2360, y:330, w:1040, h:120},
-    // flotantes
-    {x:360,  y:250, w:120, h:20},
-    {x:880,  y:250, w:120, h:20},
-    {x:1660, y:250, w:140, h:20},
-    {x:2500, y:250, w:150, h:20},
-    // tarimas ESCALONADAS de la selva (subir de nivel para ir pasando)
-    {x:1080, y:270, w:110, h:18},
-    {x:1230, y:225, w:110, h:18},
-    {x:1380, y:180, w:130, h:18},   // mirador alto sobre el puente
-    {x:1960, y:265, w:110, h:18},
-    {x:2110, y:220, w:110, h:18},
-    {x:2260, y:175, w:120, h:18},
-    {x:2820, y:265, w:110, h:18},
-    {x:2970, y:220, w:120, h:18},
-    // puentes de tablas sobre el agua (estética Contra)
-    {x:600,  y:318, w:140, h:14, bridge:true},
-    {x:1380, y:318, w:140, h:14, bridge:true},
-    {x:2220, y:318, w:140, h:14, bridge:true},
+    {x:0,    y:250, w:520, h:100},
+    {x:600,  y:244, w:470, h:106},
+    {x:1150, y:260, w:340, h:90},
+    {x:1570, y:228, w:370, h:122},
+    {x:1990, y:248, w:420, h:102},
+    {x:2470, y:236, w:350, h:114},
+    {x:2870, y:258, w:530, h:92},
+    // ledges step up and down along the jungle cliffs
+    {x:330,  y:198, w:100, h:18},
+    {x:740,  y:186, w:110, h:18},
+    {x:970,  y:210, w:90,  h:18},
+    {x:1230, y:208, w:110, h:18},
+    {x:1370, y:166, w:100, h:18},
+    {x:1650, y:184, w:120, h:18},
+    {x:1800, y:146, w:100, h:18},
+    {x:2060, y:198, w:130, h:18},
+    {x:2290, y:180, w:100, h:18},
+    {x:2520, y:186, w:100, h:18},
+    {x:2670, y:154, w:110, h:18},
+    {x:2990, y:206, w:120, h:18},
+    // short bridges link the changing shoreline heights
+    {x:520,  y:247, w:80, h:14, bridge:true},
+    {x:1070, y:252, w:80, h:14, bridge:true},
+    {x:1490, y:244, w:80, h:14, bridge:true},
+    {x:1940, y:238, w:50, h:14, bridge:true},
+    {x:2410, y:242, w:60, h:14, bridge:true},
+    {x:2820, y:247, w:50, h:14, bridge:true},
 ];
 // zonas de agua (huecos entre segmentos de suelo): caer ahí = reaparecer
-const WATER_Y = 384;
+const WATER_Y = 350;
 
 const PW=40, PH=66, PSIZE=115;   // Fabiancho +25% (sprite); hitbox PW/PH sin cambios
-const player = { x:40, y:250, vx:0, vy:0, facing:'right', onGround:false,
+const player = { x:40, y:170, vx:0, vy:0, facing:'right', onGround:false,
     jumping:false, animFrame:0, animTimer:0, bvx:0 };
-let lastSafe = { x:40, y:250 };
+let lastSafe = { x:40, y:170 };
 
-const GUARD = { x:3180, y:330-70 };   // puesto de guardia sobre el suelo final
+const GUARD = { x:3180, y:258-70 };
 
 // Soldados Contra que patrullan, empujan y disparan bolas
-const SOLDIER_Y = 330 - 68;   // más arriba (antes quedaban hundidos en el suelo)
 const soldiers = [
-    { x:320,  y:SOLDIER_Y, dir:1, min:60,   max:540,  f:0, ft:0, fire:900 },
-    { x:1000, y:SOLDIER_Y, dir:1, min:760,  max:1340, f:0, ft:0, fire:1300 },
-    { x:1200, y:SOLDIER_Y, dir:-1,min:760,  max:1340, f:0, ft:0, fire:1800 },
-    { x:1700, y:SOLDIER_Y, dir:-1,min:1520, max:2180, f:0, ft:0, fire:1500 },
-    { x:2050, y:SOLDIER_Y, dir:1, min:1520, max:2180, f:0, ft:0, fire:2200 },
-    { x:2550, y:SOLDIER_Y, dir:1, min:2380, max:3080, f:0, ft:0, fire:1100 },
-    { x:2900, y:SOLDIER_Y, dir:-1,min:2380, max:3080, f:0, ft:0, fire:2600 },
+    { x:320,  y:182, dir:1,  min:60,   max:470,  f:0, ft:0, fire:900 },
+    { x:760,  y:176, dir:1,  min:640,  max:1000, f:0, ft:0, fire:1300 },
+    { x:960,  y:176, dir:-1, min:640,  max:1000, f:0, ft:0, fire:1800 },
+    { x:1290, y:192, dir:-1, min:1180, max:1450, f:0, ft:0, fire:1500 },
+    { x:1740, y:160, dir:1,  min:1620, max:1900, f:0, ft:0, fire:2200 },
+    { x:2100, y:180, dir:1,  min:2040, max:2370, f:0, ft:0, fire:1100 },
+    { x:2550, y:168, dir:-1, min:2500, max:2780, f:0, ft:0, fire:2600 },
+    { x:3000, y:190, dir:1,  min:2910, max:3300, f:0, ft:0, fire:1600 },
 ];
 const bullets = [];   // bolas disparadas
 
@@ -180,74 +193,136 @@ function updateSoldiers(dt){
     for (let i=bullets.length-1;i>=0;i--){ if (bullets[i].ttl<=0) bullets.splice(i,1); }
 }
 
-function hill(cam, par, base, amp, step, color){
-    ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(0,cv.height);
-    const off=(cam*par)%step;
-    for (let x=-off; x<=cv.width+step; x+=step){
-        ctx.lineTo(x, base); ctx.lineTo(x+step/2, base-amp);
+function buildScenery(){
+    const g=sceneryCtx.createLinearGradient(0,0,0,cv.height);
+    g.addColorStop(0,'#03060a'); g.addColorStop(.58,'#07131d'); g.addColorStop(1,'#103b33');
+    sceneryCtx.fillStyle=g; sceneryCtx.fillRect(0,0,WORLD_W,cv.height);
+    for(let x=14,index=0;x<WORLD_W;x+=46,index++){
+        const sy=18+(index*37%112);
+        sceneryCtx.fillStyle=index%3===0?'#62d9f4':'#d7e8e9';
+        sceneryCtx.fillRect(x,sy,index%4===0?2:1,index%4===0?2:1);
     }
-    ctx.lineTo(cv.width,cv.height); ctx.closePath(); ctx.fill();
+    for(let mx=-100,index=0;mx<WORLD_W;mx+=240,index++){
+        const base=226, peak=112+(index%3)*15;
+        sceneryCtx.fillStyle=index%2?'#253844':'#1b303a';
+        sceneryCtx.beginPath(); sceneryCtx.moveTo(mx,base); sceneryCtx.lineTo(mx+67,peak+56); sceneryCtx.lineTo(mx+116,peak);
+        sceneryCtx.lineTo(mx+181,peak+62); sceneryCtx.lineTo(mx+240,base); sceneryCtx.closePath(); sceneryCtx.fill();
+        sceneryCtx.fillStyle='#b9c9c8';
+        sceneryCtx.beginPath(); sceneryCtx.moveTo(mx+91,peak+39); sceneryCtx.lineTo(mx+116,peak); sceneryCtx.lineTo(mx+141,peak+38);
+        sceneryCtx.lineTo(mx+125,peak+31); sceneryCtx.lineTo(mx+116,peak+38); sceneryCtx.lineTo(mx+106,peak+30); sceneryCtx.closePath(); sceneryCtx.fill();
+        sceneryCtx.fillStyle='#edf2e8';
+        sceneryCtx.beginPath(); sceneryCtx.moveTo(mx+57,peak+73); sceneryCtx.lineTo(mx+67,peak+56); sceneryCtx.lineTo(mx+78,peak+76);
+        sceneryCtx.lineTo(mx+68,peak+71); sceneryCtx.closePath(); sceneryCtx.fill();
+    }
+    for(let x=-30,index=0;x<WORLD_W;x+=34,index++){
+        sceneryCtx.fillStyle='#173c24'; sceneryCtx.fillRect(x+13,218,8,35);
+        sceneryCtx.fillStyle='#174b27';
+        sceneryCtx.beginPath(); sceneryCtx.arc(x+17,215,19,0,Math.PI*2); sceneryCtx.arc(x+5,224,13,0,Math.PI*2);
+        sceneryCtx.arc(x+28,224,14,0,Math.PI*2); sceneryCtx.fill();
+        sceneryCtx.fillStyle='#237335';
+        sceneryCtx.beginPath(); sceneryCtx.arc(x+13,209,11,0,Math.PI*2); sceneryCtx.arc(x+25,216,10,0,Math.PI*2);
+        sceneryCtx.arc(x+2,218,8,0,Math.PI*2); sceneryCtx.fill();
+        sceneryCtx.fillStyle='#49a637';
+        sceneryCtx.fillRect(x+7,205,5,3); sceneryCtx.fillRect(x+23,211,4,3);
+    }
 }
 function drawBg(cam){
-    // cielo nocturno de jungla
-    const g=ctx.createLinearGradient(0,0,0,cv.height);
-    g.addColorStop(0,'#071327'); g.addColorStop(0.5,'#0c2a2c'); g.addColorStop(1,'#0a2218');
-    ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
-    // luna
-    ctx.fillStyle='#d7e3c8'; ctx.beginPath(); ctx.arc(cv.width-90,70,26,0,Math.PI*2); ctx.fill();
-    // montañas lejanas con cumbres nevadas (parallax lento)
-    const moff=(cam*0.1)%320;
-    for (let i=-1;i<10;i++){
-        const mx=i*320 - moff, peak=108, by=235;
-        ctx.fillStyle='#223a4e';
-        ctx.beginPath(); ctx.moveTo(mx,by); ctx.lineTo(mx+160,peak); ctx.lineTo(mx+320,by); ctx.closePath(); ctx.fill();
-        // nieve en la cima
-        ctx.fillStyle='#e8eef0';
-        ctx.beginPath(); ctx.moveTo(mx+128,peak+30); ctx.lineTo(mx+160,peak); ctx.lineTo(mx+192,peak+30);
-        ctx.lineTo(mx+176,peak+24); ctx.lineTo(mx+160,peak+34); ctx.lineTo(mx+144,peak+24); ctx.closePath(); ctx.fill();
-    }
-    // capas de selva (parallax)
-    hill(cam,0.15, 230, 120, 260, '#0f2e3a');
-    hill(cam,0.30, 250, 150, 200, '#123a30');
-    hill(cam,0.50, 275, 120, 150, '#16492f');
-    // copas de árboles cercanas
-    ctx.fillStyle='#0d3322';
-    for (let i=-1;i<10;i++){ const tx=i*150 - (cam*0.5)%150; ctx.beginPath();
-        ctx.arc(tx,290,46,Math.PI,0); ctx.fill(); }
-    // agua
+    ctx.drawImage(sceneryCanvas,cam,0,cv.width,cv.height,0,0,cv.width,cv.height);
     const w=ctx.createLinearGradient(0,WATER_Y,0,cv.height);
-    w.addColorStop(0,'#1d7fa8'); w.addColorStop(1,'#0b4a6b');
+    w.addColorStop(0,'#159bf2'); w.addColorStop(.28,'#087be5'); w.addColorStop(1,'#0753c5');
     ctx.fillStyle=w; ctx.fillRect(0, WATER_Y, cv.width, cv.height-WATER_Y);
-    // reflejo
-    ctx.fillStyle='rgba(255,255,255,.08)';
-    for (let i=0;i<cv.width;i+=40){ ctx.fillRect(i+((Date.now()/80)%40), WATER_Y+10, 18, 2); }
+    const waveOffset=(Date.now()/55)%44;
+    for(let i=-1;i<20;i++){
+        const wx=i*44-waveOffset+(cam%44), wy=WATER_Y+12+(i%3)*12;
+        ctx.fillStyle='rgba(190,238,255,.52)'; ctx.fillRect(wx,wy,18,2);
+        ctx.fillStyle='rgba(47,183,255,.65)'; ctx.fillRect(wx+11,wy+5,23,2);
+    }
 }
-function drawPlat(p, cam){
+function drawPlat(p, cam, targetCtx=ctx){
     const x=p.x-cam;
-    if (x>cv.width || x+p.w<0) return;
+    if (targetCtx===ctx && (x>cv.width || x+p.w<0)) return;
     if (p.bridge){
-        // puente de tablas con cuerdas (estética Contra)
-        ctx.strokeStyle='#5b3c1c'; ctx.lineWidth=2;
-        ctx.beginPath(); ctx.moveTo(x,p.y); ctx.lineTo(x+p.w,p.y); ctx.stroke();
-        for (let i=0;i<=p.w;i+=12){
-            ctx.fillStyle=(i/12)%2?'#8a5a2c':'#9c6a34';
-            ctx.fillRect(x+i, p.y, 10, p.h);
+        targetCtx.fillStyle='#27313a'; targetCtx.fillRect(x,p.y,p.w,p.h);
+        targetCtx.fillStyle='#aab4b8'; targetCtx.fillRect(x,p.y,p.w,3);
+        targetCtx.fillStyle='#65747c'; targetCtx.fillRect(x,p.y+11,p.w,3);
+        for(let i=0;i<=p.w;i+=20){
+            targetCtx.fillStyle='#d8dfdc'; targetCtx.fillRect(x+i,p.y-16,3,16);
+            targetCtx.fillStyle='#e93f37'; targetCtx.fillRect(x+i+4,p.y-12,10,3);
+            targetCtx.fillStyle='#283743'; targetCtx.fillRect(x+i,p.y+3,3,11);
+            targetCtx.fillStyle='#9da9ad'; targetCtx.fillRect(x+i+4,p.y+5,12,3);
         }
-        ctx.strokeStyle='#3a2612'; ctx.lineWidth=1;
-        ctx.beginPath(); ctx.moveTo(x,p.y+p.h); ctx.lineTo(x+p.w,p.y+p.h); ctx.stroke();
+        targetCtx.fillStyle='#879398'; targetCtx.fillRect(x,p.y+4,p.w,2);
         return;
     }
-    // acantilado: tierra + roca + césped encima
-    ctx.fillStyle='#5a3d22'; ctx.fillRect(x,p.y,p.w,p.h);
-    ctx.fillStyle='#6b4a28'; ctx.fillRect(x+2,p.y+8,p.w-4,p.h-8);
-    // vetas de roca
-    ctx.fillStyle='rgba(0,0,0,.18)';
-    for (let i=10;i<p.w;i+=46) ctx.fillRect(x+i, p.y+16, 3, p.h-18);
-    // césped con borde irregular
-    ctx.fillStyle='#3ddc84'; ctx.fillRect(x,p.y,p.w,9);
-    ctx.fillStyle='#2ea968'; ctx.fillRect(x,p.y+9,p.w,5);
-    ctx.fillStyle='#3ddc84';
-    for (let i=0;i<p.w;i+=10) ctx.fillRect(x+i, p.y-3, 5, 4);
+    if(p.h<=20){
+        targetCtx.fillStyle='#533d1f'; targetCtx.fillRect(x,p.y+5,p.w,p.h-5);
+        targetCtx.fillStyle='#99702e'; targetCtx.fillRect(x+3,p.y+6,p.w-6,5);
+        targetCtx.fillStyle='#5dcc3f'; targetCtx.fillRect(x,p.y-3,p.w,7);
+        targetCtx.fillStyle='#a4e94b';
+        for(let i=3;i<p.w;i+=12) targetCtx.fillRect(x+i,p.y-5+(i%3),6,3);
+        return;
+    }
+    const worldX=localX=>p.x+localX;
+    const shoreY=localX=>{
+        const wx=worldX(localX);
+        const seed=Math.sin(Math.floor(wx/shoreStep)*127.1+p.x*311.7)*43758.5453;
+        const irregular=seed-Math.floor(seed);
+        return p.y+p.h+10+irregular*19+Math.abs(Math.sin(wx*.017))*8;
+    };
+    const shoreStep=18;
+    targetCtx.save();
+    targetCtx.beginPath();
+    targetCtx.moveTo(x,p.y+9);
+    targetCtx.lineTo(x+p.w,p.y+9);
+    targetCtx.lineTo(x+p.w,shoreY(p.w));
+    for(let localX=p.w-shoreStep;localX>0;localX-=shoreStep){
+        targetCtx.lineTo(x+localX,shoreY(localX));
+    }
+    targetCtx.lineTo(x,shoreY(0));
+    targetCtx.closePath();
+    targetCtx.fillStyle='#523719';
+    targetCtx.fill();
+    targetCtx.clip();
+    for(let row=0;row<Math.ceil((p.h+36)/25);row++){
+        for(let col=0;col<p.w;col+=42){
+            const rx=x+col+(row%2?7:0), rw=Math.min(42,x+p.w-rx);
+            if(rx>=x+p.w) continue;
+            const rh=23+(row+col/42)%3*2, ry=p.y+12+row*25;
+            const stone=(row+col/42)%3;
+            targetCtx.fillStyle=stone===0?'#c08b2c':stone===1?'#a87824':'#d0a13a';
+            targetCtx.beginPath(); targetCtx.moveTo(rx+2,ry+7); targetCtx.lineTo(rx+9,ry+2);
+            targetCtx.lineTo(rx+rw-6,ry); targetCtx.lineTo(rx+rw-1,ry+8);
+            targetCtx.lineTo(rx+rw-5,ry+rh-3); targetCtx.lineTo(rx+rw-14,ry+rh);
+            targetCtx.lineTo(rx+4,ry+rh-4); targetCtx.closePath(); targetCtx.fill();
+            targetCtx.fillStyle='rgba(255,224,123,.58)';
+            targetCtx.beginPath(); targetCtx.moveTo(rx+9,ry+4); targetCtx.lineTo(rx+rw*.65,ry+3);
+            targetCtx.lineTo(rx+rw*.48,ry+rh*.48); targetCtx.lineTo(rx+5,ry+rh*.58); targetCtx.closePath(); targetCtx.fill();
+            targetCtx.fillStyle='rgba(48,34,13,.44)';
+            targetCtx.beginPath(); targetCtx.moveTo(rx+rw*.58,ry+rh*.46); targetCtx.lineTo(rx+rw-4,ry+8);
+            targetCtx.lineTo(rx+rw-5,ry+rh-3); targetCtx.lineTo(rx+rw-14,ry+rh); targetCtx.closePath(); targetCtx.fill();
+        }
+    }
+    targetCtx.restore();
+    targetCtx.fillStyle='#328b22'; targetCtx.fillRect(x,p.y,p.w,11);
+    targetCtx.fillStyle='#64d832'; targetCtx.fillRect(x,p.y,p.w,6);
+    targetCtx.fillStyle='#b4ef4b';
+    for(let i=0;i<p.w;i+=9) targetCtx.fillRect(x+i,p.y-3+(i%3),5,4);
+    targetCtx.fillStyle='rgba(212,255,144,.72)';
+    for(let i=5;i<p.w;i+=28) targetCtx.fillRect(x+i,p.y+2,3,2);
+    if(p.y+p.h>=WATER_Y){
+        targetCtx.save();
+        targetCtx.beginPath();
+        targetCtx.moveTo(x,shoreY(0));
+        for(let localX=shoreStep;localX<p.w;localX+=shoreStep){
+            targetCtx.lineTo(x+localX,shoreY(localX));
+        }
+        targetCtx.lineTo(x+p.w,shoreY(p.w));
+        targetCtx.setLineDash([5,4]);
+        targetCtx.strokeStyle='#e5fbff'; targetCtx.lineWidth=2; targetCtx.stroke();
+        targetCtx.setLineDash([3,5]);
+        targetCtx.strokeStyle='rgba(73,207,255,.9)'; targetCtx.lineWidth=1; targetCtx.stroke();
+        targetCtx.restore();
+    }
 }
 function drawGuard(cam){
     const x=GUARD.x-cam, y=GUARD.y;
@@ -266,16 +341,19 @@ function drawSprite(img,sx,sy,sw,sh,dx,dy,dw,dh,flip){
     else ctx.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);
 }
 
+buildScenery();
+for(const p of plats) drawPlat(p,0,terrainCtx);
+
 function draw(){
     const cam = Math.max(0, Math.min(WORLD_W-cv.width, player.x+PW/2-cv.width/2));
     drawBg(cam);
-    for (const p of plats) drawPlat(p, cam);
+    ctx.drawImage(terrainCanvas,cam,0,cv.width,cv.height,0,0,cv.width,cv.height);
     drawGuard(cam);
 
     // soldados (sombra en el suelo, aunque el sprite esté más arriba)
     for (const s of soldiers){
         const x=s.x-cam; if (x>cv.width||x+40<0) continue;
-        ctx.fillStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(x+19, 328, 15,4,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(x+19, s.y+62, 15,4,0,0,Math.PI*2); ctx.fill();
         drawSprite(soldierImg, (Math.floor(s.f)%4)*23,0,23,38, x, s.y, 38, 62, s.dir>0);
     }
 

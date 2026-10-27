@@ -267,7 +267,14 @@ const player = {
     bounceVx: 0, bounceVy: 0
 };
 
-const camera = { x: 0, y: 0 };
+const MAP_INTRO_DURATION = 2200;
+const MAP_OVERVIEW_ZOOM = 0.34;
+let mapIntroElapsed = 0;
+const camera = {
+    x: (WORLD_WIDTH - VIEW_WIDTH) / 2,
+    y: (WORLD_HEIGHT - VIEW_HEIGHT) / 2,
+    zoom: MAP_OVERVIEW_ZOOM
+};
 const keys = { up: false, down: false, left: false, right: false };
 let canInteract = true;
 
@@ -668,7 +675,7 @@ function update(dt, time) {
         player.bounceVy = player.bounceVy / bmag * MAX_BOUNCE;
     }
 
-    updateCamera();
+    updateCamera(dt);
 }
 
 function updateRats(dt, time) {
@@ -940,20 +947,72 @@ function checkWallCollision(nx, ny) {
     return false;
 }
 
-function updateCamera() {
-    const targetX = player.x + PLAYER_SIZE / 2 - VIEW_WIDTH / 2;
-    const targetY = player.y + PLAYER_SIZE / 2 - VIEW_HEIGHT / 2;
-    camera.x += (targetX - camera.x) * 0.1;
-    camera.y += (targetY - camera.y) * 0.1;
-    camera.x = Math.max(0, Math.min(WORLD_WIDTH - VIEW_WIDTH, camera.x));
-    camera.y = Math.max(0, Math.min(WORLD_HEIGHT - VIEW_HEIGHT, camera.y));
+function updateCamera(dt) {
+    const targetX = Math.max(0, Math.min(WORLD_WIDTH - VIEW_WIDTH, player.x + PLAYER_SIZE / 2 - VIEW_WIDTH / 2));
+    const targetY = Math.max(0, Math.min(WORLD_HEIGHT - VIEW_HEIGHT, player.y + PLAYER_SIZE / 2 - VIEW_HEIGHT / 2));
+    if (!EDIT_MODE && mapIntroElapsed < MAP_INTRO_DURATION) {
+        mapIntroElapsed = Math.min(MAP_INTRO_DURATION, mapIntroElapsed + dt);
+        const progress = mapIntroElapsed / MAP_INTRO_DURATION;
+        const ease = progress * progress * (3 - 2 * progress);
+        const overviewX = (WORLD_WIDTH - VIEW_WIDTH) / 2;
+        const overviewY = (WORLD_HEIGHT - VIEW_HEIGHT) / 2;
+        camera.x = overviewX + (targetX - overviewX) * ease;
+        camera.y = overviewY + (targetY - overviewY) * ease;
+        camera.zoom = MAP_OVERVIEW_ZOOM + (1 - MAP_OVERVIEW_ZOOM) * ease;
+    } else {
+        camera.x += (targetX - camera.x) * 0.1;
+        camera.y += (targetY - camera.y) * 0.1;
+        camera.zoom = 1;
+    }
+}
+
+function drawLevelLabel(name, x, y, isUnlocked) {
+    const status = isUnlocked ? 'DISPONIBLE' : 'BLOQUEADO';
+    ctx.font = 'bold 20px monospace';
+    const nameWidth = ctx.measureText(name).width;
+    ctx.font = 'bold 12px monospace';
+    const statusWidth = ctx.measureText(status).width;
+    const width = Math.max(nameWidth, statusWidth) + 22;
+    const height = 48, left = x - width / 2, top = y - height / 2;
+    const color = isUnlocked ? '#4de4c2' : '#ff6978';
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 9;
+    ctx.fillStyle = 'rgba(9, 17, 29, 0.92)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(left + 6, top);
+    ctx.lineTo(left + width - 6, top);
+    ctx.quadraticCurveTo(left + width, top, left + width, top + 6);
+    ctx.lineTo(left + width, top + height - 6);
+    ctx.quadraticCurveTo(left + width, top + height, left + width - 6, top + height);
+    ctx.lineTo(left + 6, top + height);
+    ctx.quadraticCurveTo(left, top + height, left, top + height - 6);
+    ctx.lineTo(left, top + 6);
+    ctx.quadraticCurveTo(left, top, left + 6, top);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isUnlocked ? '#82f5d6' : '#ff929d';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(status, x, top + 13);
+    ctx.fillStyle = '#fff4d6';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText(name, x, top + 35);
+    ctx.restore();
 }
 
 function draw() {
     ctx.fillStyle = '#11151c'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.translate(-camera.x, -camera.y);
+    ctx.translate(VIEW_WIDTH / 2, VIEW_HEIGHT / 2);
+    ctx.scale(camera.zoom, camera.zoom);
+    ctx.translate(-camera.x - VIEW_WIDTH / 2, -camera.y - VIEW_HEIGHT / 2);
 
     if (backgroundImg.complete && backgroundImg.naturalWidth > 0) {
         ctx.drawImage(backgroundImg, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -993,7 +1052,7 @@ function draw() {
             const dw = mk.fw * scale, dh = mk.size;
             const sy = mk.dir4 ? (level._dir || 0) * mk.fh : 0;   // fila por dirección
             ctx.save();
-            if (!isUnlocked) ctx.globalAlpha = 0.45;   // bloqueado = atenuado
+            if (!isUnlocked) ctx.globalAlpha = 0.68;   // bloqueado = atenuado
             ctx.shadowBlur = 18; ctx.shadowColor = coreColor;
             if (!mk.dir4 && level._facing === 'left') {
                 ctx.translate(mx + dw/2, my - dh/2); ctx.scale(-1, 1);
@@ -1009,7 +1068,11 @@ function draw() {
             ctx.beginPath(); ctx.arc(level.x, coinY, 30, 0, Math.PI * 2); ctx.fillStyle = coreColor; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
             ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
         }
-        ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.name, level.x, coinY - 45);
+        const labelX = mk ? level.x + (level._rx || 0) : level.x;
+        const labelY = mk && mk.img.complete && mk.img.naturalWidth > 0
+            ? coinY + (level._ry || 0) - mk.size / 2 - 30
+            : coinY - 75;
+        drawLevelLabel(level.name, labelX, labelY, isUnlocked);
         const dist = Math.hypot(player.x + PLAYER_SIZE/2 - level.x, player.y + PLAYER_SIZE/2 - level.y);
         if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 22px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
     });

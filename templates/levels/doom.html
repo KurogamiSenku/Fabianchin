@@ -77,7 +77,7 @@ Escribe <b>help</b> para ver comandos. La flag está en /root/flag.txt (solo roo
       <div class="sbtns">
         <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
         <button class="btn-flag" id="send">ENVIAR</button>
-        <button class="btn-close" id="close">CERRAR</button>
+        <button type="button" class="btn-close" id="close">CERRAR</button>
       </div>
       <div class="msg" id="flagmsg"></div>
       <div class="win" id="win">✦ ¡ROOT! Siguiente nivel desbloqueado. <a href="/map">← Mapa</a></div>
@@ -89,8 +89,8 @@ Escribe <b>help</b> para ver comandos. La flag está en /root/flag.txt (solo roo
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/level_doom.js') }}"></script>
 <script>
-const term=document.getElementById('term'), cmdIn=document.getElementById('cmd');
-function printLine(txt, cls){ const span=document.createElement('div'); if(cls)span.className=cls; span.textContent=txt; term.appendChild(span); term.scrollTop=term.scrollHeight; }
+const termOutput=document.getElementById('term'), cmdIn=document.getElementById('cmd');
+function printLine(txt, cls){ const span=document.createElement('div'); if(cls)span.className=cls; span.textContent=txt; termOutput.appendChild(span); termOutput.scrollTop=termOutput.scrollHeight; }
 async function runCmd(){
   const c=cmdIn.value; if(!c.trim()){ return; }
   printLine('fabian@doom:~$ '+c, 'u'); cmdIn.value='';
@@ -112,7 +112,11 @@ async function enviarFlag(){
   }catch(e){ flagmsg.textContent='Error al enviar.'; flagmsg.className='msg err'; }
 }
 document.getElementById('send').onclick=enviarFlag;
-document.getElementById('close').onclick=()=>window._closeChallenge();
+document.getElementById('close').addEventListener('click',e=>{
+  e.preventDefault();
+  e.stopPropagation();
+  window._closeChallenge();
+});
 document.getElementById('flag').addEventListener('keydown',e=>{if(e.key==='Enter')enviarFlag();});
 </script>
 {% endblock %}
