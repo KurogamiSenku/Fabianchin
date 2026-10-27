@@ -28,7 +28,14 @@ const KEY_DIR = {
     'ArrowRight': 'right','d': 'right','D': 'right',
 };
 
+// No capturar teclas mientras se escribe en un campo de texto (inputs, etc.)
+function _typingInField(e){
+    const t = e.target || document.activeElement;
+    return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+}
+
 window.addEventListener('keydown', (e) => {
+    if (_typingInField(e)) return;
     const dir = KEY_DIR[e.key];
     if (dir) { DIRS[dir] = true; e.preventDefault(); }
     if (e.key === ' ') { jumpVisual?.classList.add('pressed'); e.preventDefault(); }
@@ -37,6 +44,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
+    if (_typingInField(e)) return;
     const dir = KEY_DIR[e.key];
     if (dir) { DIRS[dir] = false; }
     if (e.key === ' ') { jumpVisual?.classList.remove('pressed'); }

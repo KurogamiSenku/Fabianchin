@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+  /* El nivel vive dentro de la pantalla del arcade */
+  .arcade-stage{ padding:0 !important; }
+  /* Quitar el subtítulo del menú que sobra en el nivel (da espacio) */
+  .arcade-subtitle{ display:none !important; }
+  #level-inner{ width:100%; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:8px; padding:10px; min-height:0; }
+  #level-inner .ltitle{ font-family:'Press Start 2P',monospace; font-size:10px; color:#ffb454; letter-spacing:1px; flex:0 0 auto; }
+  #arena{ flex:1 1 auto; min-height:0; width:auto; max-width:100%; height:auto; object-fit:contain;
+    image-rendering:pixelated; border:4px solid #111b2b; border-radius:8px; background:#07111d;
+    box-shadow:0 0 0 2px #253c59, 0 0 28px rgba(42,184,255,.22), 0 0 48px rgba(255,180,84,.1); }
+  #level-inner .lhelp{ color:#8b949e; font-size:.85rem; text-align:center; line-height:1.6; }
+  #level-inner .lhelp .k{ display:inline-block; background:#0d1420; border:1px solid #2a3344; border-radius:4px; padding:1px 7px; color:#e6edf3; margin:0 1px; }
+
+  /* Overlay del reto SQLi (fuera de la cabina para no escalarse) */
+  .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.78); display:none;
+    align-items:flex-start; justify-content:center; padding:20px; overflow:auto; z-index:9999; }
+  .sql-overlay.show{ display:flex; }
+  .sql-modal{ background:#121a26; border:3px solid #000; border-radius:12px; max-width:640px; width:100%; margin:auto;
+    box-shadow:0 0 40px rgba(88,166,255,.25),inset 0 0 0 2px #223049; padding:20px;
+    font-family:'Courier New',monospace; color:#e6edf3; }
+  .sql-modal h2{ font-family:'Press Start 2P',monospace; font-size:12px; color:#ffb454; margin:0 0 6px; letter-spacing:1px; }
+  .sql-modal .sub{ color:#8b949e; font-size:.9rem; margin:0 0 14px; }
+  .sql-modal label{ display:block; font-size:.82rem; color:#8b949e; margin:10px 0 5px; letter-spacing:1px; }
+  .sql-modal input[type=text]{ width:100%; background:#05080e; color:#e6edf3; border:2px solid #223049; border-radius:6px; padding:11px; font-family:'Courier New',monospace; font-size:1rem; }
+  .sql-modal input[type=text]:focus{ outline:none; border-color:#58a6ff; }
+  .warn{ color:#ffb454; font-size:.8rem; margin-top:5px; min-height:1em; }
+  .sbtns{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .sql-modal button{ font-family:'Press Start 2P',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; color:#0d1117;
+    border:3px solid #000; border-radius:8px; padding:12px 15px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.35),inset 3px 3px 0 rgba(255,255,255,.25),0 4px 0 #000; }
+  .sql-modal button:active{ transform:translateY(4px); }
+  .btn-login{ background:#58a6ff; } .btn-flag{ background:#3ddc84; } .btn-close{ background:#8b949e; }
+  pre.q{ background:#05080e; color:#9ef7c3; border:2px solid #223049; border-radius:6px; padding:11px; margin:12px 0 0;
+    white-space:pre-wrap; word-break:break-word; font-size:.86rem; line-height:1.5; }
+  .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; }
+  .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
+  .flagbox{ margin-top:16px; padding-top:14px; border-top:2px solid #223049; }
+  .sql-modal details{ margin-top:12px; } .sql-modal summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
+  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
+  .win{ display:none; margin-top:14px; text-align:center; color:#3ddc84; font-weight:bold; }
+  .win.show{ display:block; }
+  .win a, .flagbox a{ color:#ff2fd6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="level-inner">
+  <canvas id="arena" width="720" height="480"></canvas>
+</div>
+{% endblock %}
+
+{% block controls_help %}
+  <strong>WASD / ←↑↓→</strong> → Mover &nbsp;|&nbsp;
+  <strong>E</strong> → Abrir terminal &nbsp;|&nbsp;
+  <a href="/map" style="color:#ff2fd6;">← Volver al mapa</a>
+{% endblock %}
+
+{% block after_cabinet %}
+<div class="sql-overlay" id="challenge">
+  <div class="sql-modal">
+    <h2>▸ Panel de acceso — Bloque-terminal</h2>
+    <p class="sub">Solo un administrador puede desactivar el bloque. Entra al panel.</p>
+
+    <label for="u">Usuario</label>
+    <input type="text" id="u" maxlength="14" placeholder="usuario" autocomplete="off" spellcheck="false">
+    <label for="p">Contraseña</label>
+    <input type="text" id="p" maxlength="14" placeholder="contraseña" autocomplete="off" spellcheck="false">
+    <div class="warn" id="warn"></div>
+
+    <div class="sbtns">
+      <button class="btn-login" id="login">ACCEDER</button>
+      <button class="btn-close" id="close">CERRAR</button>
+    </div>
+
+    <pre class="q" id="qout">// La consulta ejecutada aparecerá aquí.</pre>
+    <div class="msg" id="loginmsg"></div>
+
+    <details>
+      <summary>¿Atascado? Pistas progresivas</summary>
+      <p class="hint"><strong>1.</strong> La consulta que aparece mete tu entrada <em>tal cual</em> en <code>... WHERE user='…' AND pass='…'</code>. Para inyectar necesitas una comilla <code>'</code>.</p>
+      <p class="hint"><strong>2.</strong> ¿Notaste que el campo <strong>no te deja escribir la comilla</strong> y tiene límite de caracteres? Eso es validación <em>del lado del cliente</em>… y esa nunca es seguridad real.</p>
+      <p class="hint"><strong>3.</strong> Abre <strong>F12</strong> (DevTools) → pestaña <em>Console</em> y asigna el valor directamente, saltándote el filtro:<br>
+        <code>document.getElementById('u').value = "admin' --"</code><br>
+        Luego pulsa ACCEDER. (También sirve: quitar el <code>maxlength</code> del input en el inspector, o reenviar la petición desde la pestaña Network.)</p>
+      <p class="hint"><strong>4.</strong> Al entrar como admin verás su <strong>nota</strong>: ahí está la <strong>primera mitad</strong> de la flag [1/2]. Otro payload válido: <code>' OR '1'='1' --</code></p>
+      <p class="hint"><strong>5.</strong> La nota dice que falta la otra mitad en un <strong>sector oculto</strong>… que está <em>desactivado en la interfaz</em>. Abre <strong>F12 → Elements</strong>, busca <code>id="sector-oculto"</code> y cambia su <code>display:none</code> a <code>block</code> (o quítale el atributo <code>hidden</code>).</p>
+    </details>
+
+    <!-- SECTOR OCULTO: desactivado en la interfaz. ¿display:none? (reto IDOR) -->
+    <div class="flagbox" id="sector-oculto" style="display:none">
+      <h2 style="color:#3ddc84;">▸ Sector oculto — Expedientes</h2>
+      <p class="sub">Consulta de expedientes de usuario. Solo deberías ver el tuyo (#3).</p>
+      <label for="rid">ID de expediente</label>
+      <div class="sbtns" style="margin-top:6px;">
+        <input type="text" id="rid" value="3" autocomplete="off" spellcheck="false" style="max-width:120px;">
+        <button class="btn-login" id="verrec">CONSULTAR</button>
+      </div>
+      <pre class="q" id="recout">// El expediente consultado aparecerá aquí.</pre>
+      <details>
+        <summary>Pista del sector oculto</summary>
+        <p class="hint">El <code>id</code> va directo en la URL (<code>/record?id=3</code>) y el servidor no comprueba que sea el tuyo. Cambia el id a <code>1</code> (el admin) para ver su expediente: ahí está la <strong>segunda mitad</strong> [2/2]. Eso es un <strong>IDOR</strong>.</p>
+      </details>
+    </div>
+
+    <div class="flagbox">
+      <label for="flag">Enviar flag (las dos mitades juntas)</label>
+      <div class="sbtns" style="margin-top:6px;">
+        <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <button class="btn-flag" id="send">ENVIAR</button>
+      </div>
+      <div class="msg" id="flagmsg"></div>
+      <div class="win" id="win">✦ ¡BLOQUE DESTRUIDO! Siguiente nivel desbloqueado. <a href="/map">← Mapa</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/level_bomberman.js') }}"></script>
+<script>
+// --- Defensa del lado del CLIENTE (a propósito débil): bloquea la comilla ---
+// Obliga a usar F12 para inyectar. El servidor SÍ es vulnerable.
+const warn=document.getElementById('warn');
+function blockQuote(e){
+  if(e.key==="'"){ e.preventDefault(); warn.textContent='⚠ Carácter no permitido por el formulario.';
+    setTimeout(()=>{warn.textContent='';},1500); }
+}
+document.getElementById('u').addEventListener('keydown', blockQuote);
+document.getElementById('p').addEventListener('keydown', blockQuote);
+
+const qout=document.getElementById('qout'), loginmsg=document.getElementById('loginmsg');
+async function acceder(){
+  const u=document.getElementById('u').value, p=document.getElementById('p').value;
+  const body='user='+encodeURIComponent(u)+'&pass='+encodeURIComponent(p);
+  try{
+    const r=await fetch('/level/bomberman/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const d=await r.json();
+    qout.textContent=d.query||'';
+    if(d.error){ loginmsg.textContent=d.error; loginmsg.className='msg err'; return; }
+    loginmsg.textContent=d.message + ((d.admin&&d.flag_hint)?('  →  nota del admin: '+d.flag_hint):'');
+    loginmsg.className='msg '+(d.ok?'ok':'err');
+  }catch(e){ loginmsg.textContent='Error de conexión.'; loginmsg.className='msg err'; }
+}
+document.getElementById('login').onclick=acceder;
+document.getElementById('p').addEventListener('keydown',e=>{if(e.key==='Enter')acceder();});
+document.getElementById('close').onclick=()=>window._closeChallenge();
+
+// --- Reto IDOR del sector oculto ---
+const recout=document.getElementById('recout');
+async function verRecord(){
+  const id=document.getElementById('rid').value.trim();
+  try{
+    const r=await fetch('/level/bomberman/record?id='+encodeURIComponent(id));
+    const d=await r.json();
+    if(!d.ok){ recout.textContent=d.message; return; }
+    recout.textContent='Expediente #'+d.id+'  ('+d.user+')\n'+d.nota;
+  }catch(e){ recout.textContent='Error de conexión.'; }
+}
+document.getElementById('verrec').onclick=verRecord;
+document.getElementById('rid').addEventListener('keydown',e=>{if(e.key==='Enter')verRecord();});
+
+const flagmsg=document.getElementById('flagmsg');
+async function enviarFlag(){
+  const flag=document.getElementById('flag').value.trim(); if(!flag)return;
+  try{
+    const r=await fetch('/level/bomberman/submit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'flag='+encodeURIComponent(flag)});
+    const d=await r.json();
+    flagmsg.textContent=d.message; flagmsg.className='msg '+(d.ok?'ok':'err');
+    if(d.ok) document.getElementById('win').classList.add('show');
+  }catch(e){ flagmsg.textContent='Error al enviar.'; flagmsg.className='msg err'; }
+}
+document.getElementById('send').onclick=enviarFlag;
+document.getElementById('flag').addEventListener('keydown',e=>{if(e.key==='Enter')enviarFlag();});
+</script>
+{% endblock %}

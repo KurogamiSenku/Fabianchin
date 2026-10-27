@@ -5,9 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UwUNTU CTF</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
     {% block head %}{% endblock %}
 </head>
-<body class="arcade-body">
+<body class="arcade-body {% block body_class %}{% endblock %}">
+    <!-- Fondo retro para TODAS las páginas -->
+    <div class="scene" aria-hidden="true">
+        <div class="sky"></div>
+        <div class="stars"></div>
+        <div class="sun"></div>
+        <div class="glow"></div>
+        <div class="floor"></div>
+    </div>
 
     <div class="arcade-cabinet">
         <div class="arcade-marquee">
@@ -21,18 +32,21 @@
             {% block content %}{% endblock %}
         </div>
 
-        <!-- Explicación de controles actualizada -->
-        <div class="arcade-controls-help">
-            <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
-            <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
-            <strong>F</strong> → GOLPE &nbsp;|&nbsp;
-            <strong>E</strong> → Abrir Nivel (en el mapa)
-        </div>
-
+        <div class="panel-frame">
         <div class="arcade-panel">
             <div class="joystick-base" id="joystick-base">
                 <div class="joystick-stick" id="joystick-stick"></div>
                 <div class="joystick-ball" id="joystick-ball"></div>
+            </div>
+
+            <!-- Controles DENTRO del trapecio (ahorra espacio de pantalla) -->
+            <div class="arcade-controls-help">
+            {% block controls_help %}
+                <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
+                <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
+                <strong>F</strong> → GOLPE &nbsp;|&nbsp;
+                <strong>E</strong> → Abrir Nivel (en el mapa)
+            {% endblock %}
             </div>
 
             <div class="arcade-buttons">
@@ -40,11 +54,49 @@
                 <div class="arcade-btn hit-btn" id="btn-atk-visual">GOLPE</div>
             </div>
         </div>
+        </div>
+
+        <div class="plinth"><div class="coins"><i></i><i></i></div></div>
 
         {% block footer %}{% endblock %}
     </div>
 
+    {# Contenido fuera de la cabina (p. ej. overlays que no deben escalarse) #}
+    {% block after_cabinet %}{% endblock %}
+
     <script src="{{ url_for('static', filename='js/arcade_shell.js') }}"></script>
+
+    <!-- Auto-ajuste: escala la cabina para que SIEMPRE quepa en pantalla sin zoom -->
+    <script>
+    (function(){
+        function fitCabinet(){
+            var cab = document.querySelector('.arcade-cabinet');
+            if(!cab) return;
+            // Lo ponemos centrado a escala 1 para medir su tamaño real
+            cab.style.transform = 'translate(-50%,-50%) scale(1)';
+            // Medimos incluyendo las piezas que sobresalen (marquesina y controles)
+            var parts = document.querySelectorAll('.arcade-cabinet, .arcade-marquee, .panel-frame');
+            var L=Infinity,T=Infinity,R=-Infinity,B=-Infinity;
+            parts.forEach(function(e){
+                var r=e.getBoundingClientRect();
+                if(r.left<L)L=r.left; if(r.top<T)T=r.top;
+                if(r.right>R)R=r.right; if(r.bottom>B)B=r.bottom;
+            });
+            var w=R-L, h=B-T;
+            if(w<=0||h<=0) return;
+            var availW=window.innerWidth-28, availH=window.innerHeight-28;
+            var s=Math.min(availW/w, availH/h, 1);
+            cab.style.transform='translate(-50%,-50%) scale('+s+')';
+        }
+        window.addEventListener('resize', fitCabinet);
+        window.addEventListener('load', fitCabinet);
+        if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fitCabinet); }
+        setTimeout(fitCabinet, 60);
+        setTimeout(fitCabinet, 400);
+        fitCabinet();
+    })();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

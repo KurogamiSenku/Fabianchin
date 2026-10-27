@@ -7,12 +7,31 @@ from flask import (
 import config
 from levels.level1 import bp as level1_bp
 from levels.level2 import bp as level2_bp
+from levels.bomberman import bp as bomberman_bp
+from levels.contra import bp as contra_bp
+from levels.sonic import bp as sonic_bp
+from levels.doom import bp as doom_bp
+from levels.pokemon import bp as pokemon_bp
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
 
 app.register_blueprint(level1_bp)
 app.register_blueprint(level2_bp)
+app.register_blueprint(bomberman_bp)
+app.register_blueprint(contra_bp)
+app.register_blueprint(sonic_bp)
+app.register_blueprint(doom_bp)
+app.register_blueprint(pokemon_bp)
+
+# Mapea id de nivel -> plantilla del reto (solo los que ya están construidos)
+LEVEL_TEMPLATES = {
+    2: "levels/contra.html",
+    5: "levels/bomberman.html",
+    8: "levels/doom.html",
+    9: "levels/sonic.html",
+    14: "levels/pokemon.html",
+}
 
 
 # ---------- Helpers ----------
@@ -66,19 +85,32 @@ def submit_flag():
 
 @app.route("/map")
 def map_view():
-    # Sembramos el nivel 1 si es la primera vez
-    if "unlocked" not in session:
+    if getattr(config, "DEV_UNLOCK_ALL", False):
+        # Modo desarrollo: todos los niveles desbloqueados
+        session["unlocked"] = list(config.PROGRESSION)
+    elif "unlocked" not in session:
         session["unlocked"] = [1]
-    else:
-        # Aseguramos que el 1 siempre esté presente
-        if 1 not in session["unlocked"]:
-            session["unlocked"].insert(0, 1)
-            session.modified = True
+    elif 1 not in session["unlocked"]:
+        session["unlocked"].insert(0, 1)
+        session.modified = True
 
     return render_template(
         "map.html",
         unlocked_levels=session["unlocked"],
     )
+
+
+@app.route("/level/<int:level_id>")
+def level_view(level_id):
+    # En modo desarrollo se salta el candado para poder probar directo
+    if not getattr(config, "DEV_UNLOCK_ALL", False):
+        unlocked = session.get("unlocked", [1])
+        if level_id != 1 and level_id not in unlocked:
+            return render_template("levels/locked.html", level_id=level_id), 403
+    template = LEVEL_TEMPLATES.get(level_id)
+    if not template:
+        return render_template("levels/coming_soon.html", level_id=level_id)
+    return render_template(template, level_id=level_id)
 
 
 @app.route("/api/unlock_level/<int:level_id>", methods=["POST"])

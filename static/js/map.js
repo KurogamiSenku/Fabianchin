@@ -17,18 +17,41 @@ const HITBOX_OFFSET_X = (PLAYER_SIZE / 2) - HITBOX_RADIUS_X;
 const HITBOX_OFFSET_Y = (PLAYER_SIZE - 10) - HITBOX_RADIUS_Y; 
 
 const PLAYER_SPEED = 11; 
-const JUMP_FORCE = -24; 
+const JUMP_FORCE = -16;
 const GRAVITY = 1.6; 
 
 const ENEMY_SIZE = 218; 
 const ENEMY_SPEED = 3.1; 
-const ENEMY_PUSH_FORCE = 54; 
+const ENEMY_PUSH_FORCE = 42;
 const ENEMY_HITBOX = 73; 
 const ENEMY_SIGHT_RANGE = 900; 
-const ENEMY_SHADOW_OFFSET_Y = -55; 
+const ENEMY_SHADOW_OFFSET_Y = -55;
+
+// --- RATAS (segundo enemigo) ---
+const RAT_SIZE = 120;          // tamaño en pantalla (más pequeñas que el esqueleto)
+const RAT_SPEED = 4.2;         // son más rápidas y escurridizas
+const RAT_HITBOX = 46;
+const RAT_PUSH_FORCE = 34;     // cuánto empujan a Fabiancho al tocarlo
+
+// --- CONTROL DEL EMPUJE (para poder golpear sin salir volando) ---
+const MAX_BOUNCE = 19;         // tope del empuje acumulado: evita salir disparado
+const ATTACK_PUSH_DAMP = 0.18; // mientras Fabiancho golpea, el empuje casi no le afecta
+const RAT_SIGHT_RANGE = 750;
+const RAT_SHADOW_OFFSET_Y = -26;
+const RAT_SHEET_FACES_LEFT = true; // si la rata sale espejada, cambia esto a false
 
 const sprites = { idle: [], walk: [], attack: [], jump: [] };
 function loadImg(src) { const img = new Image(); img.src = src; return img; }
+
+// --- VELOCIDAD DE ANIMACIÓN POR ESTADO ---
+// dur = milisegundos por frame (más bajo = más rápido/fluido)
+// loop = si la animación se repite (idle/walk) o se queda en el último frame (golpe/salto)
+const ANIM = {
+    idle:   { frames: 4, dur: 170, loop: true  },
+    walk:   { frames: 6, dur: 85,  loop: true  },
+    attack: { frames: 4, dur: 65,  loop: false },
+    jump:   { frames: 4, dur: 110, loop: false }
+};
 
 for(let i=1; i<=4; i++) sprites.idle.push(loadImg(`/static/img/skeli_fixed/idle/idle${i}.png`));
 for(let i=1; i<=6; i++) sprites.walk.push(loadImg(`/static/img/skeli_fixed/walk/walk${i}.png`));
@@ -39,6 +62,19 @@ const enemySheets = {
     idle: loadImg('/static/img/enemies/enemy_idle.png'),
     walk: loadImg('/static/img/enemies/enemy_walk.png'),
     death: loadImg('/static/img/enemies/enemy_death.png')
+};
+
+// Hojas de la rata (frames de 64px, 4 columnas por fila)
+const ratSheets = {
+    idle:  loadImg('/static/img/rats/rat_idle.png'),
+    run:   loadImg('/static/img/rats/rat_run.png'),
+    death: loadImg('/static/img/rats/rat_death.png')
+};
+const RAT_FRAME = 64;
+const RAT_CFG = {
+    idle:  { cols: 4, frames: 4 },
+    run:   { cols: 4, frames: 6 },
+    death: { cols: 4, frames: 5 }
 };
 
 const backgroundImg = loadImg('/static/img/background.png');
@@ -100,22 +136,104 @@ let WALLS = [
 ];
 
 // --- NIVELES ACTUALIZADOS CON TUS POSICIONES ---
+// Solo niveles con sprite temático. Cada uno tiene su transición de entrada (fx).
 const LEVELS = [
-    { id: 1, name: "Nivel 1: Mario", desc: "Reconocimiento", x: 498, y: 392 },
-    { id: 2, name: "Nivel 2: Contra", desc: "Enumeración web", x: 956, y: 273 },
-    { id: 3, name: "Nivel 3: Mega Man", desc: "La máscara", x: 1310, y: 264 },
-    { id: 4, name: "Nivel 4: Castlevania", desc: "Manipulación", x: 1610, y: 372 },
-    { id: 5, name: "Nivel 5: Bomberman", desc: "File Upload", x: 250, y: 500 },
-    { id: 6, name: "Nivel 6: Metal Slug", desc: "Burp Suite", x: 963, y: 501 },
-    { id: 7, name: "Nivel 7: Ghosts'n Goblins", desc: "Cookies", x: 1300, y: 500 },
-    { id: 8, name: "Nivel 8: DOOM", desc: "Cmd Injection", x: 1900, y: 500 },
-    { id: 9, name: "Nivel 9: Sonic", desc: "SSH Acceso", x: 465, y: 1362 },
-    { id: 10, name: "Nivel 10: Prince", desc: "Linux System", x: 800, y: 950 },
-    { id: 11, name: "Nivel 11: Earthworm", desc: "Docker", x: 1300, y: 950 },
-    { id: 12, name: "Nivel 12: Kirby", desc: "Esteganografía", x: 1770, y: 1082 },
-    { id: 13, name: "Nivel 13: Ninja Gaiden", desc: "Audio", x: 1047, y: 1406 },
-    { id: 14, name: "Nivel 14: Final Boss", desc: "Puertos", x: 2076, y: 1199 }
+    { id: 1,  name: "Mario",     desc: "", x: 498,  y: 392,  marker: "mario_coin", fx: "mario" },
+    { id: 2,  name: "Contra",    desc: "", x: 956,  y: 273,  marker: "contra",     fx: "contra" },
+    { id: 3,  name: "Mega Man",  desc: "", x: 1310, y: 264,  marker: "megaman",    fx: "megaman" },
+    { id: 5,  name: "Bomberman", desc: "", x: 250,  y: 500,  marker: "bomberman",  fx: "bomberman" },
+    { id: 8,  name: "DOOM",      desc: "", x: 1900, y: 500,  marker: "doom",       fx: "doom" },
+    { id: 9,  name: "Sonic",     desc: "", x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic" },
+    { id: 14, name: "Pokémon",   desc: "", x: 2076, y: 1199, marker: "pokemon",    fx: "pokemon" }
 ];
+
+// --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
+// Cada nivel con "marker" dibuja su sprite; los demás siguen con la moneda.
+// roam = radio (px) en el que el personaje pasea; sin roam = quieto (monedas, anillos)
+const MARKERS = {
+    mario_coin: { img: loadImg('/static/img/markers/mario_coin.png'), fw:34, fh:35, frames:4, fps:8,  size:66 },
+    sonic_ring: { img: loadImg('/static/img/markers/sonic_ring.png'), fw:64, fh:64, frames:8, fps:12, size:72 },
+    doom:       { img: loadImg('/static/img/markers/doom.png'),       fw:71, fh:72, frames:7, fps:7,  size:104, roam:90 },
+    contra:     { img: loadImg('/static/img/markers/contra.png'),     fw:23, fh:38, frames:4, fps:9,  size:92,  roam:100 },
+    megaman:    { img: loadImg('/static/img/markers/megaman_walk.png'), fw:25, fh:28, frames:3, fps:8,  size:82, roam:100 },
+    bomberman:  { img: loadImg('/static/img/markers/bomberman.png'),  fw:20, fh:30, frames:3, fps:6,  size:86,  chase:300 },
+    // dir4: hoja de 4 filas (abajo, izq, der, arriba) x 4 frames; la fila se elige por la dirección
+    pokemon:    { img: loadImg('/static/img/markers/pokemon.png'),     fw:49, fh:67, frames:4, fps:7,  size:96,  roam:95, dir4:true }
+};
+
+// Efectos de Bomberman (bomba y explosión)
+const BOMB = { img: loadImg('/static/img/markers/bomb.png'),      fw:20, fh:20, frames:3, size:42 };
+const EXPL = { img: loadImg('/static/img/markers/explosion.png'), fw:38, fh:34, frames:4, size:140, ms:80 };
+
+// Sprite del entrenador lanzando la Pokéball (transición de Pokémon)
+const POKE_THROW = loadImg('/static/img/markers/poke_battle/t3.png');
+
+function updateMarkers(dt) {
+    const px = player.x + PLAYER_SIZE/2, py = player.y + PLAYER_SIZE - 10;  // pies del jugador
+    LEVELS.forEach(level => {
+        const mk = level.marker ? MARKERS[level.marker] : null;
+        if (!mk) return;
+        if (level._rx === undefined) {
+            level._rx = 0; level._ry = 0; level._vx = 0.6; level._vy = 0.3; level._turn = 0;
+            level._facing = 'right'; level._bombs = []; level._bombTimer = 2200;
+        }
+
+        if (mk.chase) {
+            // --- BOMBERMAN: persigue al jugador dentro de un radio (leash) y suelta bombas ---
+            const curX = level.x + level._rx, curY = level.y + level._ry;
+            const tx = px - curX, ty = py - curY, pdist = Math.hypot(tx, ty);
+            const SP = 1.5;
+            if (pdist < 540 && pdist > 50) {
+                level._rx += (tx/pdist)*SP; level._ry += (ty/pdist)*SP;
+                level._facing = tx < 0 ? 'left' : 'right';
+            } else {   // vuelve hacia su punto
+                const d = Math.hypot(level._rx, level._ry);
+                if (d > 4) { level._rx -= level._rx/d*SP*0.6; level._ry -= level._ry/d*SP*0.6; }
+            }
+            const hd = Math.hypot(level._rx, level._ry);
+            if (hd > mk.chase) { level._rx = level._rx/hd*mk.chase; level._ry = level._ry/hd*mk.chase; }
+
+            level._bombTimer -= dt;
+            if (level._bombTimer <= 0 && pdist < 440) {
+                level._bombs.push({ x: level.x + level._rx, y: level.y + level._ry, fuse: 1300, exploded: false, et: 0 });
+                level._bombTimer = 2200 + Math.random()*900;
+            }
+            for (const b of level._bombs) {
+                if (!b.exploded) {
+                    b.fuse -= dt;
+                    if (b.fuse <= 0) {
+                        b.exploded = true; b.et = 0;
+                        const bdx = px - b.x, bdy = py - b.y, bd = Math.hypot(bdx, bdy);
+                        if (bd < 150 && bd > 0) {   // la explosión solo EMPUJA, no mata
+                            const a = Math.atan2(bdy, bdx);
+                            player.bounceVx += Math.cos(a)*42;
+                            player.bounceVy += Math.sin(a)*42;
+                        }
+                    }
+                } else { b.et += dt; }
+            }
+            level._bombs = level._bombs.filter(b => !(b.exploded && b.et > EXPL.frames*EXPL.ms));
+
+        } else if (mk.roam) {
+            level._turn -= dt;
+            if (level._turn <= 0) {
+                const ang = Math.random() * Math.PI * 2, sp = 0.5 + Math.random() * 0.5;
+                level._vx = Math.cos(ang) * sp; level._vy = Math.sin(ang) * sp * 0.6;
+                level._turn = 700 + Math.random() * 1400;
+            }
+            level._rx += level._vx; level._ry += level._vy;
+            const d = Math.hypot(level._rx, level._ry);
+            if (d > mk.roam) {
+                level._rx = level._rx / d * mk.roam; level._ry = level._ry / d * mk.roam;
+                level._vx *= -1; level._vy *= -1;
+            }
+            if (Math.abs(level._vx) > 0.05) level._facing = level._vx < 0 ? 'left' : 'right';
+            // dirección de 4 vías para hojas direccionales (fila: 0 abajo,1 izq,2 der,3 arriba)
+            if (Math.abs(level._vx) > Math.abs(level._vy)) level._dir = level._vx < 0 ? 1 : 2;
+            else level._dir = level._vy < 0 ? 3 : 0;
+        }
+    });
+}
 
 const SPAWN_POINTS = [
     { x: 350, y: 200 }, { x: 700, y: 200 }, { x: 1200, y: 200 }, { x: 1800, y: 200 },
@@ -126,6 +244,16 @@ const SPAWN_POINTS = [
 let enemies = SPAWN_POINTS.map(sp => ({
     x: sp.x, y: sp.y, vx: 0, vy: 0, isDead: false, deathTimer: 0,
     animFrame: 0, animTimer: 0, facing: 'down', state: 'idle'
+}));
+
+// --- SPAWN DE RATAS ---
+const RAT_SPAWNS = [
+    { x: 600, y: 1350 }, { x: 1500, y: 1300 }, { x: 950, y: 1150 },
+    { x: 1850, y: 1250 }, { x: 500, y: 900 }
+];
+let rats = RAT_SPAWNS.map(sp => ({
+    x: sp.x, y: sp.y, isDead: false, deathTimer: 0,
+    animFrame: 0, animTimer: 0, facing: 'left', state: 'idle'
 }));
 
 // --- SPAWN DE FABIANCHO EN LA PARTE INFERIOR ---
@@ -139,7 +267,14 @@ const player = {
     bounceVx: 0, bounceVy: 0
 };
 
-const camera = { x: 0, y: 0 };
+const MAP_INTRO_DURATION = 2200;
+const MAP_OVERVIEW_ZOOM = 0.34;
+let mapIntroElapsed = 0;
+const camera = {
+    x: (WORLD_WIDTH - VIEW_WIDTH) / 2,
+    y: (WORLD_HEIGHT - VIEW_HEIGHT) / 2,
+    zoom: MAP_OVERVIEW_ZOOM
+};
 const keys = { up: false, down: false, left: false, right: false };
 let canInteract = true;
 
@@ -217,11 +352,18 @@ window.addEventListener('keydown', (e) => {
             const isUnlocked = UNLOCKED_LEVELS.includes(closestLevel.id) || closestLevel.id === 1;
             const popup = document.getElementById('level-popup');
             document.getElementById('popup-title').innerText = closestLevel.name;
-            document.getElementById('popup-desc').innerText = closestLevel.desc;
+            const descEl = document.getElementById('popup-desc');
+            descEl.innerText = closestLevel.desc || "";
+            descEl.style.display = closestLevel.desc ? "" : "none";
             const btnEnter = document.getElementById('btn-enter-level');
             if (isUnlocked) {
                 btnEnter.innerText = "ENTRAR"; btnEnter.style.color = "var(--green)"; btnEnter.style.borderColor = "var(--green)";
-                btnEnter.onclick = () => { window.location.href = `/level/${closestLevel.id}`; };
+                btnEnter.onclick = () => {
+                    document.getElementById('level-popup').classList.add('hidden');
+                    if (transition) return;   // ya en transición
+                    if (closestLevel.fx) startTransition(closestLevel.fx, closestLevel.id);
+                    else window.location.href = `/level/${closestLevel.id}`;
+                };
             } else {
                 btnEnter.innerText = "BLOQUEADO"; btnEnter.style.color = "var(--magenta)"; btnEnter.style.borderColor = "var(--magenta)";
                 btnEnter.onclick = null;
@@ -319,15 +461,152 @@ canvas.addEventListener('mouseup', (e) => {
 });
 
 let lastTime = performance.now();
+// ====================================================================
+//  TRANSICIONES DE ENTRADA POR NIVEL (todo dibujado por JS)
+// ====================================================================
+const TRANS_DUR = { mario:1100, sonic:1000, contra:1000, bomberman:1900, doom:1200, megaman:1000, pokemon:1700 };
+let transition = null;
+
+function startTransition(type, levelId) {
+    transition = { type, levelId, t0: performance.now(), navigated: false, blocks: null };
+    if (type === 'doom') {
+        // malla de bloques con tiempo de caída aleatorio
+        const cols = 16, rows = 8;
+        transition.blocks = [];
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+            transition.blocks.push({ c, r, cols, rows, delay: Math.random() });
+    }
+}
+
+function roundedStar(c, cx, cy, R, r, pts) {
+    c.beginPath();
+    for (let i = 0; i < pts * 2; i++) {
+        const rad = (i % 2 === 0) ? R : r;
+        const a = (Math.PI / pts) * i - Math.PI / 2;
+        const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.closePath();
+}
+
+function drawTransition(time) {
+    if (!transition) return;
+    const W = VIEW_WIDTH, H = VIEW_HEIGHT;
+    const dur = TRANS_DUR[transition.type] || 1100;
+    let p = (time - transition.t0) / dur;
+    if (p > 1) p = 1;
+    const t = transition.type;
+
+    if (t === 'mario') {
+        // Iris de estrella que se cierra (negro cubriendo, hueco-estrella que encoge)
+        const maxR = Math.hypot(W, H) / 2 + 40;
+        const R = (1 - p) * maxR;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, 0, W, H);
+        roundedStar(ctx, W/2, H/2, R, R*0.45, 5);
+        ctx.fillStyle = '#000'; ctx.fill('evenodd');
+        ctx.restore();
+        if (R > 2) { ctx.save(); ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 5;
+            roundedStar(ctx, W/2, H/2, R, R*0.45, 5); ctx.stroke(); ctx.restore(); }
+
+    } else if (t === 'sonic') {
+        // Círculo que se expande desde el centro
+        const R = p * (Math.hypot(W, H) / 2 + 20);
+        ctx.fillStyle = '#0a1a3a';
+        ctx.beginPath(); ctx.arc(W/2, H/2, R, 0, Math.PI*2); ctx.fill();
+        ctx.lineWidth = 8; ctx.strokeStyle = '#2ec4ff';
+        ctx.beginPath(); ctx.arc(W/2, H/2, R, 0, Math.PI*2); ctx.stroke();
+
+    } else if (t === 'contra') {
+        // Franjas diagonales / / / / que se completan una a una
+        const N = 10, shown = p * N;
+        const bw = (W + H) / N;
+        ctx.save(); ctx.fillStyle = '#111';
+        for (let i = 0; i < N; i++) {
+            const fill = Math.max(0, Math.min(1, shown - i));
+            if (fill <= 0) continue;
+            const x0 = -H + i * bw;
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.moveTo(x0, H); ctx.lineTo(x0 + H, 0);
+            ctx.lineTo(x0 + H + bw*fill, 0); ctx.lineTo(x0 + bw*fill, H);
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+
+    } else if (t === 'bomberman') {
+        // Cuenta regresiva 3, 2, 1
+        ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H);
+        const n = 3 - Math.floor(p * 3);
+        const sub = (p * 3) % 1;                 // 0..1 dentro de cada número
+        const scale = 1.4 - sub * 0.5;
+        ctx.save(); ctx.translate(W/2, H/2); ctx.scale(scale, scale);
+        ctx.globalAlpha = Math.min(1, (1 - sub) * 2.2);
+        ctx.font = 'bold 190px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 10; ctx.strokeStyle = '#000'; ctx.strokeText(n > 0 ? n : 1, 0, 0);
+        ctx.fillStyle = '#ffd24a'; ctx.fillText(n > 0 ? n : 1, 0, 0);
+        ctx.restore();
+
+    } else if (t === 'doom') {
+        // Cuadros desmoronándose (la pantalla se rompe en bloques que caen)
+        const bw = W / 16, bh = H / 8;
+        ctx.fillStyle = '#000';
+        for (const b of transition.blocks) {
+            const local = (p - b.delay * 0.55) / 0.45;
+            if (local <= 0) continue;
+            const fall = Math.min(1, local);
+            const y = b.r * bh + (fall < 1 ? 0 : 0);
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, local * 1.5);
+            const drop = (local > 1 ? (local - 1) * 400 : 0);
+            ctx.fillRect(b.c * bw, b.r * bh + drop, bw + 1, bh + 1);
+            ctx.restore();
+        }
+        if (p > 0.8) { ctx.globalAlpha = (p - 0.8) / 0.2; ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1; }
+
+    } else if (t === 'megaman') {
+        // Barrido de energía azul + destello
+        const x = p * W;
+        const grad = ctx.createLinearGradient(x - 160, 0, x, 0);
+        grad.addColorStop(0, 'rgba(10,20,40,0)'); grad.addColorStop(1, '#0a1428');
+        ctx.fillStyle = '#0a1428'; ctx.fillRect(0, 0, x, H);
+        ctx.fillStyle = grad; ctx.fillRect(x - 160, 0, 160, H);
+        ctx.fillStyle = 'rgba(88,166,255,0.9)'; ctx.fillRect(x - 10, 0, 14, H);
+
+    } else if (t === 'pokemon') {
+        // Entrenador lanza la Pokéball → destello → entra
+        ctx.fillStyle = 'rgba(0,0,0,' + Math.min(0.85, p*1.3) + ')'; ctx.fillRect(0, 0, W, H);
+        if (POKE_THROW.complete && POKE_THROW.naturalWidth > 0) {
+            const h = 360, w = h * (POKE_THROW.width / POKE_THROW.height);
+            const slide = p < 0.5 ? (1 - p/0.5) : 0;
+            const px = W*0.62 - w/2 + slide * 260;
+            ctx.globalAlpha = Math.min(1, p*3);
+            ctx.drawImage(POKE_THROW, px, H/2 - h/2, w, h);
+            ctx.globalAlpha = 1;
+        }
+        if (p > 0.6) {   // destello blanco de la Pokéball que cubre
+            const fp = (p - 0.6) / 0.4;
+            ctx.fillStyle = 'rgba(255,255,255,' + fp + ')'; ctx.fillRect(0, 0, W, H);
+        }
+    }
+
+    if (p >= 1 && !transition.navigated) {
+        transition.navigated = true;
+        window.location.href = `/level/${transition.levelId}`;
+    }
+}
+
 function gameLoop(time) {
     const dt = time - lastTime; lastTime = time;
     player.time = time;
     update(dt, time); draw();
+    drawTransition(time);
     requestAnimationFrame(gameLoop);
 }
 
 function update(dt, time) {
     if (EDIT_MODE) return;
+    if (transition) { keys.up = keys.down = keys.left = keys.right = false; player.isMoving = false; return; }
 
     let dx = 0, dy = 0;
     if (keys.up) { dy -= 1; player.facing = 'up'; }
@@ -338,28 +617,25 @@ function update(dt, time) {
     player.isMoving = (dx !== 0 || dy !== 0);
     const timeSinceAttack = time - player.attackStartTime;
     
-    if (Math.abs(player.bounceVx) > 0.5 || Math.abs(player.bounceVy) > 0.5) {
-        let newX = player.x + player.bounceVx;
-        let newY = player.y + player.bounceVy;
-        
-        if (!checkWallCollision(newX, player.y)) player.x = newX;
-        else player.bounceVx = 0;
-        
-        if (!checkWallCollision(player.x, newY)) player.y = newY;
-        else player.bounceVy = 0;
-        
-        player.bounceVx *= 0.9;
-        player.bounceVy *= 0.9;
-    } else {
-        if (!(player.isAttacking && timeSinceAttack < 150)) {
-            let newX = player.x + (dx * PLAYER_SPEED);
-            if (!checkWallCollision(newX, player.y)) player.x = newX;
-            else player.bounceVx = 0;
-        }
-        let newY = player.y + (dy * PLAYER_SPEED);
-        if (!checkWallCollision(player.x, newY)) player.y = newY;
-        else player.bounceVy = 0;
+    // Movimiento: el input SIEMPRE se aplica, con el rebote SUMADO encima.
+    // Así, aunque te rodeen y empujen, puedes empujar de vuelta y salir de la esquina.
+    let moveX = player.bounceVx;
+    let moveY = player.bounceVy;
+    if (!(player.isAttacking && timeSinceAttack < 150)) {   // breve plante al iniciar el golpe
+        moveX += dx * PLAYER_SPEED;
+        moveY += dy * PLAYER_SPEED;
     }
+
+    let newX = player.x + moveX;
+    if (!checkWallCollision(newX, player.y)) player.x = newX;
+    else player.bounceVx = 0;
+
+    let newY = player.y + moveY;
+    if (!checkWallCollision(player.x, newY)) player.y = newY;
+    else player.bounceVy = 0;
+
+    player.bounceVx *= 0.85;
+    player.bounceVy *= 0.85;
 
     if (player.x < 0) { player.x = 0; player.bounceVx = Math.abs(player.bounceVx) * 0.5; }
     if (player.x > WORLD_WIDTH - PLAYER_SIZE) { player.x = WORLD_WIDTH - PLAYER_SIZE; player.bounceVx = -Math.abs(player.bounceVx) * 0.5; }
@@ -372,11 +648,89 @@ function update(dt, time) {
         if (player.jumpOffset >= 0) { player.jumpOffset = 0; player.jumpVelocity = 0; player.onGround = true; player.isJumping = false; }
     }
     if (player.isAttacking && timeSinceAttack > 450) player.isAttacking = false;
+
+    // --- Máquina de animación: cada estado avanza a su propia velocidad ---
+    let animState = 'idle';
+    if (player.isJumping)       animState = 'jump';
+    else if (player.isAttacking) animState = 'attack';
+    else if (player.isMoving)    animState = 'walk';
+
+    if (animState !== player.animState) { player.animState = animState; player.animFrame = 0; player.animTimer = 0; }
+    const ad = ANIM[animState];
     player.animTimer += dt;
-    if (player.animTimer > 150) { player.animFrame++; player.animTimer = 0; }
+    while (player.animTimer >= ad.dur) {
+        player.animTimer -= ad.dur;
+        if (ad.loop) player.animFrame = (player.animFrame + 1) % ad.frames;
+        else if (player.animFrame < ad.frames - 1) player.animFrame++;
+    }
 
     updateEnemies(dt, time);
-    updateCamera();
+    updateRats(dt, time);
+    updateMarkers(dt);
+
+    // Tope del empuje: por fuerte o numeroso que sea el grupo, no te manda volando
+    const bmag = Math.hypot(player.bounceVx, player.bounceVy);
+    if (bmag > MAX_BOUNCE) {
+        player.bounceVx = player.bounceVx / bmag * MAX_BOUNCE;
+        player.bounceVy = player.bounceVy / bmag * MAX_BOUNCE;
+    }
+
+    updateCamera(dt);
+}
+
+function updateRats(dt, time) {
+    rats.forEach(rat => {
+        if (rat.isDead) {
+            rat.animTimer += dt;
+            if (rat.animTimer > 90) {
+                if (rat.animFrame < RAT_CFG.death.frames - 1) rat.animFrame++;
+                rat.animTimer = 0;
+            }
+            return;
+        }
+
+        if (ratWallCollision(rat.x, rat.y)) { rat.x = 1000; rat.y = 1200; }
+
+        const rcx = rat.x + RAT_SIZE/2, rcy = rat.y + RAT_SIZE/2;
+        const pcx = player.x + PLAYER_SIZE/2, pcy = player.y + PLAYER_SIZE - 10;  // pies del jugador (colisión real)
+        const dx = pcx - rcx, dy = pcy - rcy;
+        const dist = Math.hypot(dx, dy);
+
+        const canSee = dist < RAT_SIGHT_RANGE && hasLineOfSight(rcx, rcy, pcx, pcy);
+
+        if (canSee && dist > 0) {
+            const mx = (dx/dist) * RAT_SPEED, my = (dy/dist) * RAT_SPEED;
+            if (!ratWallCollision(rat.x + mx, rat.y)) rat.x += mx;
+            if (!ratWallCollision(rat.x, rat.y + my)) rat.y += my;
+            rat.state = 'run';
+            rat.facing = dx < 0 ? 'left' : 'right';
+        } else {
+            rat.state = 'idle';
+        }
+
+        // Empuje a Fabiancho al contacto (igual filosofía que el esqueleto)
+        const minDist = (RAT_HITBOX/2) + (PLAYER_SIZE * 0.25);
+        if (dist < minDist && dist > 0 && canSee) {   // sin línea de visión (muro en medio) no empuja
+            const a = Math.atan2(dy, dx);
+            const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
+            player.bounceVx += Math.cos(a) * RAT_PUSH_FORCE * 0.6 * damp;
+            player.bounceVy += Math.sin(a) * RAT_PUSH_FORCE * 0.6 * damp;
+            rat.x -= Math.cos(a) * 1.5;
+            rat.y -= Math.sin(a) * 1.5;
+        }
+
+        rat.animTimer += dt;
+        if (rat.animTimer > 90) { rat.animFrame++; rat.animTimer = 0; }
+    });
+}
+
+function ratWallCollision(nx, ny) {
+    const cx = nx + RAT_SIZE/2, cy = ny + RAT_SIZE/2, half = RAT_HITBOX/2;
+    for (let wall of WALLS) {
+        if (cx - half < wall.x + wall.w && cx + half > wall.x &&
+            cy - half < wall.y + wall.h && cy + half > wall.y) return true;
+    }
+    return false;
 }
 
 function updateEnemies(dt, time) {
@@ -400,7 +754,7 @@ function updateEnemies(dt, time) {
         const enemyCenterX = enemy.x + ENEMY_SIZE/2;
         const enemyCenterY = enemy.y + ENEMY_SIZE/2;
         const playerCenterX = player.x + PLAYER_SIZE/2;
-        const playerCenterY = player.y + PLAYER_SIZE/2;
+        const playerCenterY = player.y + PLAYER_SIZE - 10;  // punto de colisión real (pies), no el centro del sprite
 
         const dx = playerCenterX - enemyCenterX;
         const dy = playerCenterY - enemyCenterY;
@@ -430,9 +784,10 @@ function updateEnemies(dt, time) {
         }
 
         const minDistForPush = (ENEMY_HITBOX / 2) + (PLAYER_SIZE * 0.3);
-        if (dist < minDistForPush && dist > 0) {
+        if (dist < minDistForPush && dist > 0 && canSee) {   // canSee incluye línea de visión: no empuja a través de muros
             const pushAngle = Math.atan2(dy, dx);
-            const bounceForce = ENEMY_PUSH_FORCE * 0.6;
+            const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
+            const bounceForce = ENEMY_PUSH_FORCE * 0.6 * damp;
             player.bounceVx += Math.cos(pushAngle) * bounceForce;
             player.bounceVy += Math.sin(pushAngle) * bounceForce;
             enemy.x -= Math.cos(pushAngle) * 1.5;
@@ -559,13 +914,25 @@ function checkAttackHit() {
         if (enemy.isDead) return;
         const enemyCenterX = enemy.x + ENEMY_SIZE/2;
         const enemyCenterY = enemy.y + ENEMY_SIZE/2;
-        
-        if (enemyCenterX > attackX && enemyCenterX < attackX + attackW &&
-            enemyCenterY > attackY && enemyCenterY < attackY + attackH) {
-            
+        const eh = ENEMY_HITBOX/2;
+        // Golpe conecta con el CUERPO del enemigo (AABB), no solo su centro exacto
+        if (enemyCenterX - eh < attackX + attackW && enemyCenterX + eh > attackX &&
+            enemyCenterY - eh < attackY + attackH && enemyCenterY + eh > attackY) {
+
             enemy.isDead = true; enemy.deathTimer = 0; enemy.animFrame = 0;
             const angle = Math.atan2(enemyCenterY - (player.y + PLAYER_SIZE/2), enemyCenterX - (player.x + PLAYER_SIZE/2));
             enemy.vx = Math.cos(angle) * 30; enemy.vy = Math.sin(angle) * 30;
+        }
+    });
+
+    // El golpe también mata ratas
+    rats.forEach(rat => {
+        if (rat.isDead) return;
+        const rcx = rat.x + RAT_SIZE/2, rcy = rat.y + RAT_SIZE/2;
+        const rh = RAT_HITBOX/2;
+        if (rcx - rh < attackX + attackW && rcx + rh > attackX &&
+            rcy - rh < attackY + attackH && rcy + rh > attackY) {
+            rat.isDead = true; rat.deathTimer = 0; rat.animFrame = 0;
         }
     });
 }
@@ -580,20 +947,72 @@ function checkWallCollision(nx, ny) {
     return false;
 }
 
-function updateCamera() {
-    const targetX = player.x + PLAYER_SIZE / 2 - VIEW_WIDTH / 2;
-    const targetY = player.y + PLAYER_SIZE / 2 - VIEW_HEIGHT / 2;
-    camera.x += (targetX - camera.x) * 0.1;
-    camera.y += (targetY - camera.y) * 0.1;
-    camera.x = Math.max(0, Math.min(WORLD_WIDTH - VIEW_WIDTH, camera.x));
-    camera.y = Math.max(0, Math.min(WORLD_HEIGHT - VIEW_HEIGHT, camera.y));
+function updateCamera(dt) {
+    const targetX = Math.max(0, Math.min(WORLD_WIDTH - VIEW_WIDTH, player.x + PLAYER_SIZE / 2 - VIEW_WIDTH / 2));
+    const targetY = Math.max(0, Math.min(WORLD_HEIGHT - VIEW_HEIGHT, player.y + PLAYER_SIZE / 2 - VIEW_HEIGHT / 2));
+    if (!EDIT_MODE && mapIntroElapsed < MAP_INTRO_DURATION) {
+        mapIntroElapsed = Math.min(MAP_INTRO_DURATION, mapIntroElapsed + dt);
+        const progress = mapIntroElapsed / MAP_INTRO_DURATION;
+        const ease = progress * progress * (3 - 2 * progress);
+        const overviewX = (WORLD_WIDTH - VIEW_WIDTH) / 2;
+        const overviewY = (WORLD_HEIGHT - VIEW_HEIGHT) / 2;
+        camera.x = overviewX + (targetX - overviewX) * ease;
+        camera.y = overviewY + (targetY - overviewY) * ease;
+        camera.zoom = MAP_OVERVIEW_ZOOM + (1 - MAP_OVERVIEW_ZOOM) * ease;
+    } else {
+        camera.x += (targetX - camera.x) * 0.1;
+        camera.y += (targetY - camera.y) * 0.1;
+        camera.zoom = 1;
+    }
+}
+
+function drawLevelLabel(name, x, y, isUnlocked) {
+    const status = isUnlocked ? 'DISPONIBLE' : 'BLOQUEADO';
+    ctx.font = 'bold 20px monospace';
+    const nameWidth = ctx.measureText(name).width;
+    ctx.font = 'bold 12px monospace';
+    const statusWidth = ctx.measureText(status).width;
+    const width = Math.max(nameWidth, statusWidth) + 22;
+    const height = 48, left = x - width / 2, top = y - height / 2;
+    const color = isUnlocked ? '#4de4c2' : '#ff6978';
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 9;
+    ctx.fillStyle = 'rgba(9, 17, 29, 0.92)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(left + 6, top);
+    ctx.lineTo(left + width - 6, top);
+    ctx.quadraticCurveTo(left + width, top, left + width, top + 6);
+    ctx.lineTo(left + width, top + height - 6);
+    ctx.quadraticCurveTo(left + width, top + height, left + width - 6, top + height);
+    ctx.lineTo(left + 6, top + height);
+    ctx.quadraticCurveTo(left, top + height, left, top + height - 6);
+    ctx.lineTo(left, top + 6);
+    ctx.quadraticCurveTo(left, top, left + 6, top);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isUnlocked ? '#82f5d6' : '#ff929d';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(status, x, top + 13);
+    ctx.fillStyle = '#fff4d6';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText(name, x, top + 35);
+    ctx.restore();
 }
 
 function draw() {
     ctx.fillStyle = '#11151c'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.translate(-camera.x, -camera.y);
+    ctx.translate(VIEW_WIDTH / 2, VIEW_HEIGHT / 2);
+    ctx.scale(camera.zoom, camera.zoom);
+    ctx.translate(-camera.x - VIEW_WIDTH / 2, -camera.y - VIEW_HEIGHT / 2);
 
     if (backgroundImg.complete && backgroundImg.naturalWidth > 0) {
         ctx.drawImage(backgroundImg, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -623,12 +1042,55 @@ function draw() {
             ctx.beginPath(); ctx.arc(level.x, level.y, 40, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 255, 255, 0.3)'; ctx.fill();
         }
         
-        ctx.shadowBlur = 20; ctx.shadowColor = isUnlocked ? '#ffd700' : '#ff5a5a';
-        ctx.beginPath(); ctx.arc(level.x, coinY, 30, 0, Math.PI * 2); ctx.fillStyle = coreColor; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
-        ctx.fillStyle = isUnlocked ? '#ffd700' : '#ff5a5a'; ctx.font = 'bold 14px monospace'; ctx.fillText(level.name, level.x, coinY - 45);
+        const mk = level.marker ? MARKERS[level.marker] : null;
+        if (mk && mk.img.complete && mk.img.naturalWidth > 0) {
+            // Sprite temático animado (y que pasea, si tiene roam)
+            const mx = level.x + (level._rx || 0);
+            const my = coinY + (level._ry || 0);
+            const fi = Math.floor(player.time / (1000 / mk.fps)) % mk.frames;
+            const scale = mk.size / mk.fh;
+            const dw = mk.fw * scale, dh = mk.size;
+            const sy = mk.dir4 ? (level._dir || 0) * mk.fh : 0;   // fila por dirección
+            ctx.save();
+            if (!isUnlocked) ctx.globalAlpha = 0.68;   // bloqueado = atenuado
+            ctx.shadowBlur = 18; ctx.shadowColor = coreColor;
+            if (!mk.dir4 && level._facing === 'left') {
+                ctx.translate(mx + dw/2, my - dh/2); ctx.scale(-1, 1);
+                ctx.drawImage(mk.img, fi * mk.fw, 0, mk.fw, mk.fh, 0, 0, dw, dh);
+            } else {
+                ctx.drawImage(mk.img, fi * mk.fw, sy, mk.fw, mk.fh, mx - dw/2, my - dh/2, dw, dh);
+            }
+            ctx.restore();
+            ctx.shadowBlur = 0;
+        } else {
+            // Moneda (comportamiento original) para niveles sin sprite
+            ctx.shadowBlur = 20; ctx.shadowColor = isUnlocked ? '#ffd700' : '#ff5a5a';
+            ctx.beginPath(); ctx.arc(level.x, coinY, 30, 0, Math.PI * 2); ctx.fillStyle = coreColor; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
+            ctx.shadowBlur = 0; ctx.fillStyle = '#111'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(level.id, level.x, coinY + 4);
+        }
+        const labelX = mk ? level.x + (level._rx || 0) : level.x;
+        const labelY = mk && mk.img.complete && mk.img.naturalWidth > 0
+            ? coinY + (level._ry || 0) - mk.size / 2 - 30
+            : coinY - 75;
+        drawLevelLabel(level.name, labelX, labelY, isUnlocked);
         const dist = Math.hypot(player.x + PLAYER_SIZE/2 - level.x, player.y + PLAYER_SIZE/2 - level.y);
-        if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
+        if (dist < 120 && !EDIT_MODE) { ctx.fillStyle = '#fff'; ctx.font = 'bold 22px monospace'; ctx.fillText("Presiona [E]", level.x, coinY + 50); }
+    });
+
+    // Bombas y explosiones de Bomberman
+    LEVELS.forEach(level => {
+        if (!level._bombs || !level._bombs.length) return;
+        level._bombs.forEach(b => {
+            if (!b.exploded) {
+                const fi = Math.floor(player.time / 150) % BOMB.frames;
+                const sc = BOMB.size / BOMB.fh, dw = BOMB.fw*sc, dh = BOMB.size;
+                if (BOMB.img.complete) ctx.drawImage(BOMB.img, fi*BOMB.fw, 0, BOMB.fw, BOMB.fh, b.x - dw/2, b.y - dh/2, dw, dh);
+            } else {
+                const fi = Math.min(Math.floor(b.et / EXPL.ms), EXPL.frames - 1);
+                const sc = EXPL.size / EXPL.fh, dw = EXPL.fw*sc, dh = EXPL.size;
+                if (EXPL.img.complete) ctx.drawImage(EXPL.img, fi*EXPL.fw, 0, EXPL.fw, EXPL.fh, b.x - dw/2, b.y - dh/2, dw, dh);
+            }
+        });
     });
 
     enemies.forEach(enemy => {
@@ -659,6 +1121,40 @@ function draw() {
         }
     });
 
+    rats.forEach(rat => {
+        // Sombra
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.beginPath();
+        ctx.ellipse(rat.x + RAT_SIZE/2, rat.y + RAT_SIZE + RAT_SHADOW_OFFSET_Y,
+                    RAT_SIZE*0.22, RAT_SIZE*0.08, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        const key = rat.isDead ? 'death' : (rat.state === 'run' ? 'run' : 'idle');
+        const sheet = ratSheets[key];
+        const cfg = RAT_CFG[key];
+        if (!sheet.complete || sheet.naturalWidth === 0) return;
+
+        const fi = Math.floor(rat.animFrame) % cfg.frames;
+        const sx = (fi % cfg.cols) * RAT_FRAME;
+        const sy = Math.floor(fi / cfg.cols) * RAT_FRAME;
+
+        const drawFlipped = RAT_SHEET_FACES_LEFT ? (rat.facing === 'right') : (rat.facing === 'left');
+        if (drawFlipped) {
+            ctx.save();
+            ctx.translate(rat.x + RAT_SIZE, rat.y); ctx.scale(-1, 1);
+            ctx.drawImage(sheet, sx, sy, RAT_FRAME, RAT_FRAME, 0, 0, RAT_SIZE, RAT_SIZE);
+            ctx.restore();
+        } else {
+            ctx.drawImage(sheet, sx, sy, RAT_FRAME, RAT_FRAME, rat.x, rat.y, RAT_SIZE, RAT_SIZE);
+        }
+
+        if (DEBUG_FRAMES) {
+            ctx.strokeStyle = 'lime'; ctx.lineWidth = 2;
+            const half = RAT_HITBOX/2;
+            ctx.strokeRect(rat.x + RAT_SIZE/2 - half, rat.y + RAT_SIZE/2 - half, RAT_HITBOX, RAT_HITBOX);
+        }
+    });
+
     const shadowY = player.y + PLAYER_SIZE - 10;
     const heightFromGround = -player.jumpOffset;
     const shadowScale = Math.max(0.3, 1 - (heightFromGround / 400)); 
@@ -667,11 +1163,9 @@ function draw() {
     const shadowH = (PLAYER_SIZE / 6) * 0.55 * shadowScale;
     ctx.beginPath(); ctx.ellipse(player.x + PLAYER_SIZE/2, shadowY, shadowW, shadowH, 0, 0, Math.PI * 2); ctx.fill();
 
-    let currentSpriteList = sprites.idle; let frameIndex = 0;
-    if (player.isJumping) { currentSpriteList = sprites.jump; frameIndex = Math.floor(player.animFrame / 3) % 4; }
-    else if (player.isAttacking) { currentSpriteList = sprites.attack; frameIndex = Math.floor(player.animFrame) % 4; }
-    else if (player.isMoving) { currentSpriteList = sprites.walk; frameIndex = Math.floor(player.animFrame) % 6; }
-    else { currentSpriteList = sprites.idle; frameIndex = Math.floor(player.animFrame) % 4; }
+    const st = player.animState || 'idle';
+    const currentSpriteList = sprites[st] || sprites.idle;
+    const frameIndex = player.animFrame % (ANIM[st] ? ANIM[st].frames : 4);
     const img = currentSpriteList[frameIndex] || sprites.idle[0];
     const drawY = player.y + player.jumpOffset;
     if (player.facing === 'left') {
@@ -679,6 +1173,13 @@ function draw() {
         ctx.drawImage(img, 0, 0, PLAYER_SIZE, PLAYER_SIZE); ctx.restore();
     } else {
         ctx.drawImage(img, player.x, drawY, PLAYER_SIZE, PLAYER_SIZE);
+    }
+
+    // DEBUG: hitbox real de los pies de Fabiancho (tecla 0)
+    if (DEBUG_FRAMES) {
+        ctx.strokeStyle = 'cyan'; ctx.lineWidth = 3;
+        ctx.strokeRect(player.x + HITBOX_OFFSET_X, player.y + HITBOX_OFFSET_Y,
+                       HITBOX_RADIUS_X * 2, HITBOX_RADIUS_Y * 2);
     }
 
     if (EDIT_MODE) {
