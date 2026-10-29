@@ -43,7 +43,7 @@ const OVER = {
   pits: [[1104,1135],[1376,1423],[2448,2479]],
   pipes: [
     {x:448,y:176,w:32,h:64,entry:true},
-    {x:608,y:160,w:32,h:80},
+    {x:608,y:160,w:32,h:80,piranha:true},
     {x:736,y:144,w:32,h:96,piranha:true},
     {x:912,y:144,w:32,h:96,piranha:true},
   ],
@@ -53,10 +53,9 @@ const OVER = {
     {x:2976,y:112,w:16,h:96},{x:2992,y:96,w:16,h:112},{x:3008,y:80,w:48,h:128},
   ],
   blocks: [
-    // POWER-UPS en bloques BAJOS (y=144): alcanzables de un salto desde el suelo
-    Q(256,144,'mush'), Q(1248,144,'flower'), Q(1696,144,'star'),
-    // monedas (incluye los ? altos, como bonus)
-    Q(352,80,'coin'), Q(1504,80,'coin'), Q(1744,80,'coin'), Q(1792,144,'coin'), Q(2720,144,'coin'),
+    Q(256,144,'coin'), Q(352,80,'mush'),
+    Q(1248,144,'coin'), Q(1504,80,'flower'),
+    Q(1696,144,'coin'), Q(1744,80,'star'), Q(1792,144,'coin'), Q(2720,144,'coin'),
     // ladrillos rompibles del cielo (se rompen, no sueltan nada)
     Bk(320,144),Bk(336,144),Bk(352,144),Bk(368,144),Bk(384,144),Bk(1232,144),Bk(1264,144),
     Bk(1280,80),Bk(1296,80),Bk(1312,80),Bk(1328,80),Bk(1344,80),Bk(1360,80),Bk(1376,80),Bk(1392,80),
@@ -67,8 +66,7 @@ const OVER = {
   coins: [ {x:520,y:176},{x:600,y:176},{x:980,y:150},{x:1300,y:60},{x:1340,y:60},{x:1380,y:60},
            {x:1950,y:60},{x:2060,y:60},{x:2300,y:176},{x:2690,y:120} ],
   goalX:3140,
-  // Goombas en zonas abiertas (lejos del cluster de tuberías), más lentos
-  enemiesInit: [ {x:1250,vx:0.8},{x:1650,vx:-0.8},{x:2250,vx:0.8} ],
+  enemiesInit: [ {x:520,vx:1.1},{x:980,vx:-1.1},{x:1600,vx:1.1},{x:1980,vx:-1.1},{x:2300,vx:1.1} ],
 };
 
 const UGY=416;
@@ -144,14 +142,15 @@ function hitBlock(b){
 }
 function spawnItem(b,kind){ floatItems.push({x:b.x+2,y:b.y-2,kind,t:0}); }
 function applyPowerup(kind){
-  if (kind==='mush' && !player.big){ player.big=true; player.h=BIG_H; player.y-=(BIG_H-SMALL_H); }
+  // "grande" es SOLO visual + escudo: NO se agranda la caja de colisión
+  // (si creciera, la cabeza chocaría con el costado de los bloques flotantes = barrera invisible)
+  if (kind==='mush' && !player.big){ player.big=true; }
   if (kind==='star'){ player.starT=8000; }
 }
-function knockback(fromX){ player.vy=-5; player.x += (player.x+player.w/2 < fromX ? -16 : 16); if (player.x<0) player.x=0; }
 function hurtPlayer(){
   if (player.invuln>0 || player.starT>0) return;
-  if (player.big){ player.big=false; player.y+=(BIG_H-SMALL_H); player.h=SMALL_H; player.invuln=1800; toast('¡Golpe! Perdiste el tamaño.'); return; }
-  player.hp--; player.invuln=1800;
+  if (player.big){ player.big=false; player.invuln=1400; toast('¡Golpe! Perdiste el tamaño.'); return; }
+  player.hp--; player.invuln=1400;
   if (player.hp<=0) gameOverT=2600; else toast('¡Golpe! Vidas: '+player.hp);
 }
 function fallInPit(){
@@ -246,7 +245,7 @@ function updateEnemies(dt){
     if (overlaps(player,e)){
       const stomp = player.vy>0 && (player.y+player.h - e.y) < 18;
       if (player.starT>0 || stomp){ e.dead=true; e.deadT=0; if (stomp) player.vy=-6.5; }
-      else if (player.invuln<=0){ hurtPlayer(); knockback(e.x+e.w/2); }
+      else hurtPlayer();
     }
   }
   enemies = enemies.filter(e=>!(e.dead && e.deadT>600));
@@ -262,7 +261,7 @@ function updatePiranhas(dt){
     pl.risen += (target - pl.risen) * Math.min(1, dt/160);
     if (pl.risen > 12){
       const box={x:pl.x, y:pl.top-pl.risen, w:16, h:pl.risen};
-      if (overlaps(player,box) && player.invuln<=0){ hurtPlayer(); knockback(pl.x+8); }
+      if (overlaps(player,box)) hurtPlayer();
     }
   }
 }
