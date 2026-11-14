@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+  /* El nivel vive dentro de la pantalla del arcade */
+  .arcade-stage{ padding:0 !important; }
+  .arcade-subtitle{ display:none !important; }
+  #level-inner{ width:100%; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:8px; padding:10px; min-height:0; }
+  #arena{ flex:1 1 auto; min-height:0; width:auto; max-width:100%; height:auto; object-fit:contain;
+    image-rendering:pixelated; border:4px solid #111b2b; border-radius:8px; background:#5c94fc;
+    box-shadow:0 0 0 2px #253c59, 0 0 28px rgba(42,184,255,.22), 0 0 48px rgba(255,180,84,.1); }
+
+  /* ---- Overlay del reto SQLi: TERMINAL CRT estilo retro (prototipo) ---- */
+  .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.82); display:none;
+    align-items:flex-start; justify-content:center; padding:20px; overflow:auto; z-index:9999; }
+  .sql-overlay.show{ display:flex; }
+  .sql-modal{ background:#0c1a0f; border:3px solid #1d4423; border-radius:10px; max-width:600px; width:100%; margin:auto;
+    padding:0 18px 18px; color:#7dff8a; font-family:'VT323',ui-monospace,monospace; font-size:19px; line-height:1.4;
+    box-shadow:0 0 44px rgba(45,245,180,.18), inset 0 0 26px rgba(0,0,0,.6); overflow:hidden; }
+  /* barra superior tipo terminal */
+  .term-bar{ margin:0 -18px 12px; padding:10px 16px; background:#06120a; border-bottom:2px solid #1d4423;
+    display:flex; align-items:center; gap:8px; }
+  .term-bar i{ width:11px; height:11px; border-radius:50%; background:#333; }
+  .term-bar i:nth-child(1){ background:#ff5f56; } .term-bar i:nth-child(2){ background:#ffbd2e; } .term-bar i:nth-child(3){ background:#27c93f; }
+  .term-bar span{ font-family:'Press Start 2P',monospace; font-size:9px; color:#5fae6a; letter-spacing:1px; margin-left:4px; }
+  .sql-modal h2{ font-family:'Press Start 2P',monospace; font-size:12px; color:#ffd23f; margin:2px 0 8px; letter-spacing:1px; line-height:1.5; }
+  .sql-modal .sub{ color:#5fae6a; font-size:17px; margin:0 0 12px; }
+  .sql-modal label{ display:block; font-size:15px; color:#9ad6a1; margin:10px 0 4px; letter-spacing:1px; }
+  .sql-modal input[type=text]{ width:100%; background:#06120a; color:#7dff8a; border:2px solid #1d4423; border-radius:4px;
+    padding:9px 10px; font-family:'VT323',monospace; font-size:18px; }
+  .sql-modal input[type=text]:focus{ outline:2px solid #2ecc40; outline-offset:1px; border-color:#2ecc40; }
+  .sbtns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  .sql-modal button{ font-family:'Press Start 2P',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; color:#06260c;
+    border:none; border-radius:5px; padding:11px 15px; border-bottom:4px solid rgba(0,0,0,.45); }
+  .sql-modal button:active{ border-bottom-width:1px; transform:translateY(3px); }
+  .btn-login{ background:#2ecc40; } .btn-flag{ background:#ffd23f; } .btn-close{ background:#3a5f45; color:#d6ffe0; }
+  pre.q{ background:#06120a; color:#56b864; border:1px dashed #1d4423; border-radius:4px; padding:10px; margin:12px 0 0;
+    white-space:pre-wrap; word-break:break-word; font-size:16px; line-height:1.5; }
+  .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; font-size:17px; }
+  .ok{ color:#2ecc40; } .err{ color:#ff5a5a; }
+  .sql-modal details{ margin-top:12px; } .sql-modal summary{ cursor:pointer; color:#ffd23f; font-size:15px; letter-spacing:1px; text-transform:uppercase; }
+  .hint{ color:#8fbf97; font-size:16px; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #1d4423; }
+  code{ background:#06120a; color:#7dff8a; padding:1px 5px; border-radius:3px; font-family:'VT323',monospace; font-size:17px; }
+  .pipe-note{ display:none; margin-top:12px; padding:9px 11px; border-radius:5px; color:#06260c; font-weight:bold; font-size:16px;
+    background:repeating-linear-gradient(90deg,#2ecc40 0 10px,#28b539 10px 20px); }
+
+  /* ---- Caja de FLAG dorada (como el prototipo) ---- */
+  .flagbox{ margin-top:16px; background:#1a1405; border:3px solid #ffd23f; border-radius:8px; padding:14px; }
+  .flagbox .lbl{ font-family:'Press Start 2P',monospace; font-size:9px; color:#ffd23f; letter-spacing:1px; line-height:1.6; }
+  .flagbox label{ color:#e4c98a; }
+  .win{ display:none; margin-top:12px; text-align:center; color:#ffe98a; font-weight:bold; font-size:18px; }
+  .win.show{ display:block; }
+  .win a{ color:#ffd23f; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="level-inner">
+  <canvas id="arena" width="720" height="480"></canvas>
+</div>
+{% endblock %}
+
+{% block controls_help %}
+  <strong>A·D / ←→</strong> Mover &nbsp;|&nbsp;
+  <strong>Espacio·W·↑</strong> Saltar &nbsp;|&nbsp;
+  <strong>↓·S</strong> Bajar tubería &nbsp;|&nbsp;
+  <strong>E</strong> Terminal &nbsp;|&nbsp;
+  <a href="/map" style="color:#ff2fd6;">← Mapa</a>
+{% endblock %}
+
+{% block after_cabinet %}
+<div class="sql-overlay" id="challenge">
+  <div class="sql-modal">
+    <div class="term-bar"><i></i><i></i><i></i><span>GUARDIAN-AUTH v0.9 — reino1-2.pipe.local</span></div>
+    <h2>▸ PORTÓN DEL REINO · ACCESO</h2>
+    <p class="sub">El Guardián bloqueó la tubería de salida. Solo una <strong>sesión de administrador</strong> la abre.</p>
+
+    <label for="u">usuario</label>
+    <input type="text" id="u" placeholder="usuario" autocomplete="off" spellcheck="false">
+    <label for="p">contraseña</label>
+    <input type="text" id="p" placeholder="contraseña" autocomplete="off" spellcheck="false">
+
+    <div class="sbtns">
+      <button class="btn-login" id="login">ACCEDER</button>
+      <button class="btn-close" id="close">CERRAR</button>
+    </div>
+
+    <pre class="q" id="qout">// La consulta ejecutada por el servidor aparecerá aquí.</pre>
+    <div class="msg" id="loginmsg"></div>
+    <div class="pipe-note" id="pipe-open-note">▸ ¡LLAVE OBTENIDA Y TUBERÍA DESBLOQUEADA! Sube con [ ↑ ], rompe los bloques <strong>?</strong> con la cabeza, junta los <strong>3 power-ups</strong> y ve a la <strong>meta</strong>.</div>
+
+    <details>
+      <summary>¿Atascado? Pistas progresivas</summary>
+      <p class="hint"><strong>1.</strong> La consulta mete tu entrada <em>tal cual</em> en <code>... WHERE user='…' AND pass='…'</code>. Una comilla <code>'</code> cierra la cadena y lo que sigue se interpreta como SQL.</p>
+      <p class="hint"><strong>2.</strong> Haz que la condición sea siempre verdadera y descarta el resto de la línea con un comentario <code>--</code>.</p>
+      <p class="hint"><strong>3.</strong> El Guardián quiere la fila de <code>admin</code>. En <strong>usuario</strong> escribe <code>admin' --</code> (la contraseña puede quedar vacía). También sirve <code>' OR '1'='1' --</code>.</p>
+      <p class="hint"><strong>4.</strong> Al entrar como admin, su <strong>nota</strong> contiene la <strong>flag</strong>. Envíala abajo para completar el nivel.</p>
+    </details>
+
+    <div id="flagwrap" hidden>
+      <div id="goalbanner" style="display:none; margin-top:14px; padding:10px 12px; border-radius:6px; font-weight:bold; font-size:16px; color:#06260c; background:repeating-linear-gradient(90deg,#ffd23f 0 10px,#f0c42f 10px 20px);">★ ¡META! Tienes la LLAVE y los 3 POWER-UPS. Envía la flag para liberar el Reino.</div>
+      <div class="flagbox">
+        <div class="lbl">▸ ENVIAR FLAG — LLAVE DEL REINO</div>
+        <label for="flag" style="margin-top:8px;">flag capturada (está en la nota del admin)</label>
+        <div class="sbtns" style="margin-top:4px;">
+          <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+          <button class="btn-flag" id="send">ENVIAR</button>
+        </div>
+        <div class="msg" id="flagmsg"></div>
+        <div class="win" id="win">✦ ¡REINO LIBERADO! Nivel completado. <a href="/map">← Mapa</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/level_mario.js') }}"></script>
+<script>
+const qout=document.getElementById('qout'), loginmsg=document.getElementById('loginmsg');
+async function acceder(){
+  const u=document.getElementById('u').value, p=document.getElementById('p').value;
+  const body='user='+encodeURIComponent(u)+'&pass='+encodeURIComponent(p);
+  try{
+    const r=await fetch('/level/mario/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const d=await r.json();
+    qout.textContent=d.query||'';
+    if(d.error){ loginmsg.textContent=d.error; loginmsg.className='msg err'; return; }
+    loginmsg.textContent=d.message + ((d.admin&&d.flag_hint)?('  →  nota del admin: '+d.flag_hint):'');
+    loginmsg.className='msg '+(d.ok?'ok':'err');
+    if(d.ok && d.admin){ window._setAdminUnlocked(); }
+  }catch(e){ loginmsg.textContent='Error de conexión.'; loginmsg.className='msg err'; }
+}
+document.getElementById('login').onclick=acceder;
+document.getElementById('p').addEventListener('keydown',e=>{if(e.key==='Enter')acceder();});
+document.getElementById('u').addEventListener('keydown',e=>{if(e.key==='Enter')acceder();});
+document.getElementById('close').onclick=()=>window._closeChallenge();
+
+const flagmsg=document.getElementById('flagmsg');
+async function enviarFlag(){
+  const flag=document.getElementById('flag').value.trim(); if(!flag)return;
+  try{
+    const r=await fetch('/level/mario/submit',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'flag='+encodeURIComponent(flag)});
+    const d=await r.json();
+    flagmsg.textContent=d.message; flagmsg.className='msg '+(d.ok?'ok':'err');
+    if(d.ok){ document.getElementById('win').classList.add('show'); window._showWin(); }
+  }catch(e){ flagmsg.textContent='Error al enviar.'; flagmsg.className='msg err'; }
+}
+document.getElementById('send').onclick=enviarFlag;
+document.getElementById('flag').addEventListener('keydown',e=>{if(e.key==='Enter')enviarFlag();});
+</script>
+{% endblock %}

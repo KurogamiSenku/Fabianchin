@@ -138,13 +138,27 @@ let WALLS = [
 // --- NIVELES ACTUALIZADOS CON TUS POSICIONES ---
 // Solo niveles con sprite temático. Cada uno tiene su transición de entrada (fx).
 const LEVELS = [
-    { id: 1,  name: "Mario",     desc: "", x: 498,  y: 392,  marker: "mario_coin", fx: "mario" },
-    { id: 2,  name: "Contra",    desc: "", x: 956,  y: 273,  marker: "contra",     fx: "contra" },
-    { id: 3,  name: "Mega Man",  desc: "", x: 1310, y: 264,  marker: "megaman",    fx: "megaman" },
-    { id: 5,  name: "Bomberman", desc: "", x: 250,  y: 500,  marker: "bomberman",  fx: "bomberman" },
-    { id: 8,  name: "DOOM",      desc: "", x: 1900, y: 500,  marker: "doom",       fx: "doom" },
-    { id: 9,  name: "Sonic",     desc: "", x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic" },
-    { id: 14, name: "Pokémon",   desc: "", x: 2076, y: 1199, marker: "pokemon",    fx: "pokemon" }
+    { id: 1,  name: "Mario",     x: 498,  y: 392,  marker: "mario_coin", fx: "mario",
+      tag: "El reino de las tuberías", vuln: "SQL Injection", accent: "#ff5a4d", diff: 1,
+      lore: "Fabiancho selló la tubería tras un login de administrador. «Si el portón pega tu texto directo en la consulta —dice—, una comilla bien puesta vale más que mil contraseñas.»" },
+    { id: 2,  name: "Contra",    x: 956,  y: 273,  marker: "contra", fx: "contra",
+      tag: "La base militar fantasma", vuln: "Carga insegura de archivos", accent: "#d8a24a", diff: 2,
+      lore: "El puesto de guardia solo acepta «fotos»… en el cliente. «El servidor nunca revalida el tipo —ríe Fabiancho—; cuela una credencial que ejecute y la base cae.»" },
+    { id: 3,  name: "Mega Man",  x: 1310, y: 264,  marker: "megaman", fx: "megaman",
+      tag: "El laboratorio del Dr. Wily", vuln: "Path Traversal / LFI", accent: "#2a9df4", diff: 3,
+      lore: "Wily esconde sus planos tras un visor de archivos. «Trepa con ../../ por los pasillos del sistema —susurra Fabiancho— y leerás lo que nadie debía mostrarte.»" },
+    { id: 5,  name: "Bomberman", x: 250,  y: 500,  marker: "bomberman", fx: "bomberman",
+      tag: "El laberinto de los comandos", vuln: "Command Injection · IDOR", accent: "#4aa3ff", diff: 3,
+      lore: "La bomba es un «ping» que acepta de más. «Un ; o un && —advierte Fabiancho— y el laberinto obedece tus órdenes, no las suyas. Luego cambia un id y mira lo que no es tuyo.»" },
+    { id: 8,  name: "DOOM",      x: 1900, y: 500,  marker: "doom", fx: "doom",
+      tag: "Las profundidades del sistema", vuln: "SSH · Escalada de privilegios", accent: "#c0392b", diff: 4,
+      lore: "Bajo el infierno hay una shell. «Entra por SSH y mira qué puedes correr como root sin permiso —gruñe Fabiancho—; el demonio siempre deja un sudo mal configurado.»" },
+    { id: 9,  name: "Sonic",     x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic",
+      tag: "La carrera de los datos perdidos", vuln: "Esteganografía · Metadatos", accent: "#2e8bff", diff: 4,
+      lore: "La pista va tan rápido que nadie mira el archivo. «Los secretos no siempre están en el texto —guiña Fabiancho—; a veces viven en los metadatos.»" },
+    { id: 14, name: "Pokémon",   x: 2076, y: 1199, marker: "pokemon", fx: "pokemon",
+      tag: "La Liga de los administradores", vuln: "Configuración expuesta · Cadena final", accent: "#ffcb05", diff: 5,
+      lore: "La Liga guarda su título en configuraciones que creían privadas. «Junta todo lo aprendido —reta Fabiancho—; al campeón lo corona leer lo que dejaron expuesto.»" }
 ];
 
 // --- MARCADORES TEMÁTICOS POR NIVEL (sprite animado en vez de la moneda) ---
@@ -349,23 +363,42 @@ window.addEventListener('keydown', (e) => {
             if (dist < 120 && dist < minDist) { minDist = dist; closestLevel = level; }
         });
         if (closestLevel) {
-            const isUnlocked = UNLOCKED_LEVELS.includes(closestLevel.id) || closestLevel.id === 1;
+            const L = closestLevel;
+            const isUnlocked = UNLOCKED_LEVELS.includes(L.id) || L.id === 1;
             const popup = document.getElementById('level-popup');
-            document.getElementById('popup-title').innerText = closestLevel.name;
-            const descEl = document.getElementById('popup-desc');
-            descEl.innerText = closestLevel.desc || "";
-            descEl.style.display = closestLevel.desc ? "" : "none";
+            const accent = L.accent || '#ff2fd6';
+            popup.style.setProperty('--accent', accent);
+
+            // Logo real del juego en la cabecera (Mega Man no trae logo -> texto)
+            const LOGOS = { 1:'mario', 2:'contra', 3:'megaman', 5:'bomberman', 8:'doom', 9:'sonic', 14:'pokemon' };
+            const logoEl = document.getElementById('lp-logo');
+            const titleEl = document.getElementById('popup-title');
+            if (LOGOS[L.id]) {
+                logoEl.src = `/static/img/titles/title_${LOGOS[L.id]}.png`;
+                logoEl.alt = L.name; logoEl.style.display = ''; titleEl.style.display = 'none';
+            } else {
+                logoEl.style.display = 'none'; titleEl.style.display = ''; titleEl.innerText = L.name;
+            }
+            const tagEl = document.getElementById('lp-tag');  if (tagEl) tagEl.innerText = L.tag || '';
+            const vulnEl = document.getElementById('lp-vuln'); if (vulnEl) vulnEl.innerText = L.vuln || '—';
+            const descEl = document.getElementById('popup-desc'); descEl.innerText = L.lore || '';
+            const diffEl = document.getElementById('lp-diff-stars');
+            if (diffEl){ const d = L.diff || 1; diffEl.innerHTML = Array.from({length:5}, (_,i)=>`<i class="${i<d?'on':''}"></i>`).join(''); }
+
+            const statusEl = document.getElementById('lp-status');
             const btnEnter = document.getElementById('btn-enter-level');
             if (isUnlocked) {
-                btnEnter.innerText = "ENTRAR"; btnEnter.style.color = "var(--green)"; btnEnter.style.borderColor = "var(--green)";
+                if (statusEl){ statusEl.innerText = 'DISPONIBLE'; statusEl.className = 'lp-status open'; }
+                btnEnter.innerText = "ENTRAR ▸"; btnEnter.disabled = false; btnEnter.className = 'btn-play';
                 btnEnter.onclick = () => {
-                    document.getElementById('level-popup').classList.add('hidden');
-                    if (transition) return;   // ya en transición
-                    if (closestLevel.fx) startTransition(closestLevel.fx, closestLevel.id);
-                    else window.location.href = `/level/${closestLevel.id}`;
+                    popup.classList.add('hidden');
+                    if (transition) return;
+                    if (L.fx) startTransition(L.fx, L.id);
+                    else window.location.href = `/level/${L.id}`;
                 };
             } else {
-                btnEnter.innerText = "BLOQUEADO"; btnEnter.style.color = "var(--magenta)"; btnEnter.style.borderColor = "var(--magenta)";
+                if (statusEl){ statusEl.innerText = 'BLOQUEADO'; statusEl.className = 'lp-status locked'; }
+                btnEnter.innerText = "BLOQUEADO"; btnEnter.disabled = true; btnEnter.className = 'btn-play locked';
                 btnEnter.onclick = null;
             }
             popup.classList.remove('hidden');

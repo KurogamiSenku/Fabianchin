@@ -30,6 +30,7 @@ DEV_UNLOCK_ALL = True
 LEVEL5_HALF1 = "FLAG{bomberman_"
 LEVEL5_HALF2 = "sqli_e_idor}"
 LEVEL_FLAGS = {
+    1: "FLAG{mario_sqli_tuberia_admin}",
     2: "FLAG{contra_file_upload_bypass}",
     5: LEVEL5_HALF1 + LEVEL5_HALF2,   # FLAG{bomberman_sqli_e_idor}
     8: "FLAG{doom_sudo_privesc_root}",
