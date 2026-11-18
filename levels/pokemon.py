@@ -1,5 +1,5 @@
 """
-Nivel 14 - Pokémon: "La Liga de los administradores" (reto final)
+Nivel 7 - Pokémon: "La Liga de los administradores" (reto final)
 Vulnerabilidad: configuración insegura / exposición de archivos de respaldo.
 
 Fabiancho recorre el pueblo (vista isométrica) hasta el Centro de la Liga. Allí

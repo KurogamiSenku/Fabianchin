@@ -474,3 +474,25 @@
   position:relative; z-index:1; background:transparent !important; border:none !important;
   border-radius:8px; max-width:100%; max-height:none !important;
 }
+
+/* ============================================================
+   REVISIÓN 5 — la BITÁCORA deja de ser botón flotante y pasa a
+   ser una PESTAÑA LATERAL IZQUIERDA (como Controles/Créditos a
+   la derecha). Vale para todos los niveles que tengan bitácora.
+   ============================================================ */
+#notebook-btn{
+  position:fixed !important; left:0 !important; right:auto !important;
+  top:50% !important; bottom:auto !important; transform:translateY(-50%) !important;
+  display:block !important; writing-mode:vertical-rl; text-orientation:mixed; text-align:center;
+  font-family:'Press Start 2P',monospace !important; font-size:12px !important; letter-spacing:2px !important;
+  color:#0a1f10 !important;
+  background:linear-gradient(180deg,#8fe39b,#35c47a) !important;
+  border:3px solid #000 !important; border-left:none !important;
+  border-radius:0 12px 12px 0 !important;
+  box-shadow:3px 3px 0 rgba(0,0,0,.5) !important;
+  padding:16px 9px !important; z-index:700 !important;
+  transition:transform .12s ease, filter .12s ease !important;
+}
+#notebook-btn:hover{ transform:translateY(-50%) translateX(5px) !important; filter:brightness(1.1); }
+#notebook-btn:active{ transform:translateY(-50%) translateX(2px) !important; }
+#notebook-btn .nb-count{ display:none !important; }

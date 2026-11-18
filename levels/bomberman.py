@@ -1,5 +1,5 @@
 """
-Nivel 5 - Bomberman: "El laberinto de los comandos"
+Nivel 4 - Bomberman: "El laberinto de los comandos"
 Vulnerabilidad: SQL Injection (login bypass).
 
 El jugador recorre un mapa jugable (rejilla estilo Bomberman) con Fabiancho,

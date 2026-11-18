@@ -1046,7 +1046,7 @@ function draw(){
     ctx.fillStyle='rgba(31,67,69,.82)'; ctx.strokeStyle='#f8e4a6'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.roundRect(cv.width/2-230,12,460,48,14); ctx.fill(); ctx.stroke();
     ctx.fillStyle='#fff5cf'; ctx.font='bold 18px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('PUEBLO LIGA  ·  NIVEL 14', cv.width/2,32);
+    ctx.fillText('PUEBLO LIGA  ·  NIVEL 7', cv.width/2,32);
     ctx.fillStyle='#e2f6d5'; ctx.font='12px monospace';
     if(nearest.npc&&nearest.distance<2.1){
         const s=isoToScreen(nearest.npc.gx,nearest.npc.gy);

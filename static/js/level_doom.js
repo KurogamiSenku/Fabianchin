@@ -408,7 +408,7 @@ function render(){
     ctx.fillStyle='rgba(5,5,9,.78)'; ctx.fillRect(W/2-132,5,264,24);
     ctx.fillStyle='#751e25'; ctx.fillRect(W/2-132,5,3,24); ctx.fillRect(W/2+129,5,3,24);
     ctx.fillStyle='#ff6848'; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('UAC  //  SECTOR 08  //  DOOM', W/2, 17);
+    ctx.fillText('UAC  //  SECTOR 05  //  DOOM', W/2, 17);
     ctx.textAlign='left'; ctx.font='bold 10px monospace'; ctx.fillStyle='#ff8b67';
     ctx.fillText('ARMOR  100',10,H-12);
     ctx.textAlign='right'; ctx.fillStyle='#8c8a93';

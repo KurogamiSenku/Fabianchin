@@ -482,7 +482,7 @@ function draw(){
     // HUD: anillos + título
     ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(cv.width/2-150,5,300,26);
     ctx.fillStyle='#ffd24a'; ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('NIVEL 9  ·  SONIC', cv.width/2, 19);
+    ctx.fillText('NIVEL 6  ·  SONIC', cv.width/2, 19);
     ctx.fillStyle='#ffd24a'; ctx.font='bold 16px monospace'; ctx.textAlign='left'; ctx.textBaseline='top';
     ctx.fillText('◉ '+ringCount, 14, 12);
 }

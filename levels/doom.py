@@ -1,5 +1,5 @@
 """
-Nivel 8 - DOOM: "Las profundidades del sistema"
+Nivel 5 - DOOM: "Las profundidades del sistema"
 Vulnerabilidad: SSH + Linux + permisos (escalada de privilegios).
 
 El jugador recorre un laberinto en pseudo-3D (raycaster) hasta una consola.

@@ -1,5 +1,5 @@
 """
-Nivel 9 - Sonic: "La carrera de los datos perdidos"
+Nivel 6 - Sonic: "La carrera de los datos perdidos"
 Vulnerabilidad: Esteganografía / análisis de metadatos.
 
 Al llegar a la meta, el jugador recupera un "archivo de datos perdido" (una

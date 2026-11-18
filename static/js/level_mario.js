@@ -1047,14 +1047,14 @@ function drawHUD() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.textBaseline = 'middle';
 
-  // --- Barra central: título + objetivo ---
-  const hw = 448, hh = 46, hx = cv.width / 2 - hw / 2, hy = 6;
+  // --- Barra central: título + objetivo (centrada, SIN pisar los paneles laterales) ---
+  const hw = 366, hh = 46, hx = cv.width / 2 - hw / 2, hy = 6;
   ctx.fillStyle = 'rgba(6,12,22,.96)'; ctx.fillRect(hx, hy, hw, hh);
   ctx.fillStyle = '#ffb454'; ctx.fillRect(hx, hy, hw, 3);
   ctx.strokeStyle = 'rgba(89,208,221,.85)'; ctx.lineWidth = 2; ctx.strokeRect(hx + 1, hy + 1, hw - 2, hh - 2);
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#ffd24a'; ctx.font = 'bold 15px monospace';
-  ctx.fillText('MUNDO 1-1   ·   SUPER MARIO', cv.width / 2, hy + 16);
+  ctx.fillStyle = '#ffd24a'; ctx.font = 'bold 14px monospace';
+  ctx.fillText('MUNDO 1-1 · SUPER MARIO', cv.width / 2, hy + 16);
   ctx.fillStyle = '#9fe0ff'; ctx.font = 'bold 10px monospace';
   const sub = room === 'under' ? '▸ ACCESO ADMIN (SQLi) — consigue la LLAVE'
     : hasKey ? '▸ JUNTA LOS 3 POWER-UPS Y LLEGA A LA BANDERA →' : '▸ BAJA POR LA PRIMERA TUBERÍA ↓';

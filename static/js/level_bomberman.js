@@ -589,13 +589,13 @@ function draw(){
     ctx.fillStyle='#ffb454'; ctx.fillRect(hudX+7,hudY+7,3,hudH-14);
     ctx.fillStyle='#ffb454'; ctx.font='bold 14px monospace';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('SECTOR 05  /  BOMBERMAN', cv.width/2, hudY+13);
+    ctx.fillText('SECTOR 04  /  BOMBERMAN', cv.width/2, hudY+13);
     ctx.fillStyle='#78b7c8'; ctx.font='bold 8px monospace';
     ctx.fillText('ESPACIO: BOMBA  ·  EVITA LA EXPLOSIÓN', cv.width/2, hudY+28);
     if(secretSectorUnlocked){
         const remaining=secretEnemies.filter(enemy=>!enemy.defeated).length;
         ctx.textAlign='right'; ctx.fillStyle='#ffb454'; ctx.font='bold 10px monospace';
-        ctx.fillText(`SECTOR 2 · BOMBERMAN ${remaining}/4`,cv.width-12,hudY+22);
+        ctx.fillText(`SECTOR 04 · BOMBERMAN ${remaining}/4`,cv.width-12,hudY+22);
     }
     ctx.strokeStyle='rgba(118,220,218,.7)'; ctx.lineWidth=2;
     ctx.strokeRect(1,1,cv.width-2,cv.height-2);
