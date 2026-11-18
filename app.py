@@ -38,6 +38,11 @@ LEVEL_TEMPLATES = {
     9: "levels/sonic.html",
     14: "levels/pokemon.html",
 }
+
+LEVEL_MUSIC = {1: "mario", 2: "contra", 3: "megaman", 5: "bomberman",
+               8: "doom", 9: "sonic", 14: "pokemon"}
+
+
 def next_expected_level():
     """El id del próximo nivel que el jugador debe resolver, según su progreso."""
     unlocked = session.get("unlocked", [])
@@ -106,7 +111,8 @@ def level_view(level_id):
     template = LEVEL_TEMPLATES.get(level_id)
     if not template:
         return render_template("levels/coming_soon.html", level_id=level_id)
-    return render_template(template, level_id=level_id)
+    return render_template(template, level_id=level_id,
+                           music=LEVEL_MUSIC.get(level_id))
 
 @app.route("/api/unlock_level/<int:level_id>", methods=["POST"])
 def unlock_level(level_id):

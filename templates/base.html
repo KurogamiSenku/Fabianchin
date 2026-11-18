@@ -98,5 +98,10 @@
     </script>
 
     {% block scripts %}{% endblock %}
+
+    {% if music %}
+    <script src="{{ url_for('static', filename='js/theme_audio.js') }}"
+            data-track="{{ url_for('static', filename='audio/' ~ music ~ '.mp3') }}"></script>
+    {% endif %}
 </body>
 </html>
