@@ -15,7 +15,7 @@ from flask import Blueprint, request, jsonify, session
 import config
 
 bp = Blueprint("doom", __name__, url_prefix="/level/doom")
-FLAG = config.LEVEL_FLAGS[8]
+FLAG = config.LEVEL_FLAGS[5]
 
 USER = "fabian"
 
@@ -105,7 +105,7 @@ def run(cmd):
             out = _cat(_resolve(fileargs[0]), as_root=True)
             if FLAG in out:
                 session.setdefault("found", {})
-                session["found"]["8"] = True
+                session["found"]["5"] = True
                 session.modified = True
             return out
         return f"Lo siento, el usuario {USER} no puede ejecutar '/usr/bin/{args[0]}' como root."
@@ -124,11 +124,11 @@ def submit():
     if sent == FLAG:
         prog = config.PROGRESSION
         unlocked = session.get("unlocked", [1])
-        if 8 in prog:
-            i = prog.index(8)
+        if 5 in prog:
+            i = prog.index(5)
             if i + 1 < len(prog) and prog[i + 1] not in unlocked:
                 unlocked.append(prog[i + 1])
-        if 8 not in unlocked:
+        if 5 not in unlocked:
             unlocked.append(8)
         session["unlocked"] = unlocked
         session.modified = True

@@ -17,9 +17,9 @@ import config
 
 bp = Blueprint("bomberman", __name__, url_prefix="/level/bomberman")
 
-FLAG = config.LEVEL_FLAGS[5]
-HALF1 = config.LEVEL5_HALF1   # primera mitad (por SQLi)
-HALF2 = config.LEVEL5_HALF2   # segunda mitad (por IDOR, sector oculto)
+FLAG = config.LEVEL_FLAGS[4]
+HALF1 = config.BOMBERMAN_HALF1   # primera mitad (por SQLi)
+HALF2 = config.BOMBERMAN_HALF2   # segunda mitad (por IDOR, sector oculto)
 
 # La nota del admin entrega la 1a mitad y orienta hacia el sector oculto
 ADMIN_NOTE = (HALF1 + "   [1/2]   ·   la otra mitad está en el 'sector oculto' "
@@ -85,7 +85,7 @@ def login():
             flag_hint=nota,   # la nota del admin contiene la flag
         )
         session.setdefault("found", {})
-        session["found"]["5"] = True
+        session["found"]["4"] = True
         session.modified = True
     else:
         result.update(
@@ -110,7 +110,7 @@ def record():
         return jsonify(ok=False, message=f"No existe el expediente #{rid}.")
     if rec["user"] == "admin":
         session.setdefault("found", {})
-        session["found"]["5b"] = True
+        session["found"]["4b"] = True
         session.modified = True
     return jsonify(ok=True, id=rid, user=rec["user"], nota=rec["nota"])
 
@@ -121,13 +121,13 @@ def submit():
     if sent == FLAG:
         prog = config.PROGRESSION
         unlocked = session.get("unlocked", [1])
-        if 5 in prog:
-            i = prog.index(5)
+        if 4 in prog:
+            i = prog.index(4)
             if i + 1 < len(prog):
                 nxt = prog[i + 1]
                 if nxt not in unlocked:
                     unlocked.append(nxt)
-        if 5 not in unlocked:
+        if 4 not in unlocked:
             unlocked.append(5)
         session["unlocked"] = unlocked
         session.modified = True

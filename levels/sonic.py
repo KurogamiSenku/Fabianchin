@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, PngImagePlugin
 import config
 
 bp = Blueprint("sonic", __name__, url_prefix="/level/sonic")
-FLAG = config.LEVEL_FLAGS[9]
+FLAG = config.LEVEL_FLAGS[6]
 
 
 @bp.route("/datos.png")
@@ -49,11 +49,11 @@ def submit():
     if sent == FLAG:
         prog = config.PROGRESSION
         unlocked = session.get("unlocked", [1])
-        if 9 in prog:
-            i = prog.index(9)
+        if 6 in prog:
+            i = prog.index(6)
             if i + 1 < len(prog) and prog[i + 1] not in unlocked:
                 unlocked.append(prog[i + 1])
-        if 9 not in unlocked:
+        if 6 not in unlocked:
             unlocked.append(9)
         session["unlocked"] = unlocked
         session.modified = True

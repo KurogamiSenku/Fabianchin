@@ -15,7 +15,7 @@ from flask import Blueprint, request, jsonify, session, Response
 import config
 
 bp = Blueprint("pokemon", __name__, url_prefix="/level/pokemon")
-FLAG = config.LEVEL_FLAGS[14]
+FLAG = config.LEVEL_FLAGS[7]
 
 ADMIN_USER = "liga_admin"
 ADMIN_PASS = "ServidorLiga#2024!"   # se filtra por el respaldo expuesto
@@ -45,7 +45,7 @@ def login():
     p = request.form.get("pass", "")
     if u == ADMIN_USER and p == ADMIN_PASS:
         session.setdefault("found", {})
-        session["found"]["14"] = True
+        session["found"]["7"] = True
         session.modified = True
         return jsonify(ok=True, message="Acceso de ADMIN concedido. Panel de la Liga abierto.", flag_hint=FLAG)
     return jsonify(ok=False, message="Credenciales inválidas. Solo el administrador de la Liga puede entrar.")
@@ -56,12 +56,12 @@ def submit():
     sent = (request.form.get("flag") or "").strip()
     if sent == FLAG:
         session.setdefault("completed", [])
-        if 14 not in session["completed"]:
-            session["completed"].append(14)
+        if 7 not in session["completed"]:
+            session["completed"].append(7)
         # desbloquear (aunque es el último) y marcar como resuelto
         unlocked = session.get("unlocked", [1])
-        if 14 not in unlocked:
-            unlocked.append(14)
+        if 7 not in unlocked:
+            unlocked.append(7)
         session["unlocked"] = unlocked
         session.modified = True
         return jsonify(ok=True, final=True,

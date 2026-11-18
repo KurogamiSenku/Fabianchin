@@ -147,16 +147,16 @@ const LEVELS = [
     { id: 3,  name: "Mega Man",  x: 1310, y: 264,  marker: "megaman", fx: "megaman",
       tag: "El laboratorio del Dr. Wily", vuln: "Path Traversal / LFI", accent: "#2a9df4", diff: 3,
       lore: "Wily esconde sus planos tras un visor de archivos. «Trepa con ../../ por los pasillos del sistema —susurra Fabiancho— y leerás lo que nadie debía mostrarte.»" },
-    { id: 5,  name: "Bomberman", x: 250,  y: 500,  marker: "bomberman", fx: "bomberman",
+    { id: 4,  name: "Bomberman", x: 250,  y: 500,  marker: "bomberman", fx: "bomberman",
       tag: "El laberinto de los comandos", vuln: "Command Injection · IDOR", accent: "#4aa3ff", diff: 3,
       lore: "La bomba es un «ping» que acepta de más. «Un ; o un && —advierte Fabiancho— y el laberinto obedece tus órdenes, no las suyas. Luego cambia un id y mira lo que no es tuyo.»" },
-    { id: 8,  name: "DOOM",      x: 1900, y: 500,  marker: "doom", fx: "doom",
+    { id: 5,  name: "DOOM",      x: 1900, y: 500,  marker: "doom", fx: "doom",
       tag: "Las profundidades del sistema", vuln: "SSH · Escalada de privilegios", accent: "#c0392b", diff: 4,
       lore: "Bajo el infierno hay una shell. «Entra por SSH y mira qué puedes correr como root sin permiso —gruñe Fabiancho—; el demonio siempre deja un sudo mal configurado.»" },
-    { id: 9,  name: "Sonic",     x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic",
+    { id: 6,  name: "Sonic",     x: 465,  y: 1362, marker: "sonic_ring", fx: "sonic",
       tag: "La carrera de los datos perdidos", vuln: "Esteganografía · Metadatos", accent: "#2e8bff", diff: 4,
       lore: "La pista va tan rápido que nadie mira el archivo. «Los secretos no siempre están en el texto —guiña Fabiancho—; a veces viven en los metadatos.»" },
-    { id: 14, name: "Pokémon",   x: 2076, y: 1199, marker: "pokemon", fx: "pokemon",
+    { id: 7,  name: "Pokémon",   x: 2076, y: 1199, marker: "pokemon", fx: "pokemon",
       tag: "La Liga de los administradores", vuln: "Configuración expuesta · Cadena final", accent: "#ffcb05", diff: 5,
       lore: "La Liga guarda su título en configuraciones que creían privadas. «Junta todo lo aprendido —reta Fabiancho—; al campeón lo corona leer lo que dejaron expuesto.»" }
 ];
@@ -375,7 +375,7 @@ window.addEventListener('keydown', (e) => {
             popup.style.setProperty('--accent', accent);
 
             // Logo real del juego en la cabecera (Mega Man no trae logo -> texto)
-            const LOGOS = { 1:'mario', 2:'contra', 3:'megaman', 5:'bomberman', 8:'doom', 9:'sonic', 14:'pokemon' };
+            const LOGOS = { 1:'mario', 2:'contra', 3:'megaman', 4:'bomberman', 5:'doom', 6:'sonic', 7:'pokemon' };
             const logoEl = document.getElementById('lp-logo');
             const titleEl = document.getElementById('popup-title');
             if (LOGOS[L.id]) {

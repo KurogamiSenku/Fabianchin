@@ -18,23 +18,24 @@ FLAGS = {
     "level2": "FLAG{enumeracion_web_completada}",
 }
 
-# --- Progresión del mapa (ids numéricos, solo niveles con sprite) ---
-PROGRESSION = [1, 2, 3, 5, 8, 9, 14]
+# --- Progresión del mapa (ids numéricos PROGRESIVOS, 7 niveles) ---
+#   1 Mario · 2 Contra · 3 Mega Man · 4 Bomberman · 5 DOOM · 6 Sonic · 7 Pokémon
+PROGRESSION = [1, 2, 3, 4, 5, 6, 7]
 
 # MODO DESARROLLO: desbloquea TODOS los niveles para poder probarlos directo.
 # Pon esto en False cuando quieras la progresión real (desbloqueo por flags).
 DEV_UNLOCK_ALL = True
 
 # Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
-# Nivel 5 = flag en dos mitades: la 1a por SQLi, la 2a por IDOR.
-LEVEL5_HALF1 = "bomberman_"
-LEVEL5_HALF2 = "sqli_idor"
+# Nivel 4 (Bomberman) = flag en dos mitades: la 1a por SQLi, la 2a por IDOR.
+BOMBERMAN_HALF1 = "bomberman_"
+BOMBERMAN_HALF2 = "sqli_idor"
 LEVEL_FLAGS = {
     1: "FLAG{mario_sqli_tuberia_admin}",
     2: "FLAG{contra_file_upload_bypass}",
-    3: "FLAG{megaman_lfi_laboratorio_wily}",
-    5: LEVEL5_HALF1 + LEVEL5_HALF2,
-    8: "doom_sudo_root",
-    9: "FLAG{sonic_datos_en_metadatos}",
-    14: "pokemon_liga_backup",
+    # 3: "FLAG{megaman_...}",  # <- lo define quien construye Mega Man (nivel 3)
+    4: BOMBERMAN_HALF1 + BOMBERMAN_HALF2,
+    5: "doom_sudo_root",
+    6: "FLAG{sonic_datos_en_metadatos}",
+    7: "pokemon_liga_backup",
 }

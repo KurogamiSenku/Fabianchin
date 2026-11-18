@@ -13,7 +13,6 @@ from levels.sonic import bp as sonic_bp
 from levels.doom import bp as doom_bp
 from levels.pokemon import bp as pokemon_bp
 from levels.mario import bp as mario_bp
-from levels.megaman import bp as megaman_bp
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
@@ -28,22 +27,23 @@ app.register_blueprint(sonic_bp)
 app.register_blueprint(doom_bp)
 app.register_blueprint(pokemon_bp)
 app.register_blueprint(mario_bp)
-app.register_blueprint(megaman_bp)
 
 
-# Mapea id de nivel -> plantilla del reto (solo los que ya están construidos)
+# Mapea id de nivel -> plantilla del reto (orden PROGRESIVO 1..7)
+#   3 (Mega Man) está en construcción: por ahora cae en "coming_soon".
 LEVEL_TEMPLATES = {
     1: "levels/mario.html",
     2: "levels/contra.html",
-    3: "levels/megaman.html",
-    5: "levels/bomberman.html",
-    8: "levels/doom.html",
-    9: "levels/sonic.html",
-    14: "levels/pokemon.html",
+    # 3: "levels/megaman.html",   # <- descomentar cuando Mega Man esté listo
+    4: "levels/bomberman.html",
+    5: "levels/doom.html",
+    6: "levels/sonic.html",
+    7: "levels/pokemon.html",
 }
 
-LEVEL_MUSIC = {1: "mario", 2: "contra", 5: "bomberman",
-               8: "doom", 9: "sonic", 14: "pokemon"}
+# Título/música por nivel (coincide con static/img/titles/title_<nombre>.png)
+LEVEL_MUSIC = {1: "mario", 2: "contra", 3: "megaman", 4: "bomberman",
+               5: "doom", 6: "sonic", 7: "pokemon"}
 
 
 def next_expected_level():
@@ -95,14 +95,16 @@ def submit_flag():
 
 @app.route("/map")
 def map_view():
-    # Sembramos el nivel 1 si es la primera vez
-    if "unlocked" not in session:
-        session["unlocked"] = [1]
+    if config.DEV_UNLOCK_ALL:
+        # Modo desarrollo: todos los nodos desbloqueados para poder probarlos.
+        session["unlocked"] = list(config.PROGRESSION)
     else:
-        # Aseguramos que el 1 siempre esté presente
-        if 1 not in session["unlocked"]:
+        # Progresión real: se siembra el nivel 1 y se desbloquea por flags.
+        if "unlocked" not in session:
+            session["unlocked"] = [1]
+        elif 1 not in session["unlocked"]:
             session["unlocked"].insert(0, 1)
-            session.modified = True
+    session.modified = True
 
     return render_template(
         "map.html",
