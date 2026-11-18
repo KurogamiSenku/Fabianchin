@@ -32,6 +32,7 @@ LEVEL5_HALF2 = "sqli_idor"
 LEVEL_FLAGS = {
     1: "FLAG{mario_sqli_tuberia_admin}",
     2: "FLAG{contra_file_upload_bypass}",
+    3: "FLAG{megaman_lfi_laboratorio_wily}",
     5: LEVEL5_HALF1 + LEVEL5_HALF2,
     8: "doom_sudo_root",
     9: "FLAG{sonic_datos_en_metadatos}",

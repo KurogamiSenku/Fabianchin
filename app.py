@@ -13,6 +13,7 @@ from levels.sonic import bp as sonic_bp
 from levels.doom import bp as doom_bp
 from levels.pokemon import bp as pokemon_bp
 from levels.mario import bp as mario_bp
+from levels.megaman import bp as megaman_bp
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
@@ -27,19 +28,21 @@ app.register_blueprint(sonic_bp)
 app.register_blueprint(doom_bp)
 app.register_blueprint(pokemon_bp)
 app.register_blueprint(mario_bp)
+app.register_blueprint(megaman_bp)
 
 
 # Mapea id de nivel -> plantilla del reto (solo los que ya están construidos)
 LEVEL_TEMPLATES = {
     1: "levels/mario.html",
     2: "levels/contra.html",
+    3: "levels/megaman.html",
     5: "levels/bomberman.html",
     8: "levels/doom.html",
     9: "levels/sonic.html",
     14: "levels/pokemon.html",
 }
 
-LEVEL_MUSIC = {1: "mario", 2: "contra", 3: "megaman", 5: "bomberman",
+LEVEL_MUSIC = {1: "mario", 2: "contra", 5: "bomberman",
                8: "doom", 9: "sonic", 14: "pokemon"}
 
 
