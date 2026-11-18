@@ -259,6 +259,11 @@ let enemies = SPAWN_POINTS.map(sp => ({
     x: sp.x, y: sp.y, vx: 0, vy: 0, isDead: false, deathTimer: 0,
     animFrame: 0, animTimer: 0, facing: 'down', state: 'idle'
 }));
+const FIRST_WAVE_SIZE = enemies.length;
+let reinforcementsSpawned = false;
+let maxBounce = MAX_BOUNCE;
+let combatNotice = '';
+let combatNoticeTimer = 0;
 
 // --- SPAWN DE RATAS ---
 const RAT_SPAWNS = [
@@ -640,6 +645,8 @@ function gameLoop(time) {
 function update(dt, time) {
     if (EDIT_MODE) return;
     if (transition) { keys.up = keys.down = keys.left = keys.right = false; player.isMoving = false; return; }
+    combatNoticeTimer = Math.max(0, combatNoticeTimer - dt);
+    if (!combatNoticeTimer) combatNotice = '';
 
     let dx = 0, dy = 0;
     if (keys.up) { dy -= 1; player.facing = 'up'; }
@@ -703,9 +710,9 @@ function update(dt, time) {
 
     // Tope del empuje: por fuerte o numeroso que sea el grupo, no te manda volando
     const bmag = Math.hypot(player.bounceVx, player.bounceVy);
-    if (bmag > MAX_BOUNCE) {
-        player.bounceVx = player.bounceVx / bmag * MAX_BOUNCE;
-        player.bounceVy = player.bounceVy / bmag * MAX_BOUNCE;
+    if (bmag > maxBounce) {
+        player.bounceVx = player.bounceVx / bmag * maxBounce;
+        player.bounceVy = player.bounceVy / bmag * maxBounce;
     }
 
     updateCamera(dt);
@@ -792,12 +799,13 @@ function updateEnemies(dt, time) {
         const dx = playerCenterX - enemyCenterX;
         const dy = playerCenterY - enemyCenterY;
         const dist = Math.hypot(dx, dy);
+        const enemySpeed = enemy.speed || ENEMY_SPEED;
 
         const canSee = dist < ENEMY_SIGHT_RANGE && hasLineOfSight(enemyCenterX, enemyCenterY, playerCenterX, playerCenterY);
 
         if (canSee && dist > 0) {
-            let moveX = (dx / dist) * ENEMY_SPEED;
-            let moveY = (dy / dist) * ENEMY_SPEED;
+            let moveX = (dx / dist) * enemySpeed;
+            let moveY = (dy / dist) * enemySpeed;
 
             let nextEnemyX = enemy.x + moveX;
             let nextEnemyY = enemy.y + moveY;
@@ -820,7 +828,7 @@ function updateEnemies(dt, time) {
         if (dist < minDistForPush && dist > 0 && canSee) {   // canSee incluye línea de visión: no empuja a través de muros
             const pushAngle = Math.atan2(dy, dx);
             const damp = (player.isAttacking && (time - player.attackStartTime) < 350) ? ATTACK_PUSH_DAMP : 1;
-            const bounceForce = ENEMY_PUSH_FORCE * 0.6 * damp;
+            const bounceForce = (enemy.pushForce || ENEMY_PUSH_FORCE) * 0.6 * damp;
             player.bounceVx += Math.cos(pushAngle) * bounceForce;
             player.bounceVy += Math.sin(pushAngle) * bounceForce;
             enemy.x -= Math.cos(pushAngle) * 1.5;
@@ -869,7 +877,21 @@ function updateEnemies(dt, time) {
                     b.y -= ny * overlap * 0.5;
                 }
             }
+
         }
+    }
+
+    if (!reinforcementsSpawned && enemies.slice(0, FIRST_WAVE_SIZE).every(enemy => enemy.isDead)) {
+        reinforcementsSpawned = true;
+        maxBounce = 30;
+        const reinforcements = SPAWN_POINTS.slice(0, 5).map(sp => ({
+            x: sp.x, y: sp.y, vx: 0, vy: 0, isDead: false, deathTimer: 0,
+            animFrame: 0, animTimer: 0, facing: 'down', state: 'idle',
+            speed: ENEMY_SPEED * 1.35, pushForce: ENEMY_PUSH_FORCE * 2.4
+        }));
+        enemies.push(...reinforcements);
+        combatNotice = '¡Refuerzos! Llegaron cinco enemigos más rápidos y con más fuerza.';
+        combatNoticeTimer = 6500;
     }
 }
 
@@ -1230,6 +1252,19 @@ function draw() {
     }
 
     ctx.restore();
+
+    if (combatNoticeTimer > 0) {
+        ctx.fillStyle = 'rgba(9,17,29,.92)';
+        ctx.fillRect(12, 12, VIEW_WIDTH - 24, 38);
+        ctx.strokeStyle = '#ff6978';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(13, 13, VIEW_WIDTH - 26, 36);
+        ctx.fillStyle = '#fff4d6';
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(combatNotice, VIEW_WIDTH / 2, 31, VIEW_WIDTH - 44);
+    }
 }
 
 requestAnimationFrame(gameLoop);

@@ -6,8 +6,8 @@
 <style>
   .arcade-stage{ padding:0 !important; }
   .arcade-subtitle{ display:none !important; }
-  #level-inner{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:6px; }
-  #arena{ width:100%; height:100%; object-fit:contain; image-rendering:pixelated;
+  #level-inner{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:6px; }
+  #arena{ width:100%; height:100%; object-fit:contain; image-rendering:auto;
     border:4px solid #000; border-radius:8px; background:#120d0a; box-shadow:0 0 24px rgba(0,0,0,.6); }
 
   .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.8); display:none;
@@ -29,18 +29,20 @@
   .sql-modal button:active{ transform:translateY(4px); }
   .btn-flag{ background:#3ddc84; } .btn-close{ background:#8b949e; }
   .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; } .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
-  details{ margin-top:12px; } summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
-  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
   .flagbox{ margin-top:14px; padding-top:12px; border-top:2px solid #223049; }
   .flagbox label{ display:block; color:#8b949e; font-size:.82rem; margin-bottom:5px; }
   .win{ display:none; margin-top:12px; text-align:center; color:#3ddc84; font-weight:bold; } .win.show{ display:block; }
   .win a, .flagbox a{ color:#ff2fd6; }
+  #restart-level{ position:absolute; z-index:2; top:12px; left:12px; padding:8px 10px;
+    color:#ffe0a0; background:rgba(5,5,9,.88); border:1px solid #ff6848; border-radius:5px;
+    font: bold 10px monospace; cursor:pointer; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div id="level-inner">
-  <canvas id="arena" width="480" height="300"></canvas>
+  <canvas id="arena" width="640" height="400"></canvas>
+  <button type="button" id="restart-level">REINICIAR (R)</button>
 </div>
 {% endblock %}
 
@@ -49,6 +51,7 @@
   <strong>← →</strong> → Girar &nbsp;|&nbsp;
   <strong>A D</strong> → Lateral &nbsp;|&nbsp;
   <strong>E</strong> → Consola &nbsp;|&nbsp;
+  <strong>R</strong> → Reiniciar y borrar mapa &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Mapa</a>
 {% endblock %}
 
@@ -57,25 +60,17 @@
   <div class="sql-modal">
     <h2>▸ Consola — sesión SSH (usuario fabian)</h2>
     <div class="term" id="term"><span class="u">Conectado por SSH como fabian@profundidad.</span>
-Escribe <b>help</b> para ver comandos. La flag está en /root/flag.txt (solo root).
+Escribe <b>help</b> para ver los comandos disponibles. Explora antes de intentar entrar.
 </div>
     <div class="prompt-row">
       <span class="ps">fabian@doom:~$</span>
       <input type="text" id="cmd" autocomplete="off" spellcheck="false" placeholder="comando…">
     </div>
 
-    <details>
-      <summary>¿Atascado? Pistas progresivas</summary>
-      <p class="hint"><strong>1.</strong> Mira quién eres y qué puedes: <code>whoami</code>, <code>id</code>. Lee <code>cat notas.txt</code>.</p>
-      <p class="hint"><strong>2.</strong> <code>cat /root/flag.txt</code> da <em>Permiso denegado</em> (eres usuario normal). Necesitas privilegios de <strong>root</strong>.</p>
-      <p class="hint"><strong>3.</strong> Revisa qué te dejaron ejecutar como root: <code>sudo -l</code>. Hay una <strong>mala configuración</strong>.</p>
-      <p class="hint"><strong>4.</strong> Si puedes correr <code>cat</code> como root sin contraseña: <code>sudo cat /root/flag.txt</code>. Eso es <strong>escalada de privilegios</strong>.</p>
-    </details>
-
     <div class="flagbox">
       <label for="flag">Enviar flag</label>
       <div class="sbtns">
-        <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <input type="text" id="flag" placeholder="doom_raiz_..." autocomplete="off" spellcheck="false">
         <button class="btn-flag" id="send">ENVIAR</button>
         <button type="button" class="btn-close" id="close">CERRAR</button>
       </div>
@@ -90,6 +85,7 @@ Escribe <b>help</b> para ver comandos. La flag está en /root/flag.txt (solo roo
 <script src="{{ url_for('static', filename='js/level_doom.js') }}"></script>
 <script>
 const termOutput=document.getElementById('term'), cmdIn=document.getElementById('cmd');
+document.getElementById('restart-level').addEventListener('click',()=>window.location.reload());
 function printLine(txt, cls){ const span=document.createElement('div'); if(cls)span.className=cls; span.textContent=txt; termOutput.appendChild(span); termOutput.scrollTop=termOutput.scrollHeight; }
 async function runCmd(){
   const c=cmdIn.value; if(!c.trim()){ return; }

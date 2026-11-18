@@ -6,7 +6,7 @@
 // ====================================================================
 const cv = document.getElementById('arena');
 const ctx = cv.getContext('2d');
-const W = 480, H = 300;
+const W = 640, H = 400;
 cv.width = W; cv.height = H;
 
 // Mapa del laberinto: # pared, . suelo, T consola (terminal), S spawn
@@ -108,9 +108,45 @@ player.r=.18;
 
 const keys = {};
 let challengeOpen = false;
+let secretCode = '';
+let revealWholeMap = false;
+let statusMessage = '';
+let statusTimer = 0;
+let statusKind = 'info';
+let cluesCollected = 0;
+let cluePickupFlash = 0;
+let sentinelHitCooldown = 0;
+let sentinelHitFlash = 0;
+const discoveredCells = new Set();
+const visibleCells = new Set();
+const discoveredClues = new Set();
+const mapClues = [
+    { x:3, y:1, text:'Los archivos personales suelen guardar notas. Busca pistas antes de avanzar.' },
+    { x:7, y:5, text:'No todo usuario tiene permisos de administrador. Comprueba tu identidad.' },
+    { x:8, y:9, text:'La consola está en el extremo del laberinto; sigue explorando los pasillos.' },
+    { x:7, y:13, text:'Si una ruta está bloqueada, revisa qué comandos puedes ejecutar con sudo.' }
+];
 function typing(e){ const t=e.target||document.activeElement; return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
 window.addEventListener('keydown', e=>{
     if (typing(e)||challengeOpen) return;
+    if (e.key.length===1 && /^[a-z]$/i.test(e.key)){
+        const next=(secretCode+e.key.toLowerCase()).slice(-'mamahuevo'.length);
+        if ('mamahuevo'.startsWith(next)){
+            secretCode=next;
+            e.preventDefault();
+            if (secretCode==='mamahuevo'){
+                revealWholeMap=true;
+                showStatus('Código aceptado: el mapa completo está revelado.');
+                secretCode='';
+            }
+            return;
+        }
+        secretCode=e.key.toLowerCase()==='m'?'m':'';
+    }
+    if (e.key==='r'||e.key==='R'){
+        window.location.reload();
+        return;
+    }
     keys[e.key.toLowerCase()]=true;
     if ((e.key==='e'||e.key==='E') && nearTerm()) openChallenge();
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
@@ -144,6 +180,9 @@ function tryMove(nx, ny){
 }
 function update(){
     if (challengeOpen){ player.kx=0; player.ky=0; return; }   // consola: todo congelado
+    sentinelHitCooldown=Math.max(0,sentinelHitCooldown-1);
+    sentinelHitFlash=Math.max(0,sentinelHitFlash-1);
+    cluePickupFlash=Math.max(0,cluePickupFlash-1);
     let fwd=0, turn=0, strafe=0;
     if (keys['w']||keys['arrowup']) fwd+=1;
     if (keys['s']||keys['arrowdown']) fwd-=1;
@@ -158,6 +197,10 @@ function update(){
     tryMove(player.x+mvx, player.y+mvy);
     player.kx*=0.8; player.ky*=0.8;
 
+    updateExploration();
+    statusTimer=Math.max(0,statusTimer-16);
+    if (!statusTimer) statusMessage='';
+
     // Los Cacodemonios persiguen sin cruzar paredes ni atravesarse entre ellos.
     for (let i=0;i<sentinels.length;i++){
         const s=sentinels[i];
@@ -169,8 +212,97 @@ function update(){
         }
         if (d<player.r+s.r+.08){
             player.kx += (dx/d)*0.06; player.ky += (dy/d)*0.06;   // impulso corto
+            if(!sentinelHitCooldown){
+                showStatus('Un centinela te empujó: evita el contacto.','hit');
+                sentinelHitCooldown=60;
+                sentinelHitFlash=10;
+            }
         }
     }
+}
+
+function showStatus(message,kind='info'){
+    statusMessage=message;
+    statusTimer=5200;
+    statusKind=kind;
+}
+
+function updateExploration(){
+    visibleCells.clear();
+    const px=Math.floor(player.x), py=Math.floor(player.y);
+    for(let my=Math.max(0,py-8);my<Math.min(MH,py+9);my++){
+        for(let mx=Math.max(0,px-8);mx<Math.min(MW,px+9);mx++){
+            const tx=mx+.5, ty=my+.5, dx=tx-player.x, dy=ty-player.y;
+            const distance=Math.hypot(dx,dy);
+            if(distance>8) continue;
+            let angle=Math.atan2(dy,dx)-player.ang;
+            while(angle<-Math.PI) angle+=Math.PI*2;
+            while(angle>Math.PI) angle-=Math.PI*2;
+            if(Math.abs(angle)>FOV*.62) continue;
+            let blocked=false;
+            const steps=Math.ceil(distance*5);
+            for(let step=1;step<steps;step++){
+                const sx=Math.floor(player.x+dx*step/steps);
+                const sy=Math.floor(player.y+dy*step/steps);
+                if(isWall(sx,sy)){ blocked=true; break; }
+            }
+            if(blocked) continue;
+            const id=`${mx},${my}`;
+            visibleCells.add(id);
+            discoveredCells.add(id);
+        }
+    }
+
+    for(const clue of mapClues){
+        const id=`${clue.x},${clue.y}`;
+        if(!discoveredClues.has(id)&&Math.hypot(player.x-(clue.x+.5),player.y-(clue.y+.5))<.45){
+            discoveredClues.add(id);
+            cluesCollected++;
+            cluePickupFlash=14;
+            showStatus(clue.text,'clue');
+        }
+    }
+}
+
+function drawMinimap(){
+    const panelWidth=230, panelHeight=220, panelX=W-panelWidth-8, panelY=38;
+    const tileSize=Math.min(11.5,(panelWidth-24)/MW,(panelHeight-50)/MH);
+    const mapWidth=MW*tileSize, mapHeight=MH*tileSize;
+    const mapX=panelX+(panelWidth-mapWidth)/2, mapY=panelY+28;
+    ctx.fillStyle='rgba(5,8,14,.94)';
+    ctx.fillRect(panelX,panelY,panelWidth,panelHeight);
+    ctx.strokeStyle='#ff6848'; ctx.lineWidth=2;
+    ctx.strokeRect(panelX+1,panelY+1,panelWidth-2,panelHeight-2);
+    ctx.fillStyle='#ff8b67'; ctx.font='bold 12px monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(revealWholeMap?'MAPA COMPLETO':'SECTORES EXPLORADOS',panelX+panelWidth/2,panelY+13);
+    for(let my=0;my<MH;my++){
+        for(let mx=0;mx<MW;mx++){
+            const id=`${mx},${my}`;
+            const visible=revealWholeMap||visibleCells.has(id);
+            const discovered=revealWholeMap||discoveredCells.has(id);
+            if(!discovered) continue;
+            ctx.fillStyle=isWall(mx,my)?(visible?'#e26f57':'#7f5148'):(visible?'#c5b39a':'#82786d');
+            ctx.beginPath();
+            ctx.roundRect(mapX+mx*tileSize+1,mapY+my*tileSize+1,tileSize-2,tileSize-2,2);
+            ctx.fill();
+            if(mx===Math.floor(term.x)&&my===Math.floor(term.y)){
+                ctx.fillStyle='#ffc65c';
+                ctx.beginPath();
+                ctx.arc(mapX+(mx+.5)*tileSize,mapY+(my+.5)*tileSize,tileSize*.28,0,Math.PI*2);
+                ctx.fill();
+            }
+        }
+    }
+    const playerId=`${Math.floor(player.x)},${Math.floor(player.y)}`;
+    if(revealWholeMap||discoveredCells.has(playerId)){
+        ctx.fillStyle='#64f4d0';
+        ctx.beginPath();
+        ctx.arc(mapX+player.x*tileSize,mapY+player.y*tileSize,Math.max(2,tileSize*.32),0,Math.PI*2);
+        ctx.fill();
+    }
+    ctx.fillStyle='#c2b8ae'; ctx.font='8px monospace';
+    ctx.fillText('Escribe mamahuevo para revelar',panelX+panelWidth/2,panelY+panelHeight-9);
 }
 
 function render(){
@@ -232,8 +364,23 @@ function render(){
 
     // consola (terminal) como billboard
     drawBillboard(term.x, term.y, 'terminal');
+    for(const clue of mapClues){
+        if(!discoveredClues.has(`${clue.x},${clue.y}`)) drawBillboard(clue.x+.5,clue.y+.5,'clue','#54efff');
+    }
     // centinelas
     for (const s of sentinels) drawBillboard(s.x, s.y, 'sentinel', s.hue, s.frameOffset);
+
+    if(sentinelHitFlash){
+        ctx.fillStyle=`rgba(255,32,32,${sentinelHitFlash/10*.16})`;
+        ctx.fillRect(0,0,W,H);
+    }
+    if(cluePickupFlash){
+        ctx.save();
+        ctx.globalAlpha=cluePickupFlash/14*.8;
+        ctx.strokeStyle='#54efff'; ctx.lineWidth=6;
+        ctx.strokeRect(3,3,W-6,H-6);
+        ctx.restore();
+    }
 
     // Mira y viñeta con acento de alarma.
     ctx.strokeStyle='rgba(255,210,177,.8)'; ctx.lineWidth=1;
@@ -251,10 +398,28 @@ function render(){
     ctx.textAlign='left'; ctx.font='bold 10px monospace'; ctx.fillStyle='#ff8b67';
     ctx.fillText('ARMOR  100',10,H-12);
     ctx.textAlign='right'; ctx.fillStyle='#8c8a93';
-    ctx.fillText('LOWER FACILITY',W-10,H-12);
+    ctx.fillText('SI TE ENCIERRAN: R REINICIA',W-10,H-12);
     if (nearTerm() && !challengeOpen){
         ctx.fillStyle='#fff'; ctx.font='bold 14px monospace';
         ctx.fillText('CONSOLA — pulsa [E]', W/2, H-24);
+    }
+    drawMinimap();
+    if(statusMessage){
+        const isClue=statusKind==='clue';
+        const panelY=isClue?H-92:H-78, panelHeight=isClue?62:48;
+        const accent=isClue?'#54efff':statusKind==='hit'?'#ff6848':'#ff6848';
+        ctx.fillStyle='rgba(5,5,9,.92)'; ctx.fillRect(12,panelY,W-24,panelHeight);
+        ctx.strokeStyle=accent; ctx.strokeRect(12.5,panelY+.5,W-25,panelHeight-1);
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        if(isClue){
+            ctx.fillStyle=accent; ctx.font='bold 10px monospace';
+            ctx.fillText(`PISTA RECOGIDA · ${cluesCollected}/${mapClues.length}`,W/2,panelY+17);
+            ctx.fillStyle='#ffe0a0'; ctx.font='bold 9px monospace';
+            ctx.fillText(statusMessage,W/2,panelY+43,W-42);
+        }else{
+            ctx.fillStyle=statusKind==='hit'?'#ff9b82':'#ffe0a0'; ctx.font='bold 11px monospace';
+            ctx.fillText(statusMessage,W/2,panelY+panelHeight/2,W-42);
+        }
     }
 }
 
@@ -270,6 +435,23 @@ function drawBillboard(wx, wy, kind, hue, frameOffset=0){
     // ocultar si hay pared más cerca en esa columna
     const col=Math.floor(sx);
     if (col<0||col>=W || dist > zbuf[col]) return;
+    if(kind==='clue'){
+        const cy=y-size*.12, radius=Math.min(25,Math.max(7,size*.19));
+        const pulse=(Math.sin(Date.now()/210+wx*3)+1)/2;
+        const glow=ctx.createRadialGradient(sx,cy,radius*.15,sx,cy,radius*1.8);
+        glow.addColorStop(0,'rgba(84,239,255,.55)');
+        glow.addColorStop(1,'rgba(84,239,255,0)');
+        ctx.fillStyle=glow; ctx.fillRect(sx-radius*1.8,cy-radius*1.8,radius*3.6,radius*3.6);
+        ctx.save();
+        ctx.shadowBlur=10+pulse*12; ctx.shadowColor='#54efff';
+        const orb=ctx.createRadialGradient(sx-radius*.35,cy-radius*.4,1,sx,cy,radius);
+        orb.addColorStop(0,'#f1ffff'); orb.addColorStop(.28,'#9af8ff'); orb.addColorStop(1,'#0789bd');
+        ctx.fillStyle=orb; ctx.beginPath(); ctx.arc(sx,cy,radius,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle='rgba(255,255,255,.9)';
+        ctx.beginPath(); ctx.arc(sx-radius*.32,cy-radius*.35,Math.max(1.5,radius*.13),0,Math.PI*2); ctx.fill();
+        return;
+    }
     if (kind==='terminal'){
         const w=size*.58, h=size*.78, pulse=(Math.sin(Date.now()/240)+1)/2;
         ctx.fillStyle='#18141a'; ctx.fillRect(sx-w*.36,y+h*.08,w*.72,h*.42);

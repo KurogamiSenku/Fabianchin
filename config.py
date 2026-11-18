@@ -26,14 +26,14 @@ PROGRESSION = [1, 2, 3, 5, 8, 9, 14]
 DEV_UNLOCK_ALL = True
 
 # Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
-# Nivel 5 = flag en DOS mitades: la 1a por SQLi, la 2a por IDOR (sector oculto, F12)
-LEVEL5_HALF1 = "FLAG{bomberman_"
-LEVEL5_HALF2 = "sqli_e_idor}"
+# Nivel 5 = flag en dos mitades: la 1a por SQLi, la 2a por IDOR.
+LEVEL5_HALF1 = "bomberman_"
+LEVEL5_HALF2 = "sqli_idor"
 LEVEL_FLAGS = {
     1: "FLAG{mario_sqli_tuberia_admin}",
     2: "FLAG{contra_file_upload_bypass}",
-    5: LEVEL5_HALF1 + LEVEL5_HALF2,   # FLAG{bomberman_sqli_e_idor}
-    8: "FLAG{doom_sudo_privesc_root}",
+    5: LEVEL5_HALF1 + LEVEL5_HALF2,
+    8: "doom_sudo_root",
     9: "FLAG{sonic_datos_en_metadatos}",
-    14: "FLAG{liga_config_expuesta_pwned}",
+    14: "pokemon_liga_backup",
 }

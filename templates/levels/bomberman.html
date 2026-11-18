@@ -41,8 +41,6 @@
   .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; }
   .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
   .flagbox{ margin-top:16px; padding-top:14px; border-top:2px solid #223049; }
-  .sql-modal details{ margin-top:12px; } .sql-modal summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
-  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
   .win{ display:none; margin-top:14px; text-align:center; color:#3ddc84; font-weight:bold; }
   .win.show{ display:block; }
   .win a, .flagbox a{ color:#ff2fd6; }
@@ -57,6 +55,7 @@
 
 {% block controls_help %}
   <strong>WASD / ←↑↓→</strong> → Mover &nbsp;|&nbsp;
+  <strong>Espacio</strong> → Poner bomba &nbsp;|&nbsp;
   <strong>E</strong> → Abrir terminal &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Volver al mapa</a>
 {% endblock %}
@@ -81,17 +80,6 @@
     <pre class="q" id="qout">// La consulta ejecutada aparecerá aquí.</pre>
     <div class="msg" id="loginmsg"></div>
 
-    <details>
-      <summary>¿Atascado? Pistas progresivas</summary>
-      <p class="hint"><strong>1.</strong> La consulta que aparece mete tu entrada <em>tal cual</em> en <code>... WHERE user='…' AND pass='…'</code>. Para inyectar necesitas una comilla <code>'</code>.</p>
-      <p class="hint"><strong>2.</strong> ¿Notaste que el campo <strong>no te deja escribir la comilla</strong> y tiene límite de caracteres? Eso es validación <em>del lado del cliente</em>… y esa nunca es seguridad real.</p>
-      <p class="hint"><strong>3.</strong> Abre <strong>F12</strong> (DevTools) → pestaña <em>Console</em> y asigna el valor directamente, saltándote el filtro:<br>
-        <code>document.getElementById('u').value = "admin' --"</code><br>
-        Luego pulsa ACCEDER. (También sirve: quitar el <code>maxlength</code> del input en el inspector, o reenviar la petición desde la pestaña Network.)</p>
-      <p class="hint"><strong>4.</strong> Al entrar como admin verás su <strong>nota</strong>: ahí está la <strong>primera mitad</strong> de la flag [1/2]. Otro payload válido: <code>' OR '1'='1' --</code></p>
-      <p class="hint"><strong>5.</strong> La nota dice que falta la otra mitad en un <strong>sector oculto</strong>… que está <em>desactivado en la interfaz</em>. Abre <strong>F12 → Elements</strong>, busca <code>id="sector-oculto"</code> y cambia su <code>display:none</code> a <code>block</code> (o quítale el atributo <code>hidden</code>).</p>
-    </details>
-
     <!-- SECTOR OCULTO: desactivado en la interfaz. ¿display:none? (reto IDOR) -->
     <div class="flagbox" id="sector-oculto" style="display:none">
       <h2 style="color:#3ddc84;">▸ Sector oculto — Expedientes</h2>
@@ -102,16 +90,12 @@
         <button class="btn-login" id="verrec">CONSULTAR</button>
       </div>
       <pre class="q" id="recout">// El expediente consultado aparecerá aquí.</pre>
-      <details>
-        <summary>Pista del sector oculto</summary>
-        <p class="hint">El <code>id</code> va directo en la URL (<code>/record?id=3</code>) y el servidor no comprueba que sea el tuyo. Cambia el id a <code>1</code> (el admin) para ver su expediente: ahí está la <strong>segunda mitad</strong> [2/2]. Eso es un <strong>IDOR</strong>.</p>
-      </details>
     </div>
 
     <div class="flagbox">
       <label for="flag">Enviar flag (las dos mitades juntas)</label>
       <div class="sbtns" style="margin-top:6px;">
-        <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <input type="text" id="flag" placeholder="bomberman_..." autocomplete="off" spellcheck="false">
         <button class="btn-flag" id="send">ENVIAR</button>
       </div>
       <div class="msg" id="flagmsg"></div>

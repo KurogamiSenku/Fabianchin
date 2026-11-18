@@ -18,6 +18,23 @@ for (let i=1;i<=6;i++) sprites.walk.push(loadImg(`/static/img/skeli_fixed/walk/w
 const bombWalk = loadImg('/static/img/markers/bomberman.png');  // 3 frames 20x30
 const bombImg  = loadImg('/static/img/markers/bomb.png');       // 3 frames 20x20
 const explImg  = loadImg('/static/img/markers/explosion.png');  // 4 frames 38x34
+const EXPLOSION = { frames:4, frameMs:80, frameWidth:38, frameHeight:34 };
+function tintSpriteSheet(image, tint){
+    const canvas=document.createElement('canvas'), tintCtx=canvas.getContext('2d');
+    const applyTint=()=>{
+        if (!image.naturalWidth) return;
+        canvas.width=image.naturalWidth; canvas.height=image.naturalHeight;
+        tintCtx.drawImage(image,0,0);
+        tintCtx.globalCompositeOperation='source-atop';
+        tintCtx.fillStyle=tint; tintCtx.fillRect(0,0,canvas.width,canvas.height);
+        tintCtx.globalCompositeOperation='source-over';
+    };
+    image.addEventListener('load',applyTint);
+    if (image.complete) applyTint();
+    return canvas;
+}
+const playerBombImg=tintSpriteSheet(bombImg,'#19dfff');
+const playerExplImg=tintSpriteSheet(explImg,'#19dfff');
 
 // --- Rejilla estilo Bomberman ---
 const grid = [];
@@ -38,15 +55,22 @@ function mkEnemy(c, r, delay){
         facing:'left', animFrame:Math.random()*3, animTimer:0, bombTimer:delay, bombs:[] };
 }
 const enemies = [ mkEnemy(7,5,2200), mkEnemy(11,3,3400), mkEnemy(3,7,4200) ];
+const playerBombs = [];
 
 const keys = { up:false, down:false, left:false, right:false };
 let challengeOpen = false;
+let playerDead = false;
+let gameplayHint = '';
+let gameplayHintTitle = '';
+let gameplayHintTimer = 0;
+let defeatedEnemies = 0;
 
 function typingInField(e){ const t=e.target||document.activeElement;
     return t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
 
 window.addEventListener('keydown', e=>{
     if (typingInField(e) || challengeOpen) return;
+    if (e.code==='Space'){ e.preventDefault(); placeBomb(); return; }
     if (['w','W','ArrowUp'].includes(e.key)) keys.up=true;
     if (['s','S','ArrowDown'].includes(e.key)) keys.down=true;
     if (['a','A','ArrowLeft'].includes(e.key)) keys.left=true;
@@ -64,11 +88,10 @@ window.addEventListener('keyup', e=>{
 window.addEventListener('blur', ()=>{ keys.up=keys.down=keys.left=keys.right=false; });
 
 function hitsWallBox(cx, cy, half){
-    const pts=[[cx-half,cy-half],[cx+half,cy-half],[cx-half,cy+half],[cx+half,cy+half]];
-    for (const [px,py] of pts){
-        const c=Math.floor(px/TILE), r=Math.floor(py/TILE);
-        if (r<0||c<0||r>=ROWS||c>=COLS) return true;
-        if (grid[r][c]===1) return true;
+    const minC=Math.floor((cx-half)/TILE), maxC=Math.floor((cx+half-.001)/TILE);
+    const minR=Math.floor((cy-half)/TILE), maxR=Math.floor((cy+half-.001)/TILE);
+    for (let r=minR;r<=maxR;r++) for (let c=minC;c<=maxC;c++){
+        if (r<0||c<0||r>=ROWS||c>=COLS||grid[r][c]===1) return true;
     }
     return false;
 }
@@ -81,7 +104,7 @@ function nearTerminal(){
 }
 
 function updatePlayer(dt){
-    if (challengeOpen){ player.moving=false; return; }
+    if (challengeOpen||playerDead){ player.moving=false; return; }
     let dx=0,dy=0;
     if (keys.up){dy-=1;player.facing='up';}
     if (keys.down){dy+=1;player.facing='down';}
@@ -100,9 +123,10 @@ function updatePlayer(dt){
 }
 
 function updateEnemy(dt){
-    if (challengeOpen) return;
+    if (challengeOpen||playerDead) return;
     const pcx=player.x+PSIZE/2, pcy=player.y+PSIZE-10;
     for (const enemy of enemies){
+        if (enemy.defeated) continue;
         const ecx=enemy.x+ESIZE/2, ecy=enemy.y+ESIZE/2;
         const dx=pcx-ecx, dy=pcy-ecy, dist=Math.hypot(dx,dy)||1;
         const mvx=(dx/dist)*ESPEED, mvy=(dy/dist)*ESPEED;
@@ -117,7 +141,9 @@ function updateEnemy(dt){
         if (dist < contact && dist>0){
             player.bvx += (dx/dist)*7;
             player.bvy += (dy/dist)*7;
-            enemy.x -= (dx/dist)*1.2; enemy.y -= (dy/dist)*1.2;
+            const pushX=enemy.x-(dx/dist)*1.2, pushY=enemy.y-(dy/dist)*1.2;
+            if (!enemyHitsWall(pushX,enemy.y)) enemy.x=pushX;
+            if (!enemyHitsWall(enemy.x,pushY)) enemy.y=pushY;
         }
 
         enemy.bombTimer-=dt;
@@ -131,11 +157,11 @@ function updateEnemy(dt){
                 if (b.fuse<=0){
                     b.exploded=true; b.et=0;
                     const bdx=pcx-b.x, bdy=pcy-b.y, bd=Math.hypot(bdx,bdy);
-                    if (bd<130 && bd>0){ player.bvx += (bdx/bd)*14; player.bvy += (bdy/bd)*14; }
+                    if (bd<130) handlePlayerDeath('enemy');
                 }
             } else { b.et+=dt; }
         }
-        enemy.bombs = enemy.bombs.filter(b=>!(b.exploded && b.et>4*80));
+        enemy.bombs = enemy.bombs.filter(b=>!(b.exploded && b.et>EXPLOSION.frames*EXPLOSION.frameMs));
     }
 
     // Separación entre enemigos: si se acercan demasiado, se empujan (no se fusionan)
@@ -154,6 +180,84 @@ function updateEnemy(dt){
             }
         }
     }
+}
+
+function playerCell(){
+    return {
+        c:Math.floor((player.x+PSIZE/2)/TILE),
+        r:Math.floor((player.y+PSIZE-10)/TILE)
+    };
+}
+function placeBomb(){
+    if (playerDead) return;
+    const {c,r}=playerCell();
+    if (grid[r][c]===1 || playerBombs.some(b=>b.c===c&&b.r===r)) return;
+    playerBombs.push({c,r,x:c*TILE+TILE/2,y:r*TILE+TILE/2,fuse:1500,exploded:false,et:0,cells:[]});
+}
+function explosionCells(c,r){
+    const cells=[{c,r}];
+    for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        for(let distance=1;distance<=2;distance++){
+            const nc=c+dc*distance,nr=r+dr*distance;
+            if(nc<0||nr<0||nc>=COLS||nr>=ROWS||grid[nr][nc]===1) break;
+            cells.push({c:nc,r:nr});
+        }
+    }
+    return cells;
+}
+function showDefeatHint(){
+    defeatedEnemies++;
+    const hints=[
+        'Enemigo derrotado: el formulario bloquea comillas, pero esa restricción está en tu navegador.',
+        'Abre F12 > Console y revisa cómo se valida el usuario antes de pulsar ACCEDER.',
+        '¡Zona despejada! F12 > Elements: muestra sector-oculto y revisa el id del expediente.'
+    ];
+    gameplayHint=hints[Math.min(defeatedEnemies-1,hints.length-1)];
+    gameplayHintTitle=`PISTA ${defeatedEnemies}/3 DESBLOQUEADA`;
+    gameplayHintTimer=6500;
+}
+function resolvePlayerBlast(bomb, playerPosition){
+    if(bomb.cells.some(cell=>cell.c===playerPosition.c&&cell.r===playerPosition.r)){
+        handlePlayerDeath('player');
+    }
+    for(const enemy of enemies){
+        if(enemy.defeated) continue;
+        const ec=Math.floor((enemy.x+ESIZE/2)/TILE);
+        const er=Math.floor((enemy.y+ESIZE/2)/TILE);
+        if(bomb.cells.some(cell=>cell.c===ec&&cell.r===er)){
+            enemy.defeated=true;
+            showDefeatHint();
+        }
+    }
+}
+function updatePlayerBombs(dt){
+    const playerPosition=playerCell();
+    for(const bomb of playerBombs){
+        if(!bomb.exploded){
+            bomb.fuse-=dt;
+            if(bomb.fuse<=0){
+                bomb.exploded=true; bomb.et=0; bomb.cells=explosionCells(bomb.c,bomb.r);
+                resolvePlayerBlast(bomb,playerPosition);
+            }
+        }else{
+            bomb.et+=dt;
+            resolvePlayerBlast(bomb,playerPosition);
+        }
+    }
+    for(let i=playerBombs.length-1;i>=0;i--){
+        if(playerBombs[i].exploded&&playerBombs[i].et>EXPLOSION.frames*EXPLOSION.frameMs) playerBombs.splice(i,1);
+    }
+}
+function handlePlayerDeath(source){
+    if(playerDead) return;
+    playerDead=true;
+    gameplayHintTitle='DERROTA';
+    gameplayHint=source==='player'
+        ? 'Tu propia explosión te alcanzó. Reiniciando la partida…'
+        : 'La explosión de un enemigo te alcanzó. Reiniciando la partida…';
+    gameplayHintTimer=1000;
+    keys.up=keys.down=keys.left=keys.right=false;
+    setTimeout(()=>window.location.reload(),1000);
 }
 
 function drawTile(targetCtx,c,r){
@@ -235,9 +339,11 @@ function draw(){
 
     // enemigos + sombras + sus bombas
     for (const enemy of enemies){
+        if (enemy.defeated) continue;
+        const groundX=enemy.x+ESIZE/2, groundY=enemy.y+ESIZE/2;
         ctx.fillStyle='rgba(0,0,0,.45)';
-        ctx.beginPath(); ctx.ellipse(enemy.x+ESIZE/2, enemy.y+ESIZE-4, 14,5,0,0,Math.PI*2); ctx.fill();
-        drawSprite(bombWalk, enemy.x, enemy.y, ESIZE, enemy.facing, 20, 30, Math.floor(enemy.animFrame)%3);
+        ctx.beginPath(); ctx.ellipse(groundX,groundY,14,5,0,0,Math.PI*2); ctx.fill();
+        drawSprite(bombWalk,enemy.x,groundY-ESIZE*30/20,ESIZE,enemy.facing,20,30,Math.floor(enemy.animFrame)%3);
         for (const b of enemy.bombs){
             if (!b.exploded){
                 const fi=Math.floor(Date.now()/150)%3, s=42;
@@ -247,8 +353,25 @@ function draw(){
                 ctx.beginPath(); ctx.arc(b.x,b.y,17+danger*5,0,Math.PI*2); ctx.stroke();
                 if (bombImg.complete) ctx.drawImage(bombImg, fi*20,0,20,20, b.x-s/2, b.y-s/2, s, s);
             } else {
-                const fi=Math.min(Math.floor(b.et/80),3), s=120;
-                if (explImg.complete) ctx.drawImage(explImg, fi*38,0,38,34, b.x-s/2, b.y-s/2, s, s*(34/38));
+                const fi=Math.min(Math.floor(b.et/EXPLOSION.frameMs),EXPLOSION.frames-1), s=120;
+                if (explImg.complete) ctx.drawImage(explImg,fi*EXPLOSION.frameWidth,0,EXPLOSION.frameWidth,EXPLOSION.frameHeight,
+                    b.x-s/2,b.y-s/2,s,s*(EXPLOSION.frameHeight/EXPLOSION.frameWidth));
+            }
+        }
+    }
+
+    for(const bomb of playerBombs){
+        if(!bomb.exploded){
+            const frame=Math.floor(Date.now()/150)%3, size=38;
+            const danger=Math.max(0,Math.min(1,1-bomb.fuse/1500));
+            ctx.strokeStyle=`rgba(25,223,255,${.35+.55*danger})`; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.arc(bomb.x,bomb.y,17+danger*5,0,Math.PI*2); ctx.stroke();
+            if(playerBombImg.width) ctx.drawImage(playerBombImg,frame*20,0,20,20,bomb.x-size/2,bomb.y-size/2,size,size);
+        }else{
+            const frame=Math.min(Math.floor(bomb.et/EXPLOSION.frameMs),EXPLOSION.frames-1), size=TILE*2;
+            if(playerExplImg.width) for(const cell of bomb.cells){
+                ctx.drawImage(playerExplImg,frame*EXPLOSION.frameWidth,0,EXPLOSION.frameWidth,EXPLOSION.frameHeight,
+                    cell.c*TILE+TILE/2-size/2,cell.r*TILE+TILE/2-size/2,size,size*(EXPLOSION.frameHeight/EXPLOSION.frameWidth));
             }
         }
     }
@@ -274,13 +397,22 @@ function draw(){
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText('SECTOR 05  /  BOMBERMAN', cv.width/2, hudY+13);
     ctx.fillStyle='#78b7c8'; ctx.font='bold 8px monospace';
-    ctx.fillText('INFILTRACIÓN  ·  SQLI / IDOR', cv.width/2, hudY+28);
+    ctx.fillText('ESPACIO: BOMBA  ·  EVITA LA EXPLOSIÓN', cv.width/2, hudY+28);
     ctx.strokeStyle='rgba(118,220,218,.7)'; ctx.lineWidth=2;
     ctx.strokeRect(1,1,cv.width-2,cv.height-2);
+    if (gameplayHintTimer>0){
+        ctx.fillStyle='rgba(4,14,24,.96)'; ctx.fillRect(30,cv.height-58,cv.width-60,44);
+        ctx.strokeStyle=playerDead?'#ff5a5a':'#ffb454'; ctx.strokeRect(30.5,cv.height-57.5,cv.width-61,43);
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle=playerDead?'#ff9b9b':'#54efff'; ctx.font='bold 10px monospace';
+        ctx.fillText(gameplayHintTitle,cv.width/2,cv.height-46);
+        ctx.fillStyle='#ffe0a6'; ctx.font='bold 10px monospace';
+        ctx.fillText(gameplayHint,cv.width/2,cv.height-28,cv.width-76);
+    }
 }
 
 let last=performance.now();
-function loop(t){ const dt=t-last; last=t; updatePlayer(dt); updateEnemy(dt); draw(); requestAnimationFrame(loop); }
+function loop(t){ const dt=t-last; last=t; updatePlayer(dt); updateEnemy(dt); updatePlayerBombs(dt); gameplayHintTimer=Math.max(0,gameplayHintTimer-dt); draw(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
 
 function openChallenge(){ challengeOpen=true; keys.up=keys.down=keys.left=keys.right=false;

@@ -8,7 +8,7 @@
   .arcade-subtitle{ display:none !important; }
   .arcade-stage:has(#arena)::after{ display:none; }
   #level-inner{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:0; }
-  #arena{ width:100%; height:100%; object-fit:fill; image-rendering:pixelated;
+  #arena{ width:100%; height:100%; object-fit:fill; image-rendering:auto; cursor:grab;
     border:0; border-radius:0; background:#bfe9ff; }
 
   .sql-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.8); display:none;
@@ -27,8 +27,6 @@
   .sql-modal button:active{ transform:translateY(4px); }
   .btn-login{ background:#c48bf0; } .btn-flag{ background:#3ddc84; } .btn-close{ background:#8b949e; }
   .msg{ margin-top:10px; font-weight:bold; min-height:1.2em; } .ok{ color:#3ddc84; } .err{ color:#ff5a5a; }
-  details{ margin-top:12px; } summary{ cursor:pointer; color:#58a6ff; font-size:.9rem; }
-  .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
   .flagbox{ margin-top:16px; padding-top:14px; border-top:2px solid #223049; }
   .win{ display:none; margin-top:14px; text-align:center; color:#ffd24a; font-weight:bold; font-size:1.05rem; } .win.show{ display:block; }
   .win a, .flagbox a{ color:#ff2fd6; }
@@ -55,7 +53,8 @@
 
 {% block controls_help %}
   <strong>WASD / ←↑↓→</strong> → Caminar &nbsp;|&nbsp;
-  <strong>E</strong> → Centro de la Liga &nbsp;|&nbsp;
+  <strong>Arrastrar con mouse</strong> → Girar perspectiva &nbsp;|&nbsp;
+  <strong>E</strong> → Hablar / Entrar o salir &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Mapa</a>
 {% endblock %}
 
@@ -76,18 +75,10 @@
     </div>
     <div class="msg" id="loginmsg"></div>
 
-    <details>
-      <summary>¿Atascado? Pistas progresivas</summary>
-      <p class="hint"><strong>1.</strong> Los administradores de la Liga dejaron un <strong>respaldo de configuración</strong> accesible por error (configuración insegura). Es un archivo <code>.bak</code>.</p>
-      <p class="hint"><strong>2.</strong> Prueba la ruta del respaldo en el navegador o con curl:<br>
-        <a class="dl" href="/level/pokemon/config.bak" target="_blank">/level/pokemon/config.bak</a></p>
-      <p class="hint"><strong>3.</strong> Dentro verás el <code>usuario</code> y el <code>password</code> del admin. Úsalos aquí para entrar: ahí está la <strong>flag final</strong>.</p>
-    </details>
-
     <div class="flagbox">
       <label for="flag">Enviar flag FINAL</label>
       <div class="sbtns" style="margin-top:6px;">
-        <input type="text" id="flag" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+        <input type="text" id="flag" placeholder="pokemon_liga_..." autocomplete="off" spellcheck="false">
         <button class="btn-flag" id="send">ENVIAR</button>
       </div>
       <div class="msg" id="flagmsg"></div>
