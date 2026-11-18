@@ -35,6 +35,62 @@
   .hint{ color:#8b949e; font-size:.88rem; line-height:1.6; margin:8px 0 0; padding-left:8px; border-left:2px solid #223049; }
   .win{ display:none; margin-top:14px; text-align:center; color:#3ddc84; font-weight:bold; } .win.show{ display:block; }
   .win a, .flagbox a{ color:#ff2fd6; }
+  code{ background:#05080e; color:#9ef7c3; padding:1px 5px; border-radius:3px; font-family:'Courier New',monospace; }
+
+  /* ---- Intel recogido (en el puesto y en la bitácora) ---- */
+  .pistas-head{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin:16px 0 8px; padding-top:12px; border-top:2px solid #2f5d35; }
+  .pistas-head .t{ font-family:'Press Start 2P',monospace; font-size:9px; color:#ffb454; letter-spacing:1px; }
+  .pistas-head .c{ font-family:'Press Start 2P',monospace; font-size:9px; color:#0d1117;
+    background:#8fd06a; border-radius:4px; padding:4px 7px; }
+  .pista{ border-radius:7px; padding:9px 11px; margin:8px 0; }
+  .pista.found{ background:#13261a; border:1px solid #3f7a46; border-left:4px solid #8fd06a; }
+  .pista.locked{ background:#1a1710; border:1px dashed #5a4d2a; border-left:4px solid #7a6a3a; opacity:.8; }
+  .pista-h{ display:flex; align-items:center; gap:8px; }
+  .pista-ic{ font-size:17px; line-height:1; }
+  .pista-t{ font-family:'Press Start 2P',monospace; font-size:8.5px; letter-spacing:.5px; color:#ffd98a; line-height:1.5; }
+  .pista.locked .pista-t{ color:#b9a86f; }
+  .pista-b{ font-size:.95rem; line-height:1.55; color:#dcefd6; margin-top:6px; }
+  .pista.locked .pista-b{ color:#a89a6c; font-style:italic; }
+  .pista-b b, .pista-b strong{ color:#8fe39b; }
+  .pista-b code{ font-size:.82rem; display:inline-block; margin-top:2px; }
+  .pista-src{ font-size:.78rem; color:#7bd87f; margin-top:6px; letter-spacing:.3px; }
+
+  /* ---- BITÁCORA flotante (tecla Q / botón) ---- */
+  #notebook-btn{ position:fixed; right:16px; bottom:16px; z-index:9998; cursor:pointer;
+    font-family:'Press Start 2P',monospace; font-size:9px; color:#0d1117; letter-spacing:.5px;
+    background:#8fd06a; border:none; border-bottom:4px solid #4f7a39; border-radius:8px; padding:11px 13px;
+    box-shadow:0 0 0 3px #2f5d35, 0 4px 14px rgba(0,0,0,.4); display:flex; align-items:center; gap:7px; }
+  #notebook-btn:active{ border-bottom-width:1px; transform:translateY(3px); }
+  #notebook-btn .nb-count{ background:#0d1117; color:#9fe39b; border-radius:4px; padding:3px 6px; font-size:9px; }
+  @keyframes nbflash{ 0%,100%{ box-shadow:0 0 0 3px #2f5d35,0 4px 14px rgba(0,0,0,.4);} 50%{ box-shadow:0 0 0 3px #ffb454,0 0 24px 6px rgba(255,180,84,.9); transform:scale(1.07);} }
+  #notebook-btn.flash{ animation:nbflash .5s ease 3; }
+  .notebook-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.76); display:none;
+    align-items:center; justify-content:center; padding:20px; z-index:9999; }
+  .notebook-overlay.show{ display:flex; }
+  .notebook-card{ background:#101c14; border:4px solid #2f5d35; border-radius:12px; max-width:560px; width:100%;
+    max-height:86vh; overflow:auto; padding:0 18px 18px; color:#dcefd6;
+    font-family:'Courier New',monospace; box-shadow:0 0 0 3px #8fd06a, 0 0 40px rgba(0,0,0,.6); }
+  .nb-bar{ position:sticky; top:0; margin:0 -18px 12px; padding:12px 16px; background:#1b3a22;
+    border-bottom:3px solid #4f7a39; display:flex; align-items:center; justify-content:space-between; }
+  .nb-bar .title{ font-family:'Press Start 2P',monospace; font-size:11px; color:#ffb454; letter-spacing:1px; }
+  .nb-bar .closeb{ cursor:pointer; font-family:'Press Start 2P',monospace; font-size:10px; color:#0d1117;
+    background:#8fd06a; border:none; border-radius:6px; padding:8px 10px; }
+  .nb-intro{ font-size:.95rem; color:#bfe0c4; line-height:1.5; margin:2px 0 10px; }
+
+  /* ---- Popup grande al recuperar intel ---- */
+  #pista-pop{ position:fixed; left:50%; top:50%; transform:translate(-50%,calc(-50% - 16px)) scale(.95);
+    z-index:9997; width:min(580px,92vw); pointer-events:none; opacity:0; transition:opacity .25s ease, transform .25s ease;
+    background:#101c14; border:4px solid #8fd06a; border-radius:14px; padding:16px 20px; color:#dcefd6;
+    font-family:'Courier New',monospace; box-shadow:0 0 0 4px #1b3a22, 0 12px 44px rgba(0,0,0,.6); }
+  #pista-pop.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  #pista-pop .pp-head{ display:flex; align-items:center; gap:10px; }
+  #pista-pop .pp-ic{ font-size:30px; line-height:1; }
+  #pista-pop .pp-tag{ font-family:'Press Start 2P',monospace; font-size:12px; color:#ffb454; letter-spacing:1px; text-shadow:2px 2px 0 #000; }
+  #pista-pop .pp-title{ font-family:'Press Start 2P',monospace; font-size:11px; color:#fff; margin:12px 0 7px; line-height:1.6; }
+  #pista-pop .pp-body{ font-size:1.05rem; line-height:1.45; color:#eafbe6; }
+  #pista-pop .pp-body code{ font-size:.82rem; }
+  #pista-pop .pp-foot{ margin-top:11px; font-size:.9rem; color:#bfe0ff; letter-spacing:.3px; }
 </style>
 {% endblock %}
 
@@ -47,7 +103,9 @@
 {% block controls_help %}
   <strong>A D / ←→</strong> → Correr &nbsp;|&nbsp;
   <strong>W / Espacio</strong> → Saltar &nbsp;|&nbsp;
-  <strong>E</strong> → Puesto de guardia &nbsp;|&nbsp;
+  <strong>J / F</strong> → Disparar &nbsp;|&nbsp;
+  <strong>E</strong> → Puesto &nbsp;|&nbsp;
+  <strong>Q</strong> → Bitácora &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Mapa</a>
 {% endblock %}
 
@@ -55,7 +113,7 @@
 <div class="sql-overlay" id="challenge">
   <div class="sql-modal">
     <h2>▸ Puesto de guardia — Acreditación</h2>
-    <p class="sub">Sube tu <strong>credencial de acceso</strong> para tomar la base. El sistema solo admite imágenes.</p>
+    <p class="sub">Sube tu <strong>credencial de acceso</strong> para tomar la base. El sistema solo admite imágenes. Usa el <strong>intel</strong> que recogiste (abajo) para evadir el filtro.</p>
 
     <label for="cred">Credencial (solo .jpg / .png)</label>
     <input type="file" id="cred" accept="image/png,image/jpeg">
@@ -69,14 +127,11 @@
     <pre class="q" id="out">// La respuesta del puesto aparecerá aquí.</pre>
     <div class="msg" id="upmsg"></div>
 
-    <details>
-      <summary>¿Atascado? Pistas progresivas</summary>
-      <p class="hint"><strong>1.</strong> El formulario solo deja subir imágenes, pero el puesto procesa la credencial como un <em>script</em>. Necesitas subir algo tipo <code>.php</code>… y el formulario lo bloquea del lado del cliente.</p>
-      <p class="hint"><strong>2.</strong> La validación es del cliente (atributo <code>accept</code> + un chequeo JS). El servidor <strong>no revalida</strong>. Evádela.</p>
-      <p class="hint"><strong>3.</strong> Lo más fiable: desde <strong>F12 → Console</strong>, arma y envía tú mismo la petición con un archivo .php:<br>
-        <code>const fd=new FormData();fd.append('cred',new File(['&lt;?php echo 1;?&gt;'],'cred.php'));fetch('/level/contra/upload',{method:'POST',body:fd}).then(r=&gt;r.json()).then(console.log)</code></p>
-      <p class="hint"><strong>4.</strong> (Alternativa) En F12 → Elements, quítale el atributo <code>accept</code> al input y, en el dialogo, elige "Todos los archivos" para seleccionar un .php; luego SUBIR.</p>
-    </details>
+    <div class="pistas-head">
+      <span class="t">▸ INTEL RECOGIDO</span>
+      <span class="c" data-pista-count>0/4</span>
+    </div>
+    <div id="modal-pistas"><!-- el intel recuperado se inyecta desde el juego --></div>
 
     <div class="flagbox">
       <label for="flag">Enviar flag</label>
@@ -87,6 +142,24 @@
       <div class="msg" id="flagmsg"></div>
       <div class="win" id="win">✦ ¡BASE TOMADA! Siguiente nivel desbloqueado. <a href="/map">← Mapa</a></div>
     </div>
+  </div>
+</div>
+
+<!-- Popup grande al recuperar intel -->
+<div id="pista-pop"></div>
+
+<!-- BITÁCORA de intel -->
+<button id="notebook-btn" onclick="window._toggleNotebook()" title="Abrir bitácora (Q)">
+  🗂️ BITÁCORA <span class="nb-count" data-pista-count>0/4</span>
+</button>
+<div class="notebook-overlay" id="notebook">
+  <div class="notebook-card">
+    <div class="nb-bar">
+      <span class="title">🗂️ BITÁCORA · INTEL</span>
+      <button class="closeb" onclick="window._toggleNotebook(false)">CERRAR [Esc]</button>
+    </div>
+    <p class="nb-intro">El intel se recupera jugando: busca <strong>expedientes</strong> escondidos en las cornisas y <strong>elimina soldados</strong> (tecla J) para abrirte paso. Con ese intel evadirás el filtro del puesto.</p>
+    <div id="notebook-list"><!-- se llena desde el juego --></div>
   </div>
 </div>
 {% endblock %}

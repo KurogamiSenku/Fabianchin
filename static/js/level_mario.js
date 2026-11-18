@@ -280,20 +280,35 @@ const OVER = {
 (OVER.blocks.find(b => b.x === 384 && b.y === 144) || {}).clue = 'bloque';
 
 const UGY = 416;
+// Subterráneo MÁS GRANDE con parkour: plataformas (plat), bloques (brick),
+// goombas, el terminal en una alcoba y la tubería de salida al final.
 const UNDER = {
-  width: 960, floorY: UGY, scale: 1,
+  width: 1480, floorY: UGY, scale: 1,
   solids: [
-    { x: 0, y: UGY, w: 960, h: 64 },
-    { x: 0, y: 0, w: 32, h: cv.height },
-    { x: 928, y: 0, w: 32, h: cv.height },
-    { x: 300, y: 356, w: 150, h: 24 },
+    { x: 0, y: UGY, w: 1480, h: 64, brick: true },     // suelo
+    { x: 0, y: 0, w: 24, h: cv.height, brick: true },  // muro izq
+    { x: 1456, y: 0, w: 24, h: cv.height, brick: true },// muro der
+    // --- parkour: escalera de plataformas (cada salto es alcanzable) ---
+    { x: 150, y: 366, w: 120, h: 16, plat: true },
+    { x: 300, y: 328, w: 120, h: 16, plat: true },
+    { x: 470, y: 296, w: 130, h: 16, plat: true },   // goomba
+    { x: 650, y: 330, w: 120, h: 16, plat: true },
+    { x: 830, y: 300, w: 170, h: 16, plat: true },   // alcoba del terminal
+    { x: 1050, y: 334, w: 120, h: 16, plat: true },  // goomba
+    { x: 1250, y: 300, w: 120, h: 116, brick: true },// escalón de salida
   ],
-  exitPipe: { x: 820, y: 352, w: 64, h: 64 },
-  terminal: { x: 720, y: 368, w: 48, h: 48 },
+  exitPipe: { x: 1288, y: 236, w: 64, h: 64 },       // sobre el escalón (top 300)
+  terminal: { x: 882, y: 252, w: 48, h: 48 },        // sobre la alcoba (top 300)
   coins: [
-    { x: 170, y: 384 }, { x: 230, y: 384 }, { x: 300, y: 384 },
-    { x: 360, y: 322 }, { x: 410, y: 322 }, { x: 560, y: 384 },
-    { x: 700, y: 318 }, { x: 770, y: 318 },
+    { x: 210, y: 338 }, { x: 360, y: 300 }, { x: 535, y: 268 },
+    { x: 710, y: 302 }, { x: 915, y: 272 }, { x: 1110, y: 306 },
+    { x: 400, y: 388 }, { x: 600, y: 388 }, { x: 980, y: 388 },
+  ],
+  enemies: [
+    { x: 500, y: 272, min: 472, max: 576, dir: 1 },    // sobre plataforma 470
+    { x: 1100, y: 310, min: 1052, max: 1146, dir: -1 },// sobre plataforma 1050
+    { x: 300, y: 392, min: 160, max: 440, dir: 1 },    // patrulla el suelo
+    { x: 760, y: 392, min: 660, max: 1000, dir: -1 },  // patrulla el suelo
   ],
 };
 
@@ -326,6 +341,7 @@ const floatItems = [];
 const particles = [];
 let enemies = [];
 let piranhas = [];
+let undEnemies = [];   // goombas del subterráneo
 
 const cur = () => (room === 'over' ? OVER : UNDER);
 
@@ -338,6 +354,10 @@ function resetEnemies() {
   }));
   piranhas = OVER.pipes.filter(p => p.piranha).map((p, i) => ({
     x: p.x + p.w / 2 - 8, top: p.y, t: i * 1250, risen: 0,
+  }));
+  undEnemies = UNDER.enemies.map(e => ({
+    x: e.x, y: e.y, w: 24, h: 24, min: e.min, max: e.max, dir: e.dir,
+    dead: false, deadT: 0, anim: 0,
   }));
 }
 resetEnemies();
@@ -399,10 +419,11 @@ function onEntryPipe() {
 }
 
 function onExitPipe() {
+  // De pie sobre el escalón, en la base del tubo de salida.
   const p = UNDER.exitPipe;
-  const feet = player.y + player.h;
-  return room === 'under' && Math.abs(feet - p.y) < 8 &&
-    player.x + player.w > p.x + 6 && player.x < p.x + p.w - 6;
+  const feet = player.y + player.h, cxp = player.x + player.w / 2;
+  return room === 'under' && adminUnlocked && player.onGround &&
+    cxp > p.x - 4 && cxp < p.x + p.w + 4 && Math.abs(feet - (p.y + p.h)) < 10;
 }
 
 function nearTerminal() {
@@ -584,6 +605,7 @@ function updatePlayer(dt) {
     updateEnemies(dt); updatePiranhas(dt);
     if (!goalDone && player.x + player.w / 2 > OVER.goalX) reachGoal();
   }
+  if (room === 'under') updateUndEnemies(dt);
 
   if (player.attackTimer > 0) { player.attackTimer -= dt; player.state = 'attack'; }
   else if (!player.onGround) player.state = 'jump';
@@ -635,6 +657,24 @@ function updateEnemies(dt) {
     }
   }
   enemies = enemies.filter(e => !(e.dead && e.deadT > 600));
+}
+
+function updateUndEnemies(dt) {
+  const step = dt / 16;
+  for (const e of undEnemies) {
+    if (e.dead) { e.deadT += dt; continue; }
+    e.anim += dt; e.x += e.dir * 1.0 * step;
+    if (e.x < e.min) { e.x = e.min; e.dir = 1; }
+    if (e.x > e.max) { e.x = e.max; e.dir = -1; }
+    if (overlaps(player, e)) {
+      const stomp = player.vy > 0 && (player.y + player.h - e.y) < 18;
+      if (player.starT > 0 || stomp) {
+        e.dead = true; e.deadT = 0;
+        if (stomp) player.vy = -6.5;
+      } else hurtPlayer();
+    }
+  }
+  undEnemies = undEnemies.filter(e => !(e.dead && e.deadT > 600));
 }
 
 function updatePiranhas(dt) {
@@ -880,25 +920,77 @@ function promptS(cx, topY, label) {
   ctx.fillStyle = '#ffe0a6'; ctx.fillText(label, cx, y + 1);
 }
 
+// Ladrillo azul clásico (suelo, muros, escalón) con juntas trabadas y bisel.
+function drawBrick(x, y, w, h) {
+  ctx.fillStyle = '#18287e'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#0b1356';
+  for (let gy = 0; gy < h; gy += 16) ctx.fillRect(x, y + gy + 14, w, 2);
+  for (let gy = 0; gy < h; gy += 16) {
+    const off = (Math.floor(gy / 16) % 2) ? 8 : 0;
+    for (let gx = off; gx <= w; gx += 16) ctx.fillRect(x + gx, y + gy, 2, 16);
+  }
+  ctx.fillStyle = 'rgba(96,126,255,.38)'; ctx.fillRect(x, y, w, 2);
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(x, y + h - 2, w, 2);
+}
+// Cornisa metálica para el parkour (se distingue del ladrillo).
+function drawLedge(x, y, w, h) {
+  ctx.fillStyle = '#2b3550'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#56688f'; ctx.fillRect(x, y, w, 3);
+  ctx.fillStyle = '#8fa6d8'; ctx.fillRect(x, y, w, 1);
+  ctx.fillStyle = '#141b2d'; ctx.fillRect(x, y + h - 3, w, 3);
+  ctx.fillStyle = '#7f94c6';
+  for (let i = 6; i < w - 4; i += 22) ctx.fillRect(x + i, y + h - 7, 2, 2);
+  ctx.fillStyle = 'rgba(88,225,255,.55)'; ctx.fillRect(x, y - 1, w, 1);
+}
+// Tubería verde clásica (salida).
+function drawPipe(px, y, w, h, lit) {
+  const dark = lit ? '#1f7a1f' : '#167e16', mid = lit ? '#2ea82e' : '#34bd34', lite = lit ? '#7bd858' : '#9bf06a';
+  ctx.fillStyle = mid; ctx.fillRect(px + 5, y + 16, w - 10, h - 16);
+  ctx.fillStyle = lite; ctx.fillRect(px + 9, y + 16, 7, h - 16);
+  ctx.fillStyle = dark; ctx.fillRect(px + w - 13, y + 16, 8, h - 16);
+  ctx.fillStyle = mid; ctx.fillRect(px - 6, y, w + 12, 18);
+  ctx.fillStyle = lite; ctx.fillRect(px - 6, y, w + 12, 5);
+  ctx.fillStyle = dark; ctx.fillRect(px - 6, y + 13, w + 12, 5);
+  ctx.strokeStyle = '#07340f'; ctx.lineWidth = 2;
+  ctx.strokeRect(px - 6, y, w + 12, 18); ctx.strokeRect(px + 5, y + 16, w - 10, h - 16);
+}
+
 // ---- Subterráneo ----
 function drawUnderground() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  // Fondo de caverna con viñeta y polvo.
+  const bgg = ctx.createLinearGradient(0, 0, 0, cv.height);
+  bgg.addColorStop(0, '#060814'); bgg.addColorStop(.55, '#0a1024'); bgg.addColorStop(1, '#05070f');
+  ctx.fillStyle = bgg; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = 'rgba(88,166,255,.10)';
+  for (let i = 0; i < 40; i++) {
+    const dx = (i * 137 - camX * 0.3) % (cv.width + 40);
+    ctx.fillRect((dx + cv.width) % cv.width, (i * 53) % 360 + 10, 2, 2);
+  }
 
-  // Ladrillos azules del subterráneo: tile de 16px con biselado (más limpio).
   for (const s of UNDER.solids) {
-    const x = s.x - camX, y = s.y;
-    for (let by = 0; by < s.h; by += 16)
-      for (let bx = 0; bx < s.w; bx += 16) {
-        const px = x + bx, py = y + by;
-        ctx.fillStyle = '#1b2fb0'; ctx.fillRect(px, py, 16, 16);
-        ctx.fillStyle = '#4a63ff'; ctx.fillRect(px, py, 16, 2); ctx.fillRect(px, py, 2, 16);
-        ctx.fillStyle = '#0c1570'; ctx.fillRect(px, py + 14, 16, 2); ctx.fillRect(px + 14, py, 2, 16);
-        ctx.fillStyle = '#2a40d8'; ctx.fillRect(px + 7, py + 3, 2, 10);
-      }
+    const x = s.x - camX;
+    if (x > cv.width || x + s.w < 0) continue;
+    if (s.plat) drawLedge(x, s.y, s.w, s.h);
+    else drawBrick(x, s.y, s.w, s.h);
   }
 
   for (const c of UNDER.coins) if (!c.got) drawCoinBright(c.x - camX, c.y);
+
+  // goombas del subterráneo
+  for (const e of undEnemies) {
+    const ex = e.x - camX; if (ex < -30 || ex > cv.width + 30) continue;
+    if (e.dead) {
+      if (IMG.goomba_flat.complete && IMG.goomba_flat.naturalWidth) ctx.drawImage(IMG.goomba_flat, ex, e.y + 16, 24, 8);
+      continue;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(ex + 12, e.y + e.h - 1, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
+    const img = Math.floor(e.anim / 180) % 2 ? IMG.goomba2 : IMG.goomba1;
+    if (img.complete && img.naturalWidth) {
+      if (e.dir < 0) { ctx.save(); ctx.translate(ex + 24, e.y); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0, 24, 24); ctx.restore(); }
+      else ctx.drawImage(img, ex, e.y, 24, 24);
+    } else { ctx.fillStyle = '#8b4a1a'; ctx.fillRect(ex + 2, e.y + 4, 20, 18); }
+  }
 
   // ---- Terminal del Guardián: pequeño COMPUTADOR retro ----
   const tm = UNDER.terminal, tx = tm.x - camX, pulse = 0.5 + 0.5 * Math.sin(Date.now() / 260);
@@ -931,18 +1023,20 @@ function drawUnderground() {
 
   if (nearTerminal() && !challengeOpen && !adminUnlocked) promptS(tx + tm.w / 2, tm.y, '[ E ] ACCESO');
 
-  const p = UNDER.exitPipe, px = p.x - camX, body = adminUnlocked ? '#1f7a1f' : '#00a800';
-  ctx.fillStyle = body; ctx.fillRect(px, p.y + 18, p.w, p.h - 18); ctx.fillRect(px - 6, p.y, p.w + 12, 20);
-  ctx.fillStyle = '#7bd858'; ctx.fillRect(px + 6, p.y + 22, 8, p.h - 26); ctx.fillRect(px, p.y + 4, 8, 12);
-  ctx.strokeStyle = '#0b3b12'; ctx.lineWidth = 3; ctx.strokeRect(px + 1, p.y + 18, p.w - 2, p.h - 18); ctx.strokeRect(px - 6, p.y, p.w + 12, 20);
-
+  const p = UNDER.exitPipe, px = p.x - camX;
+  drawPipe(px, p.y, p.w, p.h, adminUnlocked);
   if (adminUnlocked) {
-    ctx.fillStyle = '#021002'; ctx.fillRect(px + 6, p.y + 3, p.w - 12, 14);
+    const bob = Math.sin(Date.now() / 200) * 3;
+    ctx.save();
+    ctx.globalAlpha = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(Date.now() / 160));
+    ctx.fillStyle = '#8fe39b'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('▲', px + p.w / 2, p.y - 15 + bob);
+    ctx.restore();
     if (onExitPipe() && !transition) promptS(px + p.w / 2, p.y, '[ ↑ ] SUBIR');
   } else {
-    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(px + p.w / 2 - 9, p.y - 18, 18, 16);
-    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px + p.w / 2, p.y - 18, 7, Math.PI, 0); ctx.stroke();
-    ctx.fillStyle = '#ffd23f'; ctx.fillRect(px + p.w / 2 - 2, p.y - 14, 4, 8);
+    ctx.fillStyle = '#cfd4da'; ctx.fillRect(px + p.w / 2 - 8, p.y - 15, 16, 12);
+    ctx.strokeStyle = '#cfd4da'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px + p.w / 2, p.y - 15, 6, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(px + p.w / 2 - 2, p.y - 11, 4, 6);
   }
 
   drawPlayer(false);
@@ -951,36 +1045,44 @@ function drawUnderground() {
 // ---- HUD ----
 function drawHUD() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  const hudW = 400, hudH = 40, hudX = cv.width / 2 - hudW / 2, hudY = 6;
+  ctx.textBaseline = 'middle';
 
-  ctx.fillStyle = 'rgba(5,13,24,.95)'; ctx.fillRect(hudX, hudY, hudW, hudH);
-  ctx.strokeStyle = 'rgba(89,208,221,.8)'; ctx.lineWidth = 1.5; ctx.strokeRect(hudX + 0.75, hudY + 0.75, hudW - 1.5, hudH - 1.5);
-  ctx.fillStyle = '#ffb454'; ctx.fillRect(hudX + 8, hudY + 8, 3, hudH - 16);
+  // --- Barra central: título + objetivo ---
+  const hw = 448, hh = 46, hx = cv.width / 2 - hw / 2, hy = 6;
+  ctx.fillStyle = 'rgba(6,12,22,.96)'; ctx.fillRect(hx, hy, hw, hh);
+  ctx.fillStyle = '#ffb454'; ctx.fillRect(hx, hy, hw, 3);
+  ctx.strokeStyle = 'rgba(89,208,221,.85)'; ctx.lineWidth = 2; ctx.strokeRect(hx + 1, hy + 1, hw - 2, hh - 2);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffd24a'; ctx.font = 'bold 15px monospace';
+  ctx.fillText('MUNDO 1-1   ·   SUPER MARIO', cv.width / 2, hy + 16);
+  ctx.fillStyle = '#9fe0ff'; ctx.font = 'bold 10px monospace';
+  const sub = room === 'under' ? '▸ ACCESO ADMIN (SQLi) — consigue la LLAVE'
+    : hasKey ? '▸ JUNTA LOS 3 POWER-UPS Y LLEGA A LA BANDERA →' : '▸ BAJA POR LA PRIMERA TUBERÍA ↓';
+  ctx.fillText(sub, cv.width / 2, hy + 34);
 
-  ctx.fillStyle = '#ffb454'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('MUNDO 1-1 · SUPER MARIO', cv.width / 2, hudY + 13);
-  ctx.fillStyle = '#9fd0de'; ctx.font = 'bold 10px monospace';
-  const sub = room === 'under' ? 'ACCESO ADMIN (SQLi) → consigue la LLAVE'
-    : hasKey ? 'JUNTA LOS 3 POWER-UPS Y LLEGA A LA BANDERA →' : 'BAJA POR LA PRIMERA TUBERÍA ↓';
-  ctx.fillText(sub, cv.width / 2, hudY + 29);
+  // --- Panel izquierdo: vidas + llave + power-ups ---
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(6,12,22,.9)'; ctx.fillRect(8, 6, 156, 24);
+  ctx.strokeStyle = 'rgba(255,120,130,.55)'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 6.5, 155, 23);
+  for (let i = 0; i < 3; i++) { ctx.fillStyle = i < player.hp ? '#ff4d6d' : '#3a2030'; heart(15 + i * 17, 12, 1.2); }
+  ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = hasKey ? '#ffd24a' : '#49515f'; ctx.fillText('🔑', 72, 19);
+  ctx.fillStyle = '#ff9a3c'; ctx.fillText('★' + powerups + '/' + TOTAL_POWERUPS, 98, 19);
+  if (player.starT > 0) { ctx.fillStyle = '#fcd500'; ctx.font = 'bold 9px monospace'; ctx.fillText('INV', 140, 19); }
 
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  for (let i = 0; i < 3; i++) { ctx.fillStyle = i < player.hp ? '#ff4d6d' : '#3a2030'; heart(16 + i * 18, 18, 1.25); }
-  ctx.font = 'bold 15px monospace';
-  ctx.fillStyle = hasKey ? '#ffd23f' : '#55606f'; ctx.fillText('🔑', 78, 20);
-  ctx.fillStyle = '#ff9a3c'; ctx.fillText('★ ' + powerups + '/' + TOTAL_POWERUPS, 104, 20);
-  if (player.starT > 0) { ctx.fillStyle = '#fcd500'; ctx.font = 'bold 12px monospace'; ctx.fillText('INVENCIBLE', 172, 20); }
-
+  // --- Pistas (debajo) ---
   const n = foundCount();
-  ctx.fillStyle = 'rgba(5,13,24,.92)'; ctx.fillRect(10, 36, 128, 22);
-  ctx.strokeStyle = 'rgba(143,227,151,.85)'; ctx.lineWidth = 1; ctx.strokeRect(10.5, 36.5, 127, 21);
+  ctx.fillStyle = 'rgba(6,16,10,.92)'; ctx.fillRect(8, 34, 164, 22);
+  ctx.strokeStyle = n === PISTAS.length ? '#8fe39b' : 'rgba(143,227,151,.7)'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 34.5, 163, 21);
   ctx.fillStyle = n === PISTAS.length ? '#8fe39b' : '#cfe8d3'; ctx.font = 'bold 12px monospace';
-  ctx.fillText('📓 PISTAS ' + n + '/' + PISTAS.length + '  [Q]', 18, 47);
+  ctx.fillText('📓 PISTAS ' + n + '/' + PISTAS.length, 16, 45);
+  ctx.fillStyle = '#8fb0ff'; ctx.font = 'bold 10px monospace'; ctx.fillText('[ Q ]', 140, 45);
 
-  ctx.fillStyle = 'rgba(5,13,24,.92)'; ctx.fillRect(cv.width - 104, 6, 98, 26);
-  ctx.strokeStyle = 'rgba(252,192,0,.85)'; ctx.lineWidth = 1; ctx.strokeRect(cv.width - 103.5, 6.5, 97, 25);
-  if (IMG.coin.complete && IMG.coin.naturalWidth > 0) ctx.drawImage(IMG.coin, cv.width - 96, 9, 18, 18);
-  ctx.fillStyle = '#ffd24a'; ctx.font = 'bold 15px monospace'; ctx.textAlign = 'left'; ctx.fillText('× ' + coinsGot, cv.width - 72, 20);
+  // --- Monedas (derecha) ---
+  ctx.fillStyle = 'rgba(6,12,22,.9)'; ctx.fillRect(cv.width - 112, 6, 104, 26);
+  ctx.strokeStyle = 'rgba(252,192,0,.8)'; ctx.lineWidth = 1; ctx.strokeRect(cv.width - 111.5, 6.5, 103, 25);
+  if (IMG.coin.complete && IMG.coin.naturalWidth > 0) ctx.drawImage(IMG.coin, cv.width - 102, 10, 18, 18);
+  ctx.fillStyle = '#ffd24a'; ctx.font = 'bold 15px monospace'; ctx.fillText('× ' + coinsGot, cv.width - 78, 19);
 
   if (msgT > 0 && msg) {
     ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';

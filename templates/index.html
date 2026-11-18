@@ -4,27 +4,98 @@
     <div style="display:none;">FLAG{primera_bandera_oculta_en_el_codigo}</div>
 
     <div class="arcade-screen-text">¿Listo para el reto?</div>
-    
-    <!-- Mini Canvas más grande para Fabiancho 450% -->
-    <div style="width: 100%; display: flex; justify-content: center; margin-bottom: 10px;">
-        <canvas id="indexCanvas" width="900" height="360" style="background: rgba(0,0,0,0.5); border: 1px solid #30363d; border-radius: 8px; max-width:100%;"></canvas>
+    <div class="start-tag">★ 13 MUNDOS · 13 VULNERABILIDADES ★</div>
+
+    <!-- Escena de pantalla: logos de los juegos DESPLAZÁNDOSE detrás de Fabiancho -->
+    <div class="screen-scene">
+      <div class="game-logos" aria-hidden="true">
+        <div class="track">
+          {% set logos = ['mario','contra','bomberman','megaman','doom','sonic','pokemon'] %}
+          {% for _ in range(2) %}{% for g in logos %}
+          <img src="{{ url_for('static', filename='img/titles/title_' ~ g ~ '.png') }}" alt="{{ g }}">
+          {% endfor %}{% endfor %}
+        </div>
+      </div>
+      <canvas id="indexCanvas" width="900" height="320"></canvas>
     </div>
 
     <div class="arcade-actions">
-        <a href="{{ url_for('map_view') }}" class="btn-play">JUGAR</a>
+        <a href="{{ url_for('map_view') }}" class="btn-play" id="btn-play">JUGAR</a>
         <button class="btn-exit" id="btn-exit">SALIR</button>
+    </div>
+{% endblock %}
+
+{% block after_cabinet %}
+    <!-- Dispensador de monedas: arrástralas a la ranura del arcade para iniciar -->
+    <div id="coin-dispenser">
+        <div class="disp-label">MONEDAS</div>
+        <div class="disp-tray">
+            <div class="coin-token" data-coin><span>★</span></div>
+            <div class="coin-token" data-coin><span>★</span></div>
+            <div class="coin-token" data-coin><span>★</span></div>
+        </div>
+        <div class="disp-hint">Arrástrala a<br>la ranura ▸</div>
     </div>
 
     <script>
-        document.getElementById('btn-exit').addEventListener('click', async () => {
-            if (!confirm('¿Apagar el servidor del CTF?')) return;
-            try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
-            document.getElementById('arcade-stage').innerHTML = '<div style="color:#58a6ff; text-align:center; font-family:monospace;">Servidor apagado.<br>Puedes cerrar esta pestaña.</div>';
+    (function(){
+        var playBtn = document.getElementById('btn-play');
+        var PLAY_URL = playBtn ? playBtn.getAttribute('href') : '/map';
+        var slot = document.getElementById('coin-slot');
+        if (!slot) return;
+        var started = false, active = null, sx = 0, sy = 0;
+
+        function coinCenter(c){ var r = c.getBoundingClientRect(); return { x: r.left + r.width/2, y: r.top + r.height/2 }; }
+        function overSlot(c){
+            var cc = coinCenter(c), r = slot.getBoundingClientRect();
+            return cc.x > r.left - 32 && cc.x < r.right + 32 && cc.y > r.top - 32 && cc.y < r.bottom + 60;
+        }
+        function startInsert(c){
+            if (started) return; started = true;
+            var cc = coinCenter(c), r = slot.getBoundingClientRect();
+            var tx = (r.left + r.width/2) - cc.x, ty = (r.top - 2) - cc.y;
+            c.style.transition = 'transform .3s ease, opacity .3s ease';
+            c.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(.8)';
+            slot.classList.add('accept'); slot.classList.remove('hot');
+            var lbl = slot.querySelector('.coin-slot-label'); if(lbl) lbl.textContent = 'CREDIT 1';
+            setTimeout(function(){ c.style.transform = 'translate(' + tx + 'px,' + (ty+34) + 'px) scale(.35) rotate(90deg)'; c.style.opacity = '0'; }, 300);
+            var t = document.querySelector('.arcade-screen-text'); if(t) setTimeout(function(){ t.textContent = '¡PRESS START!'; }, 680);
+            setTimeout(function(){ window.location.href = PLAY_URL; }, 1080);
+        }
+        function snapBack(c){ c.style.transition = 'transform .2s ease'; c.style.transform = ''; c.style.zIndex = ''; slot.classList.remove('hot'); }
+
+        document.querySelectorAll('.coin-token').forEach(function(coin){
+            function release(){
+                if (active !== coin) return;
+                coin.classList.remove('dragging');
+                if (overSlot(coin)) startInsert(coin); else snapBack(coin);
+                active = null;
+            }
+            coin.addEventListener('pointerdown', function(e){
+                if (started) return;
+                active = coin; sx = e.clientX; sy = e.clientY;
+                try { coin.setPointerCapture(e.pointerId); } catch(_){}
+                coin.classList.add('dragging'); coin.style.transition = 'none'; coin.style.zIndex = '3000';
+                e.preventDefault();
+            });
+            coin.addEventListener('pointermove', function(e){
+                if (active !== coin) return;
+                coin.style.transform = 'translate(' + (e.clientX - sx) + 'px,' + (e.clientY - sy) + 'px)';
+                slot.classList.toggle('hot', overSlot(coin));
+            });
+            coin.addEventListener('pointerup', release);
+            coin.addEventListener('pointercancel', release);
         });
+    })();
+
+    document.getElementById('btn-exit').addEventListener('click', async () => {
+        if (!confirm('¿Apagar el servidor del CTF?')) return;
+        try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
+        document.getElementById('arcade-stage').innerHTML = '<div style="color:#58a6ff; text-align:center; font-family:monospace;">Servidor apagado.<br>Puedes cerrar esta pestaña.</div>';
+    });
     </script>
 {% endblock %}
 
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/index_showcase.js') }}"></script>
 {% endblock %}
-

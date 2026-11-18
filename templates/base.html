@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UwUNTU CTF</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/arcade_ui.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
@@ -22,7 +23,36 @@
 
     <div class="arcade-cabinet">
         <div class="arcade-marquee">
-            <h1>UwUNTU CTF</h1>
+            <span class="led-strip left"><i></i><i></i><i></i></span>
+            <span class="led-strip right"><i></i><i></i><i></i></span>
+          {% block marquee %}
+            {% if music %}
+            <img class="marquee-game" src="{{ url_for('static', filename='img/titles/title_' ~ music ~ '.png') }}" alt="{{ music }}">
+            {% else %}
+            <svg class="uwuntu-logo" viewBox="0 0 560 92" role="img" aria-label="UwUntu CTF">
+              <defs>
+                <linearGradient id="uwFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#ffffff"/><stop offset=".42" stop-color="#bfe9ff"/>
+                  <stop offset=".52" stop-color="#58a6ff"/><stop offset="1" stop-color="#1f5bb0"/>
+                </linearGradient>
+                <linearGradient id="ctfFill" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#ffd24a"/><stop offset=".5" stop-color="#ff8a3d"/><stop offset="1" stop-color="#ff2fd6"/>
+                </linearGradient>
+              </defs>
+              <g font-family="'Press Start 2P',monospace" font-size="40" text-anchor="middle">
+                <text x="222" y="57" fill="#0a1226">UwUNTU</text>
+                <text x="222" y="55" fill="#0a1226">UwUNTU</text>
+                <text x="222" y="53" stroke="#06284f" stroke-width="7" paint-order="stroke" fill="url(#uwFill)">UwUNTU</text>
+                <text x="222" y="53" fill="url(#uwFill)">UwUNTU</text>
+              </g>
+              <g transform="translate(476,53)">
+                <rect x="-44" y="-30" width="92" height="52" rx="10" fill="#0a1226" stroke="#000" stroke-width="3"/>
+                <rect x="-44" y="-30" width="92" height="52" rx="10" fill="none" stroke="url(#ctfFill)" stroke-width="3"/>
+                <text x="2" y="10" font-family="'Press Start 2P',monospace" font-size="26" text-anchor="middle" fill="url(#ctfFill)">CTF</text>
+              </g>
+            </svg>
+            {% endif %}
+          {% endblock %}
         </div>
         <p class="arcade-subtitle">
             Fabiancho lleva tanto tiempo enseñando Hacking Ético que ya sólo queda el esqueleto.
@@ -39,14 +69,18 @@
                 <div class="joystick-ball" id="joystick-ball"></div>
             </div>
 
-            <!-- Controles DENTRO del trapecio (ahorra espacio de pantalla) -->
-            <div class="arcade-controls-help">
-            {% block controls_help %}
-                <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
-                <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
-                <strong>F</strong> → GOLPE &nbsp;|&nbsp;
-                <strong>E</strong> → Abrir Nivel (en el mapa)
-            {% endblock %}
+            <!-- Centro del panel: rejilla de altavoz + ranura de monedas -->
+            <div class="panel-center">
+                <div class="speaker-grille"></div>
+                <div class="coin-slot" id="coin-slot" title="Inserta una moneda para jugar">
+                    <div class="coin-slot-plate"><span class="coin-slot-mouth"></span></div>
+                    <div class="coin-slot-label">INSERT COIN</div>
+                </div>
+            </div>
+
+            <div class="deco-buttons" aria-hidden="true">
+                <i style="--c:#ffd24a"></i><i style="--c:#b06bff"></i><i style="--c:#ff5a5a"></i>
+                <i style="--c:#3ddc84"></i><i style="--c:#38c6ff"></i><i style="--c:#ff8a3d"></i>
             </div>
 
             <div class="arcade-buttons">
@@ -56,10 +90,55 @@
         </div>
         </div>
 
-        <div class="plinth"><div class="coins"><i></i><i></i></div></div>
+        <div class="plinth">
+            <span class="plinth-credit">© 2026 · <b>EL BESTO EQUIPO</b></span>
+            <div class="coins"><i></i><i></i></div>
+        </div>
 
         {% block footer %}{% endblock %}
     </div>
+
+    {# ---- Pestañas laterales: Controles y Créditos ---- #}
+    <div class="side-tabs">
+        <button class="side-tab tab-controls" onclick="uiOpen('controls-modal')">▤ CONTROLES</button>
+        <button class="side-tab tab-credits" onclick="uiOpen('credits-modal')">★ CRÉDITOS</button>
+    </div>
+
+    <div class="ui-modal" id="controls-modal" onclick="if(event.target===this)uiClose('controls-modal')">
+        <div class="ui-card">
+            <div class="ui-card-head"><span>▤ CONTROLES</span><button onclick="uiClose('controls-modal')">✕</button></div>
+            <div class="ui-controls-body">
+            {% block controls_help %}
+                <strong>Flechas / WASD</strong> → Moverse &nbsp;|&nbsp;
+                <strong>Espacio</strong> → SALTO &nbsp;|&nbsp;
+                <strong>F</strong> → GOLPE &nbsp;|&nbsp;
+                <strong>E</strong> → Abrir Nivel (en el mapa)
+            {% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <div class="ui-modal" id="credits-modal" onclick="if(event.target===this)uiClose('credits-modal')">
+        <div class="ui-card credits">
+            <div class="ui-card-head"><span>★ CRÉDITOS</span><button onclick="uiClose('credits-modal')">✕</button></div>
+            <p class="credits-title">EL BESTO EQUIPO</p>
+            <p class="credits-sub">UwUntu CTF — Plataforma educativa de Ethical Hacking en formato arcade retro.</p>
+            <ul class="credits-list">
+                <li>Danna Angelika Ruiz Rodríguez</li>
+                <li>Laura Danniela Botia Ordoñez</li>
+                <li>Nicolás Gutiérrez</li>
+            </ul>
+            <p class="credits-foot">© 2026 · Hecho con 💚 y muchos exploits</p>
+        </div>
+    </div>
+
+    <script>
+        function uiOpen(id){ var m=document.getElementById(id); if(m) m.classList.add('show'); }
+        function uiClose(id){ var m=document.getElementById(id); if(m) m.classList.remove('show'); }
+        document.addEventListener('keydown', function(e){
+            if(e.key==='Escape'){ document.querySelectorAll('.ui-modal.show').forEach(function(m){ m.classList.remove('show'); }); }
+        });
+    </script>
 
     {# Contenido fuera de la cabina (p. ej. overlays que no deben escalarse) #}
     {% block after_cabinet %}{% endblock %}
@@ -72,9 +151,7 @@
         function fitCabinet(){
             var cab = document.querySelector('.arcade-cabinet');
             if(!cab) return;
-            // Lo ponemos centrado a escala 1 para medir su tamaño real
-            cab.style.transform = 'translate(-50%,-50%) scale(1)';
-            // Medimos incluyendo las piezas que sobresalen (marquesina y controles)
+            cab.style.transform = 'scale(1)';
             var parts = document.querySelectorAll('.arcade-cabinet, .arcade-marquee, .panel-frame');
             var L=Infinity,T=Infinity,R=-Infinity,B=-Infinity;
             parts.forEach(function(e){
@@ -84,15 +161,31 @@
             });
             var w=R-L, h=B-T;
             if(w<=0||h<=0) return;
-            var availW=window.innerWidth-28, availH=window.innerHeight-28;
+            var availW=window.innerWidth-24, availH=window.innerHeight-24;
             var s=Math.min(availW/w, availH/h, 1);
-            cab.style.transform='translate(-50%,-50%) scale('+s+')';
+            cab.style.transform='scale('+s+')';
+            // Corrección exacta: medir y centrar vertical/horizontalmente.
+            var r=cab.getBoundingClientRect();
+            var dx=(window.innerWidth - r.width)/2 - r.left;
+            var dy=(window.innerHeight - r.height)/2 - r.top;
+            cab.style.transform='scale('+s+') translate('+(dx/s)+'px,'+(dy/s)+'px)';
+            window._cabScale = s;
         }
+        window.fitCabinet = fitCabinet;
         window.addEventListener('resize', fitCabinet);
         window.addEventListener('load', fitCabinet);
         if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fitCabinet); }
+        document.querySelectorAll('.arcade-cabinet img').forEach(function(im){
+            im.addEventListener('load', fitCabinet);
+            if(im.complete) fitCabinet();
+        });
+        var cabEl = document.querySelector('.arcade-cabinet');
+        if (window.ResizeObserver && cabEl){
+            new ResizeObserver(function(){ fitCabinet(); }).observe(cabEl);
+        }
         setTimeout(fitCabinet, 60);
         setTimeout(fitCabinet, 400);
+        setTimeout(fitCabinet, 900);
         fitCabinet();
     })();
     </script>
