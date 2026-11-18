@@ -193,9 +193,33 @@ let returnPosition = null;
 let returnViewAngle = 0;
 const spokenNpcs = new Set();
 let rotationHintUnlocked = false;
+const clueNotebook = window.createClueNotebook({
+    title:'BITÁCORA · PUEBLO POKÉMON',
+    intro:'Las conversaciones quedan anotadas aquí. La última nota aparece cuando hayas hablado con todos los habitantes.',
+    lockedText:'Acércate a los personajes y pulsa E para escuchar lo que saben.',
+    isBlocked:()=>challengeOpen,
+    onToggle:open=>{ if(open) for(const key in keys) keys[key]=false; },
+    clues:[
+        ...npcs.map((npc,index)=>({
+            id:npc.id,
+            icon:'💬',
+            title:`Habitante ${index+1}`,
+            body:npc.say,
+            source:'Conversaste con este habitante',
+        })),
+        {
+            id:'perspective',
+            icon:'🔄',
+            title:'Una pista sobre el pueblo',
+            body:'No todo es lo que parece. Algunas cosas tienen otra cara.',
+            source:'Hablaste con todos los habitantes',
+        },
+    ],
+});
 function typing(e){ const t=e.target||document.activeElement; return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
 window.addEventListener('keydown', e=>{
     if (typing(e)||challengeOpen) return;
+    if (clueNotebook.isOpen()) return;
     if (e.key==='e'||e.key==='E'){
         const nearby=nearestNpc();
         if(currentHome){
@@ -240,9 +264,11 @@ function talkToNearbyNpc(){
     let say=npc.say;
     if(!spokenNpcs.has(npc.id)){
         spokenNpcs.add(npc.id);
+        clueNotebook.unlock(npc.id);
         if(spokenNpcs.size===npcs.length&&!rotationHintUnlocked){
             rotationHintUnlocked=true;
             say+=' No todo es lo que parece. Algunas cosas tienen otra cara.';
+            clueNotebook.unlock('perspective');
         }
     }
     activeDialogue={...npc,say};
@@ -313,7 +339,7 @@ function viewDepth(gx,gy){
 }
 
 function update(dt){
-    if (challengeOpen){ player.moving=false; return; }
+    if (challengeOpen||clueNotebook.isOpen()){ player.moving=false; return; }
     if(currentHome){
         if(activeDialogue&&Math.hypot(player.gx-activeDialogue.roomX,player.gy-activeDialogue.roomY)>2.3) activeDialogue=null;
         const roomSize=getRoomSize();

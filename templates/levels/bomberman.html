@@ -3,6 +3,7 @@
 {% block head %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clue_notebook.css') }}">
 <style>
   /* El nivel vive dentro de la pantalla del arcade */
   .arcade-stage{ padding:0 !important; }
@@ -10,10 +11,12 @@
   .arcade-subtitle{ display:none !important; }
   #level-inner{ width:100%; height:100%; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:8px; padding:10px; min-height:0; }
+  #level-inner.expanded{ padding:0; gap:0; }
   #level-inner .ltitle{ font-family:'Press Start 2P',monospace; font-size:10px; color:#ffb454; letter-spacing:1px; flex:0 0 auto; }
   #arena{ flex:1 1 auto; min-height:0; width:auto; max-width:100%; height:auto; object-fit:contain;
     image-rendering:pixelated; border:4px solid #111b2b; border-radius:8px; background:#07111d;
     box-shadow:0 0 0 2px #253c59, 0 0 28px rgba(42,184,255,.22), 0 0 48px rgba(255,180,84,.1); }
+  #level-inner.expanded #arena{ width:100%; height:100%; max-width:100%; object-fit:fill; }
   #level-inner .lhelp{ color:#8b949e; font-size:.85rem; text-align:center; line-height:1.6; }
   #level-inner .lhelp .k{ display:inline-block; background:#0d1420; border:1px solid #2a3344; border-radius:4px; padding:1px 7px; color:#e6edf3; margin:0 1px; }
 
@@ -57,6 +60,7 @@
   <strong>WASD / ←↑↓→</strong> → Mover &nbsp;|&nbsp;
   <strong>Espacio</strong> → Poner bomba &nbsp;|&nbsp;
   <strong>E</strong> → Abrir terminal &nbsp;|&nbsp;
+  <strong>Q</strong> → Bitácora &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Volver al mapa</a>
 {% endblock %}
 
@@ -83,7 +87,7 @@
     <!-- SECTOR OCULTO: desactivado en la interfaz. ¿display:none? (reto IDOR) -->
     <div class="flagbox" id="sector-oculto" style="display:none">
       <h2 style="color:#3ddc84;">▸ Sector oculto — Expedientes</h2>
-      <p class="sub">Consulta de expedientes de usuario. Solo deberías ver el tuyo (#3).</p>
+      <p class="sub">Terminal de registros del sector despejado. Solo deberías ver tu expediente (#3).</p>
       <label for="rid">ID de expediente</label>
       <div class="sbtns" style="margin-top:6px;">
         <input type="text" id="rid" value="3" autocomplete="off" spellcheck="false" style="max-width:120px;">
@@ -106,6 +110,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/clue_notebook.js') }}"></script>
 <script src="{{ url_for('static', filename='js/level_bomberman.js') }}"></script>
 <script>
 // --- Defensa del lado del CLIENTE (a propósito débil): bloquea la comilla ---
@@ -129,6 +134,7 @@ async function acceder(){
     if(d.error){ loginmsg.textContent=d.error; loginmsg.className='msg err'; return; }
     loginmsg.textContent=d.message + ((d.admin&&d.flag_hint)?('  →  nota del admin: '+d.flag_hint):'');
     loginmsg.className='msg '+(d.ok?'ok':'err');
+    if(d.ok&&d.admin) window._unlockSecretSector();
   }catch(e){ loginmsg.textContent='Error de conexión.'; loginmsg.className='msg err'; }
 }
 document.getElementById('login').onclick=acceder;

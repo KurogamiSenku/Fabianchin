@@ -1,0 +1,44 @@
+.clue-notebook-btn{
+  position:fixed; right:16px; bottom:16px; z-index:10000; display:flex; align-items:center; gap:8px;
+  padding:11px 13px; border:2px solid #ffe38a; border-bottom:5px solid #8e3b2f; border-radius:8px;
+  background:#d94b3d; color:#fff8e8; box-shadow:0 4px 16px rgba(0,0,0,.55);
+  font:700 12px monospace; letter-spacing:.6px; cursor:pointer;
+}
+.clue-notebook-btn:active{ border-bottom-width:2px; transform:translateY(3px); }
+.clue-notebook-count{ padding:3px 6px; border-radius:4px; background:#fff0aa; color:#321a12; font-size:11px; }
+.clue-notebook-btn.flash{ animation:clue-notebook-flash .5s ease 3; }
+@keyframes clue-notebook-flash{
+  0%,100%{ box-shadow:0 4px 16px rgba(0,0,0,.55); }
+  50%{ box-shadow:0 0 0 3px #fff,0 0 25px 8px rgba(255,215,95,.95); transform:scale(1.07); }
+}
+.clue-notebook-overlay{
+  position:fixed; inset:0; z-index:10001; display:none; align-items:center; justify-content:center;
+  padding:20px; background:rgba(5,9,16,.82);
+}
+.clue-notebook-overlay.show{ display:flex; }
+.clue-notebook-card{
+  width:min(560px,100%); max-height:86vh; overflow:auto; padding:0 18px 18px;
+  border:3px solid #e86d50; border-radius:12px; background:#111a25; color:#e6edf3;
+  box-shadow:0 0 0 3px #ffd65f,0 12px 44px rgba(0,0,0,.65);
+  font-family:'Courier New',monospace;
+}
+.clue-notebook-bar{
+  position:sticky; top:0; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  margin:0 -18px 12px; padding:12px 16px; border-bottom:3px solid #8e3b2f; background:#d94b3d;
+}
+.clue-notebook-title{ color:#fff8e8; font:700 12px monospace; letter-spacing:.7px; }
+.clue-notebook-close{
+  padding:8px 10px; border:0; border-radius:5px; background:#ffe38a; color:#321a12;
+  font:700 10px monospace; cursor:pointer;
+}
+.clue-notebook-intro{ margin:2px 0 12px; color:#b8c9da; font-size:14px; line-height:1.55; }
+.clue-notebook-entry{ margin:8px 0; padding:10px 12px; border-radius:7px; }
+.clue-notebook-entry.found{ border:1px solid #d99454; border-left:5px solid #ffd65f; background:#20202a; }
+.clue-notebook-entry.locked{ border:1px dashed #465366; border-left:5px solid #677589; background:#151c27; opacity:.82; }
+.clue-notebook-entry-head{ display:flex; align-items:center; gap:8px; }
+.clue-notebook-icon{ font-size:18px; }
+.clue-notebook-entry-title{ color:#ffd989; font-weight:700; font-size:13px; line-height:1.4; }
+.clue-notebook-entry.locked .clue-notebook-entry-title{ color:#9eafc3; }
+.clue-notebook-body{ margin-top:7px; color:#e6edf3; font-size:15px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+.clue-notebook-entry.locked .clue-notebook-body{ color:#aab5c2; font-style:italic; }
+.clue-notebook-source{ margin-top:6px; color:#84d5a3; font-size:12px; }

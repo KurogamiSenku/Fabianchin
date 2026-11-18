@@ -21,9 +21,10 @@ FLAG = config.LEVEL_FLAGS[5]
 HALF1 = config.LEVEL5_HALF1   # primera mitad (por SQLi)
 HALF2 = config.LEVEL5_HALF2   # segunda mitad (por IDOR, sector oculto)
 
-# La nota del admin entrega la 1a mitad y pista hacia el sector oculto
+# La nota del admin entrega la 1a mitad y orienta hacia el sector oculto
 ADMIN_NOTE = (HALF1 + "   [1/2]   ·   la otra mitad está en el 'sector oculto' "
-              "del panel: está DESACTIVADO en la interfaz (pista: F12).")
+              "del panel. El muro del este acaba de ceder; despeja el camino "
+              "y busca el terminal de registros.")
 
 # Expedientes para el reto IDOR: cambiar el id para ver el del admin (id=1)
 RECORDS = {

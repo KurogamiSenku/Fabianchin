@@ -3,6 +3,7 @@
 {% block head %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clue_notebook.css') }}">
 <style>
   .arcade-stage{ padding:0 !important; }
   .arcade-subtitle{ display:none !important; }
@@ -51,6 +52,7 @@
   <strong>← →</strong> → Girar &nbsp;|&nbsp;
   <strong>A D</strong> → Lateral &nbsp;|&nbsp;
   <strong>E</strong> → Consola &nbsp;|&nbsp;
+  <strong>Q</strong> → Bitácora &nbsp;|&nbsp;
   <strong>R</strong> → Reiniciar y borrar mapa &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Mapa</a>
 {% endblock %}
@@ -82,6 +84,7 @@ Escribe <b>help</b> para ver los comandos disponibles. Explora antes de intentar
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/clue_notebook.js') }}"></script>
 <script src="{{ url_for('static', filename='js/level_doom.js') }}"></script>
 <script>
 const termOutput=document.getElementById('term'), cmdIn=document.getElementById('cmd');

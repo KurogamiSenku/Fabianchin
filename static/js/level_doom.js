@@ -121,14 +121,27 @@ const discoveredCells = new Set();
 const visibleCells = new Set();
 const discoveredClues = new Set();
 const mapClues = [
-    { x:3, y:1, text:'Los archivos personales suelen guardar notas. Busca pistas antes de avanzar.' },
-    { x:7, y:5, text:'No todo usuario tiene permisos de administrador. Comprueba tu identidad.' },
-    { x:8, y:9, text:'La consola está en el extremo del laberinto; sigue explorando los pasillos.' },
-    { x:7, y:13, text:'Si una ruta está bloqueada, revisa qué comandos puedes ejecutar con sudo.' }
+    { id:'files', x:3, y:1, icon:'📄', title:'Notas olvidadas', source:'Exploraste un orbe del laberinto',
+      text:'Los archivos personales suelen guardar notas. Busca pistas antes de avanzar.' },
+    { id:'identity', x:7, y:5, icon:'🪪', title:'Identidad y permisos', source:'Exploraste un orbe del laberinto',
+      text:'No todo usuario tiene permisos de administrador. Comprueba tu identidad.' },
+    { id:'terminal', x:8, y:9, icon:'⌨️', title:'Al final del pasillo', source:'Exploraste un orbe del laberinto',
+      text:'La consola está en el extremo del laberinto; sigue explorando los pasillos.' },
+    { id:'sudo', x:7, y:13, icon:'🔑', title:'Permisos elevados', source:'Exploraste un orbe del laberinto',
+      text:'Si una ruta está bloqueada, revisa qué comandos puedes ejecutar con sudo.' }
 ];
+const clueNotebook = window.createClueNotebook({
+    title:'BITÁCORA · SECTOR DOOM',
+    intro:'Las notas aparecen al encontrar los orbes repartidos por el laberinto. Tu progreso se reinicia al reiniciar la partida.',
+    lockedText:'Explora el laberinto y recoge los orbes para recuperar esta pista.',
+    isBlocked:()=>challengeOpen,
+    onToggle:open=>{ if(open) for(const key in keys) keys[key]=false; },
+    clues:mapClues,
+});
 function typing(e){ const t=e.target||document.activeElement; return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
 window.addEventListener('keydown', e=>{
     if (typing(e)||challengeOpen) return;
+    if (clueNotebook.isOpen()) return;
     if (e.key.length===1 && /^[a-z]$/i.test(e.key)){
         const next=(secretCode+e.key.toLowerCase()).slice(-'mamahuevo'.length);
         if ('mamahuevo'.startsWith(next)){
@@ -179,7 +192,7 @@ function tryMove(nx, ny){
     moveActor(player,nx,ny,sentinels);
 }
 function update(){
-    if (challengeOpen){ player.kx=0; player.ky=0; return; }   // consola: todo congelado
+    if (challengeOpen||clueNotebook.isOpen()){ player.kx=0; player.ky=0; return; }
     sentinelHitCooldown=Math.max(0,sentinelHitCooldown-1);
     sentinelHitFlash=Math.max(0,sentinelHitFlash-1);
     cluePickupFlash=Math.max(0,cluePickupFlash-1);
@@ -258,6 +271,7 @@ function updateExploration(){
         if(!discoveredClues.has(id)&&Math.hypot(player.x-(clue.x+.5),player.y-(clue.y+.5))<.45){
             discoveredClues.add(id);
             cluesCollected++;
+            clueNotebook.unlock(clue.id);
             cluePickupFlash=14;
             showStatus(clue.text,'clue');
         }

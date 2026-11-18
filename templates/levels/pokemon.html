@@ -3,6 +3,7 @@
 {% block head %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clue_notebook.css') }}">
 <style>
   .arcade-stage{ padding:0 !important; }
   .arcade-subtitle{ display:none !important; }
@@ -55,6 +56,7 @@
   <strong>WASD / ←↑↓→</strong> → Caminar &nbsp;|&nbsp;
   <strong>Arrastrar con mouse</strong> → Girar perspectiva &nbsp;|&nbsp;
   <strong>E</strong> → Hablar / Entrar o salir &nbsp;|&nbsp;
+  <strong>Q</strong> → Bitácora &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Mapa</a>
 {% endblock %}
 
@@ -100,6 +102,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/clue_notebook.js') }}"></script>
 <script src="{{ url_for('static', filename='js/level_pokemon.js') }}"></script>
 <script>
 const loginmsg=document.getElementById('loginmsg');
