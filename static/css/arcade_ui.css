@@ -771,3 +771,16 @@
 @keyframes ufo-lights{ 50%{ filter:brightness(.35); box-shadow:none; } }
 /* Nota: el OVNI se anima SIEMPRE (también con "reducir animaciones"
    activado en el sistema), porque su vuelo es suave y es parte del diseño. */
+
+/* Logo del equipo en el modal de créditos (reemplaza el título de texto).
+   Estilo calcomanía plano: sin resplandores, solo una sombra dura. */
+.credits-logo{
+  display:block; width:88%; max-width:460px; height:auto;
+  margin:14px auto 4px;
+  image-rendering:auto;
+  animation:credits-logo-in .55s cubic-bezier(.2,1.5,.4,1) both;
+}
+@keyframes credits-logo-in{
+  from{ transform:scale(.6) rotate(-4deg); opacity:0; }
+  to  { transform:scale(1) rotate(0);     opacity:1; }
+}
