@@ -1,0 +1,152 @@
+/* ============================================================
+   INVASIÓN DE RATAS (static/js/rat_invasion.js)
+   Capa fija sobre TODA la pantalla: Fabiancho huye en su OVNI y
+   las ratas lo persiguen en platillos rojos. Solo las ratas
+   reciben clics; el resto deja pasar el ratón al juego.
+   ============================================================ */
+
+/* El Fabiancho original queda invisible (conserva su hueco para que
+   el arcade no se re-escale) y con él desaparece su letrero. */
+.arcade-body .ufo-rider.ri-away{ visibility:hidden; }
+
+#rat-invasion{
+  position:fixed; inset:0; z-index:9000;
+  pointer-events:none; overflow:hidden;
+}
+
+/* ---------- Fabiancho huyendo ---------- */
+#rat-invasion .ri-fab{
+  position:absolute; left:0; top:0;
+  width:210px;
+  display:flex; flex-direction:column; align-items:center;
+  transform-origin:50% 50%;
+  will-change:transform;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.55));
+}
+#rat-invasion .ri-fab-skeli{
+  width:170px; height:auto; display:block;
+  margin-bottom:-40px; position:relative; z-index:2;
+  image-rendering:pixelated;
+}
+#rat-invasion .ri-fab .ufo{ flex:none; }
+
+/* ---------- Rata en su platillo ---------- */
+#rat-invasion .ri-rat{
+  position:absolute; left:0; top:0;
+  width:150px;
+  transform-origin:50% 50%;
+  will-change:transform;
+  pointer-events:auto;
+  cursor:crosshair;
+  -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#rat-invasion .ri-rat:hover .ri-sprite{
+  filter:drop-shadow(0 0 6px #ff5a5a) drop-shadow(0 0 2px #fff);
+}
+#rat-invasion .ri-rat.dead{ pointer-events:none; cursor:default; }
+
+#rat-invasion .ri-ship{
+  position:relative; width:150px; height:108px;
+}
+#rat-invasion .ri-sprite{
+  position:absolute; left:50%; top:0; margin-left:-60px;   /* 120x80 */
+  image-rendering:pixelated;
+  background-repeat:no-repeat;
+  z-index:2;
+}
+/* cúpula de vidrio por delante de la rata */
+#rat-invasion .ri-dome{
+  position:absolute; left:24px; right:24px; top:8px; height:66px;
+  border:3px solid #04060e; border-bottom:none;
+  border-radius:50% 50% 0 0 / 100% 100% 0 0;
+  background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(127,243,255,.12));
+  z-index:3;
+}
+#rat-invasion .ri-rim{
+  position:absolute; left:0; right:0; top:64px; height:26px;
+  border:3px solid #04060e; border-radius:50%;
+  background:linear-gradient(180deg,#e06a6a 0%,#9b2c3c 55%,#4a1020 100%);
+  box-shadow:0 0 16px rgba(255,90,90,.55);
+  display:flex; align-items:center; justify-content:space-evenly; padding:0 12px;
+  z-index:4;
+}
+#rat-invasion .ri-rim i{
+  width:7px; height:7px; border-radius:50%; border:2px solid #04060e;
+  background:#ffd24a; box-shadow:0 0 8px #ffd24a;
+  animation:ri-lights .9s steps(1) infinite;
+}
+#rat-invasion .ri-rim i:nth-child(2){ animation-delay:.22s; background:#ff5a5a; box-shadow:0 0 8px #ff5a5a; }
+#rat-invasion .ri-rim i:nth-child(3){ animation-delay:.44s; }
+#rat-invasion .ri-rim i:nth-child(4){ animation-delay:.66s; background:#ff5a5a; box-shadow:0 0 8px #ff5a5a; }
+#rat-invasion .ri-belly{
+  position:absolute; left:48px; right:48px; top:87px; height:13px;
+  border:3px solid #04060e; border-top:none; border-radius:0 0 30px 30px;
+  background:linear-gradient(180deg,#3a1420,#1a0810);
+  z-index:3;
+}
+#rat-invasion .ri-belly::after{
+  content:""; position:absolute; left:50%; bottom:-6px; width:18px; height:6px; margin-left:-9px;
+  border-radius:50%; background:#ff9a7a; box-shadow:0 0 12px 4px rgba(255,120,90,.8);
+  animation:ri-thruster .3s ease-in-out infinite alternate;
+}
+
+/* ---------- Globos (capa propia, anti-solapamiento) ---------- */
+#rat-invasion .ri-bubbles{ position:absolute; inset:0; pointer-events:none; }
+#rat-invasion .ri-bubble{
+  position:absolute; left:0; top:0;
+  width:max-content; max-width:240px;
+  margin:0; padding:10px 12px;
+  font-family:'Press Start 2P',monospace;
+  font-size:12px; line-height:1.8; color:#0b0618; text-align:center;
+  background:#fffbe8;
+  border:3px solid #04060e; border-radius:10px;
+  box-shadow:3px 3px 0 #04060e;
+  pointer-events:none;
+  /* texto lo más nítido posible mientras se mueve */
+  -webkit-font-smoothing:none;
+  font-smooth:never;
+  text-rendering:optimizeSpeed;
+  backface-visibility:hidden;
+  --tail-x:50%;
+}
+/* piquito del globo (la línea hasta la rata va en .ri-tail, por debajo) */
+#rat-invasion .ri-bubble::after{
+  content:""; position:absolute; top:100%; left:var(--tail-x);
+  width:0; height:0; margin-left:-8px; border-style:solid;
+  border-width:10px 8px 0 8px; border-color:#04060e transparent transparent transparent;
+}
+#rat-invasion .ri-bubble::before{
+  content:""; position:absolute; top:calc(100% - 1px); left:var(--tail-x);
+  width:0; height:0; margin-left:-5px; border-style:solid; z-index:1;
+  border-width:6px 5px 0 5px; border-color:#fffbe8 transparent transparent transparent;
+}
+#rat-invasion .ri-tails{ position:absolute; inset:0; pointer-events:none; }
+#rat-invasion .ri-tail{
+  position:absolute; left:-1.5px; top:0; width:3px; height:0;
+  background:#04060e; border-radius:2px;
+  transform-origin:50% 0;
+  box-shadow:0 0 0 1px rgba(255,251,232,.35);
+}
+#rat-invasion .ri-bubble.pop{ animation:ri-bubble-pop .3s ease-out; }
+
+/* ---------- Golpe ---------- */
+#rat-invasion .ri-boom{
+  position:absolute; left:50%; top:10px;
+  font-family:'Press Start 2P',monospace; font-size:16px;
+  color:#ffd24a; text-shadow:3px 3px 0 #04060e, 0 0 12px #ff5a5a;
+  transform:translateX(-50%);
+  animation:ri-boom .7s ease-out forwards;
+  pointer-events:none; z-index:5;
+}
+
+@keyframes ri-lights{ 50%{ filter:brightness(.35); box-shadow:none; } }
+@keyframes ri-thruster{ from{ opacity:.6; transform:scaleX(.8); } to{ opacity:1; transform:scaleX(1.2); } }
+@keyframes ri-bubble-pop{
+  from{ opacity:0; filter:brightness(1.6); }
+  to  { opacity:1; filter:none; }
+}
+@keyframes ri-boom{
+  from{ transform:translate(-50%,0) scale(.6); opacity:1; }
+  to  { transform:translate(-50%,-60px) scale(1.4); opacity:0; }
+}

@@ -4,6 +4,7 @@ import posixpath
 from flask import Blueprint, jsonify, request, session
 
 import config
+from levels import progress
 
 bp = Blueprint("megaman", __name__, url_prefix="/level/megaman")
 
@@ -51,16 +52,6 @@ def submit():
     sent = (request.form.get("flag") or "").strip()
     if sent != FLAG:
         return jsonify(ok=False, message="Flag incorrecta. Revisa los archivos del laboratorio.")
-
-    unlocked = session.get("unlocked", [1])
-    if 3 in config.PROGRESSION:
-        index = config.PROGRESSION.index(3)
-        if index + 1 < len(config.PROGRESSION):
-            next_level = config.PROGRESSION[index + 1]
-            if next_level not in unlocked:
-                unlocked.append(next_level)
-    if 3 not in unlocked:
-        unlocked.append(3)
-    session["unlocked"] = unlocked
-    session.modified = True
+    if not progress.complete_level(3):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
     return jsonify(ok=True, message="¡Flag correcta! Laboratorio Wily superado. Siguiente nivel desbloqueado.")

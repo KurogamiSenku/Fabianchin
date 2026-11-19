@@ -1,3 +1,4 @@
+import os
 import secrets
 
 # Clave secreta para firmar las cookies de sesión.
@@ -6,25 +7,23 @@ import secrets
 # lo que de hecho resetea el progreso de todos — útil para pruebas).
 SECRET_KEY = secrets.token_hex(32)
 
-# Lista ordenada de niveles. El id define el orden de desbloqueo.
-LEVEL_ORDER = [
-    "level1",
-    "level2",
-    # aquí iremos agregando level3, level4... según avancemos
-]
-
-FLAGS = {
-    "level1": "mario_sqli_tuberia_admin",
-    "level2": "enumeracion_web_completada",
-}
-
 # --- Progresión del mapa (ids numéricos PROGRESIVOS, 7 niveles) ---
 #   1 Mario · 2 Contra · 3 Mega Man · 4 Bomberman · 5 DOOM · 6 Sonic · 7 Pokémon
 PROGRESSION = [1, 2, 3, 4, 5, 6, 7]
 
 # MODO DESARROLLO: desbloquea TODOS los niveles para poder probarlos directo.
-# Pon esto en False cuando quieras la progresión real (desbloqueo por flags).
-DEV_UNLOCK_ALL = True
+# Debe quedar en False: los niveles se desbloquean EN ORDEN al enviar la flag
+# del nivel anterior. Ponlo en True solo para probar niveles sueltos.
+DEV_UNLOCK_ALL = False
+
+# MODO REVISIÓN (para el equipo): desbloquea todo SOLO en tu navegador, sin
+# reiniciar el servidor ni tocar este archivo. Abre en el navegador:
+#   /dev/revisar?clave=<DEV_KEY>   -> todos los niveles abiertos (solo tú)
+#   /dev/normal                    -> vuelve a la progresión real
+#   /dev/reiniciar                 -> borra tu progreso (empiezas en el nivel 1)
+# Cambia la clave antes de presentar (el repo es público), o defínela con la
+# variable de entorno CTF_DEV_KEY.
+DEV_KEY = os.environ.get("CTF_DEV_KEY", "besto-revision-2026")
 
 # Flags por id de nivel del mapa (placeholders; cambiar por las reales en la VM)
 # Nivel 4 (Bomberman) = flag en dos mitades: la 1a por SQLi, la 2a por IDOR.

@@ -13,6 +13,7 @@ credenciales en memoria. Sin datos reales ni ejecución.
 """
 from flask import Blueprint, request, jsonify, session, Response
 import config
+from levels import progress
 
 bp = Blueprint("pokemon", __name__, url_prefix="/level/pokemon")
 FLAG = config.LEVEL_FLAGS[7]
@@ -54,16 +55,9 @@ def login():
 @bp.route("/submit", methods=["POST"])
 def submit():
     sent = (request.form.get("flag") or "").strip()
-    if sent == FLAG:
-        session.setdefault("completed", [])
-        if 7 not in session["completed"]:
-            session["completed"].append(7)
-        # desbloquear (aunque es el último) y marcar como resuelto
-        unlocked = session.get("unlocked", [1])
-        if 7 not in unlocked:
-            unlocked.append(7)
-        session["unlocked"] = unlocked
-        session.modified = True
-        return jsonify(ok=True, final=True,
-                       message="¡FLAG FINAL CORRECTA! Has conquistado la Liga de los administradores. ¡Fin del CTF!")
-    return jsonify(ok=False, message="Flag incorrecta. La respuesta está en el panel de admin.")
+    if sent != FLAG:
+        return jsonify(ok=False, message="Flag incorrecta. La respuesta está en el panel de admin.")
+    if not progress.complete_level(7):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
+    return jsonify(ok=True, final=True,
+                   message="¡FLAG FINAL CORRECTA! Has conquistado la Liga de los administradores. ¡Fin del CTF!")

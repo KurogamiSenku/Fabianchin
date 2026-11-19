@@ -14,6 +14,7 @@ puede leer es la flag ficticia, que es el objetivo del reto.
 import sqlite3
 from flask import Blueprint, request, jsonify, session
 import config
+from levels import progress
 
 bp = Blueprint("bomberman", __name__, url_prefix="/level/bomberman")
 
@@ -118,18 +119,8 @@ def record():
 @bp.route("/submit", methods=["POST"])
 def submit():
     sent = (request.form.get("flag") or "").strip()
-    if sent == FLAG:
-        prog = config.PROGRESSION
-        unlocked = session.get("unlocked", [1])
-        if 4 in prog:
-            i = prog.index(4)
-            if i + 1 < len(prog):
-                nxt = prog[i + 1]
-                if nxt not in unlocked:
-                    unlocked.append(nxt)
-        if 4 not in unlocked:
-            unlocked.append(5)
-        session["unlocked"] = unlocked
-        session.modified = True
-        return jsonify(ok=True, message="¡Flag correcta! Bloque destruido. Siguiente nivel desbloqueado.")
-    return jsonify(ok=False, message="Flag incorrecta. Vuelve a mirar la nota del admin.")
+    if sent != FLAG:
+        return jsonify(ok=False, message="Flag incorrecta. Vuelve a mirar la nota del admin.")
+    if not progress.complete_level(4):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
+    return jsonify(ok=True, message="¡Flag correcta! Bloque destruido. Siguiente nivel desbloqueado.")

@@ -1,11 +1,7 @@
 import os
 import threading
-from flask import (
-    Flask, render_template, request, redirect, url_for,
-    flash, session, jsonify,
-)
+from flask import Flask, render_template, session, request, redirect, url_for, abort
 import config
-from levels.level1 import bp as level1_bp
 from levels.level2 import bp as level2_bp
 from levels.bomberman import bp as bomberman_bp
 from levels.contra import bp as contra_bp
@@ -14,11 +10,11 @@ from levels.doom import bp as doom_bp
 from levels.pokemon import bp as pokemon_bp
 from levels.mario import bp as mario_bp
 from levels.megaman import bp as megaman_bp
+from levels import progress
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
 
-app.register_blueprint(level1_bp)
 app.register_blueprint(level2_bp)
 
 
@@ -47,89 +43,65 @@ LEVEL_MUSIC = {1: "mario", 2: "contra", 3: "megaman", 4: "bomberman",
                5: "doom", 6: "sonic", 7: "pokemon"}
 
 
-def next_expected_level():
-    """El id del próximo nivel que el jugador debe resolver, según su progreso."""
-    unlocked = session.get("unlocked", [])
-    for level_id in config.LEVEL_ORDER:
-        if level_id not in unlocked:
-            return level_id
-    return None
-
-
 # ---------- Home (fachada arcade) ----------
+
+# Música del inicio y del mapa (misma pista): static/audio/menu.mp3
+MENU_MUSIC = "menu"
+
 
 @app.route("/")
 def index():
-    return render_template("index.html")
-
-
-# ---------- Submit de flags ----------
-
-@app.route("/submit", methods=["GET"])
-def submit_page():
-    return render_template("submit.html")
-
-
-@app.route("/submit-flag", methods=["POST"])
-def submit_flag():
-    submitted = request.form.get("flag", "").strip()
-    expected_id = next_expected_level()
-
-    if expected_id is None:
-        flash("Ya completaste todos los niveles disponibles.", "ok")
-        return redirect(url_for("submit_page"))
-
-    expected_flag = config.FLAGS.get(expected_id)
-
-    if submitted == expected_flag:
-        session.setdefault("unlocked", [])
-        session["unlocked"].append(expected_id)
-        session.modified = True
-        flash(f"¡Correcto! Nivel {expected_id} desbloqueado.", "ok")
-    else:
-        flash("Flag incorrecta. Sigue buscando.", "error")
-
-    return redirect(url_for("submit_page"))
+    return render_template("index.html", bg_music=MENU_MUSIC)
 
 
 # ---------- Mapa / Hub ----------
 
 @app.route("/map")
 def map_view():
-    if config.DEV_UNLOCK_ALL:
-        # Modo desarrollo: todos los nodos desbloqueados para poder probarlos.
-        session["unlocked"] = list(config.PROGRESSION)
-    else:
-        # Progresión real: se siembra el nivel 1 y se desbloquea por flags.
-        if "unlocked" not in session:
-            session["unlocked"] = [1]
-        elif 1 not in session["unlocked"]:
-            session["unlocked"].insert(0, 1)
-    session.modified = True
-
+    unlocked = progress.get_unlocked()
     return render_template(
         "map.html",
-        unlocked_levels=session["unlocked"],
+        unlocked_levels=unlocked,
+        completed_levels=session.get("completed", []),
+        total_levels=len(config.PROGRESSION),
+        dev_mode=progress.dev_mode(),
+        bg_music=MENU_MUSIC,
     )
+
 
 @app.route("/level/<int:level_id>")
 def level_view(level_id):
     template = LEVEL_TEMPLATES.get(level_id)
     if not template:
         return render_template("levels/coming_soon.html", level_id=level_id)
+    # El servidor decide: escribir /level/5 en la barra NO salta niveles.
+    if not progress.is_unlocked(level_id):
+        return render_template("levels/locked.html", level_id=level_id), 403
     return render_template(template, level_id=level_id,
                            music=LEVEL_MUSIC.get(level_id))
 
-@app.route("/api/unlock_level/<int:level_id>", methods=["POST"])
-def unlock_level(level_id):
-    if "unlocked" not in session:
-        session["unlocked"] = [1]
 
-    if level_id not in session["unlocked"]:
-        session["unlocked"].append(level_id)
-        session.modified = True
+# ---------- Modo revisión (equipo) ----------
 
-    return jsonify(status="success", unlocked=session["unlocked"])
+@app.route("/dev/revisar")
+def dev_on():
+    if request.args.get("clave") != config.DEV_KEY:
+        abort(404)
+    session["dev_mode"] = True
+    return redirect(url_for("map_view"))
+
+
+@app.route("/dev/normal")
+def dev_off():
+    session.pop("dev_mode", None)
+    return redirect(url_for("map_view"))
+
+
+@app.route("/dev/reiniciar")
+def dev_reset():
+    for k in ("dev_mode", "unlocked", "completed", "found"):
+        session.pop(k, None)
+    return redirect(url_for("map_view"))
 
 
 # ---------- Shutdown ----------

@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div style="display:none;">mario_sqli_tuberia_admin</div>
-
     <div class="arcade-screen-text">¿Listo para el reto?</div>
     <div class="start-tag">★ 7 MUNDOS · 7 VULNERABILIDADES ★</div>
 
@@ -38,6 +36,9 @@
         var PLAY_URL = playBtn ? playBtn.getAttribute('href') : '/map';
         var slot = document.getElementById('coin-slot');
         if (!slot) return;
+        var COIN_SFX = "{{ url_for('static', filename='audio/moneda.mp3') }}";
+        // precarga para que suene sin retraso al soltar la moneda
+        var coinPreload = new Audio(COIN_SFX); coinPreload.preload = 'auto';
         var started = false, active = null, sx = 0, sy = 0;
 
         function coinCenter(c){ var r = c.getBoundingClientRect(); return { x: r.left + r.width/2, y: r.top + r.height/2 }; }
@@ -55,7 +56,18 @@
             var lbl = slot.querySelector('.coin-slot-label'); if(lbl) lbl.textContent = 'CREDIT 1';
             setTimeout(function(){ c.style.transform = 'translate(' + tx + 'px,' + (ty+34) + 'px) scale(.35) rotate(90deg)'; c.style.opacity = '0'; }, 300);
             var t = document.querySelector('.arcade-screen-text'); if(t) setTimeout(function(){ t.textContent = '¡PRESS START!'; }, 680);
-            setTimeout(function(){ window.location.href = PLAY_URL; }, 1080);
+            // Sonido de la moneda (static/audio/moneda.mp3). Se espera a que
+            // termine (máx. 3 s) antes de ir al mapa para que no se corte.
+            var t0 = Date.now();
+            var go = function(){ if (go.done) return; go.done = true; window.location.href = PLAY_URL; };
+            // nunca antes de que termine la animación de la moneda (1.08 s)
+            var goAfterAnim = function(){ setTimeout(go, Math.max(0, 1080 - (Date.now() - t0))); };
+            var ding = new Audio(COIN_SFX);
+            ding.volume = 0.9;
+            ding.addEventListener('ended', goAfterAnim);
+            ding.addEventListener('error', goAfterAnim);   // si falta el mp3, sigue igual que antes
+            ding.play().catch(goAfterAnim);
+            setTimeout(go, 3000);                            // tope por si el mp3 es largo
         }
         function snapBack(c){ c.style.transition = 'transform .2s ease'; c.style.transform = ''; c.style.zIndex = ''; slot.classList.remove('hot'); }
 
@@ -83,7 +95,8 @@
         });
     })();
 
-    document.getElementById('btn-exit').addEventListener('click', async () => {
+    var exitBtn = document.getElementById('btn-exit');   // (el botón ya no existe en la portada)
+    if (exitBtn) exitBtn.addEventListener('click', async () => {
         if (!confirm('¿Apagar el servidor del CTF?')) return;
         try { await fetch('/shutdown', { method: 'POST' }); } catch (e) {}
         document.getElementById('arcade-stage').innerHTML = '<div style="color:#58a6ff; text-align:center; font-family:monospace;">Servidor apagado.<br>Puedes cerrar esta pestaña.</div>';

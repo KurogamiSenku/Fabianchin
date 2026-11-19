@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
     {% block head %}{% endblock %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/matrix_terminal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rat_invasion.css') }}">
 </head>
 <body class="arcade-body {% block body_class %}{% endblock %}">
     <!-- Fondo retro para TODAS las páginas -->
@@ -144,6 +145,7 @@
     </script>
 
     <script src="{{ url_for('static', filename='js/arcade_shell.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/rat_invasion.js') }}"></script>
 
     <!-- Auto-ajuste: escala la cabina para que SIEMPRE quepa en pantalla sin zoom -->
     <script>
@@ -198,9 +200,11 @@
     {% endif %}
     {% block scripts %}{% endblock %}
 
-    {% if music %}
+    {% set track = music or bg_music %}
+    {% if track %}
     <script src="{{ url_for('static', filename='js/theme_audio.js') }}"
-            data-track="{{ url_for('static', filename='audio/' ~ music ~ '.mp3') }}"></script>
+            data-track="{{ url_for('static', filename='audio/' ~ track ~ '.mp3') }}"
+            {% if bg_music and not music %}data-continue="1"{% endif %}></script>
     {% endif %}
 </body>
 </html>

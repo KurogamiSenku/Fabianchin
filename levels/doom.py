@@ -13,6 +13,7 @@ un sistema de archivos y permisos ficticios, en memoria. Contenido y sin riesgo.
 """
 from flask import Blueprint, request, jsonify, session
 import config
+from levels import progress
 
 bp = Blueprint("doom", __name__, url_prefix="/level/doom")
 FLAG = config.LEVEL_FLAGS[5]
@@ -121,16 +122,8 @@ def shell():
 @bp.route("/submit", methods=["POST"])
 def submit():
     sent = (request.form.get("flag") or "").strip()
-    if sent == FLAG:
-        prog = config.PROGRESSION
-        unlocked = session.get("unlocked", [1])
-        if 5 in prog:
-            i = prog.index(5)
-            if i + 1 < len(prog) and prog[i + 1] not in unlocked:
-                unlocked.append(prog[i + 1])
-        if 5 not in unlocked:
-            unlocked.append(8)
-        session["unlocked"] = unlocked
-        session.modified = True
-        return jsonify(ok=True, message="¡Flag correcta! Profundidad conquistada. Siguiente nivel desbloqueado.")
-    return jsonify(ok=False, message="Flag incorrecta. Sigue explorando el sistema.")
+    if sent != FLAG:
+        return jsonify(ok=False, message="Flag incorrecta. Sigue explorando el sistema.")
+    if not progress.complete_level(5):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
+    return jsonify(ok=True, message="¡Flag correcta! Profundidad conquistada. Siguiente nivel desbloqueado.")

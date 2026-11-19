@@ -14,6 +14,22 @@
   audio.volume = vol;
   audio.muted = muted;
 
+  // Inicio y mapa comparten pista: se retoma donde iba al cambiar de página
+  const KEY = "ctf_music_pos:" + src;
+  if (document.currentScript.dataset.continue) {
+    const pos = parseFloat(sessionStorage.getItem(KEY));
+    if (!isNaN(pos)) {
+      audio.addEventListener("loadedmetadata", () => {
+        if (pos < audio.duration) audio.currentTime = pos;
+      }, { once: true });
+    }
+    window.addEventListener("pagehide", () => {
+      try { sessionStorage.setItem(KEY, String(audio.currentTime)); } catch (e) {}
+    });
+    // intenta sonar de una vez (funciona si el navegador ya lo permite)
+    audio.play().catch(() => {});
+  }
+
   // el navegador no deja sonar hasta una interacción del usuario:
   // se arranca en la primera tecla o clic (tu juego ya los captura)
   function unlock() {

@@ -14,6 +14,7 @@ y responder. Contenido y sin riesgo (no hay RCE ni webshell real).
 """
 from flask import Blueprint, request, jsonify, session
 import config
+from levels import progress
 
 bp = Blueprint("contra", __name__, url_prefix="/level/contra")
 
@@ -61,16 +62,8 @@ def upload():
 @bp.route("/submit", methods=["POST"])
 def submit():
     sent = (request.form.get("flag") or "").strip()
-    if sent == FLAG:
-        prog = config.PROGRESSION
-        unlocked = session.get("unlocked", [1])
-        if 2 in prog:
-            i = prog.index(2)
-            if i + 1 < len(prog) and prog[i + 1] not in unlocked:
-                unlocked.append(prog[i + 1])
-        if 2 not in unlocked:
-            unlocked.append(2)
-        session["unlocked"] = unlocked
-        session.modified = True
-        return jsonify(ok=True, message="¡Flag correcta! Base militar tomada. Siguiente nivel desbloqueado.")
-    return jsonify(ok=False, message="Flag incorrecta. Sigue buscando en el puesto de guardia.")
+    if sent != FLAG:
+        return jsonify(ok=False, message="Flag incorrecta. Sigue buscando en el puesto de guardia.")
+    if not progress.complete_level(2):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
+    return jsonify(ok=True, message="¡Flag correcta! Base militar tomada. Siguiente nivel desbloqueado.")

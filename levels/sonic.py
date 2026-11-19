@@ -14,6 +14,7 @@ import io
 from flask import Blueprint, send_file, request, jsonify, session
 from PIL import Image, ImageDraw, PngImagePlugin
 import config
+from levels import progress
 
 bp = Blueprint("sonic", __name__, url_prefix="/level/sonic")
 FLAG = config.LEVEL_FLAGS[6]
@@ -46,16 +47,8 @@ def datos():
 @bp.route("/submit", methods=["POST"])
 def submit():
     sent = (request.form.get("flag") or "").strip()
-    if sent == FLAG:
-        prog = config.PROGRESSION
-        unlocked = session.get("unlocked", [1])
-        if 6 in prog:
-            i = prog.index(6)
-            if i + 1 < len(prog) and prog[i + 1] not in unlocked:
-                unlocked.append(prog[i + 1])
-        if 6 not in unlocked:
-            unlocked.append(9)
-        session["unlocked"] = unlocked
-        session.modified = True
-        return jsonify(ok=True, message="¡Flag correcta! Datos recuperados. Siguiente nivel desbloqueado.")
-    return jsonify(ok=False, message="Flag incorrecta. Revisa bien los metadatos del archivo.")
+    if sent != FLAG:
+        return jsonify(ok=False, message="Flag incorrecta. Revisa bien los metadatos del archivo.")
+    if not progress.complete_level(6):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
+    return jsonify(ok=True, message="¡Flag correcta! Datos recuperados. Siguiente nivel desbloqueado.")

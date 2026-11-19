@@ -516,7 +516,7 @@
 {% block content %}
 <div id="game-container">
     <div class="hud-map">
-        <div>NIVELES: <span id="hud-progress">1/7</span></div>
+        <div>NIVELES: <span id="hud-progress">{{ completed_levels|length }}/{{ total_levels }}</span>{% if dev_mode %} <a href="{{ url_for('dev_off') }}" style="color:#ffd24a;margin-left:10px" title="Volver a la progresión real">[ MODO REVISIÓN ✕ ]</a>{% endif %}</div>
         <div>
             <a href="{{ url_for('index') }}">[ SALIR AL MENÚ ]</a>
         </div>

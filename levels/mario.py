@@ -20,6 +20,7 @@ la mecánica de tuberías del nivel Mario.
 import sqlite3
 from flask import Blueprint, request, jsonify, session
 import config
+from levels import progress
 
 bp = Blueprint("mario", __name__, url_prefix="/level/mario")
 
@@ -103,16 +104,8 @@ def status():
 @bp.route("/submit", methods=["POST"])
 def submit():
     sent = (request.form.get("flag") or "").strip()
-    if sent == FLAG:
-        prog = config.PROGRESSION
-        unlocked = session.get("unlocked", [1])
-        if 1 in prog:
-            i = prog.index(1)
-            if i + 1 < len(prog) and prog[i + 1] not in unlocked:
-                unlocked.append(prog[i + 1])
-        if 1 not in unlocked:
-            unlocked.append(1)
-        session["unlocked"] = unlocked
-        session.modified = True
-        return jsonify(ok=True, message="¡Flag correcta! Reino liberado. Siguiente nivel desbloqueado.")
-    return jsonify(ok=False, message="Flag incorrecta. Vuelve a mirar la nota del admin.")
+    if sent != FLAG:
+        return jsonify(ok=False, message="Flag incorrecta. Vuelve a mirar la nota del admin.")
+    if not progress.complete_level(1):
+        return jsonify(ok=False, message=progress.LOCKED_MSG)
+    return jsonify(ok=True, message="¡Flag correcta! Reino liberado. Siguiente nivel desbloqueado.")

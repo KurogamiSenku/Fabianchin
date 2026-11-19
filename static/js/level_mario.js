@@ -28,6 +28,58 @@ function loadImg(src) {
 
 const bg = loadImg('/static/img/mario_1_1_ref.png');
 
+// ====================================================================
+// SONIDOS — coloca los .mp3 en static/audio/mario/ con estos nombres.
+// Si falta alguno, ese sonido simplemente no suena (el juego sigue igual).
+// El botón 🔊/🔇 de la música también silencia estos efectos.
+// ====================================================================
+const SFX = (() => {
+  const BASE = '/static/audio/mario/';
+  const NAMES = [
+    'salto',              // al saltar
+    'romper_bloque',      // romper un ladrillo
+    'bloque_golpe',       // golpear un bloque "?"
+    'moneda',             // tomar una moneda
+    'hongo',              // tomar el hongo (escudo)
+    'estrella',           // tomar la estrella (invencible ~8 s; pausa la música del nivel)
+    'aplastar_goomba',    // saltar encima de un Goomba
+    'patada',             // eliminar un enemigo con la estrella
+    'dano',               // recibir un golpe / perder el escudo
+    'caida',              // caer a un hueco
+    'tuberia_bajar',      // bajar por la tubería
+    'tuberia_subir',      // subir por la tubería
+    'pista',              // desbloquear una pista de la bitácora
+    'llave',              // conseguir la sesión de admin (SQLi resuelto)
+    'meta',               // llegar a la bandera con todo
+    'nivel_completado',   // flag correcta, nivel superado (pausa la música)
+    'game_over',          // sin vidas (pausa la música)
+  ];
+  const cache = {}, missing = new Set();
+  NAMES.forEach(n => {
+    const a = new Audio(BASE + n + '.mp3');
+    a.preload = 'auto';
+    a.addEventListener('error', () => missing.add(n));
+    cache[n] = a;
+  });
+  const muted = () => localStorage.getItem('ctf_music_muted') === '1';
+  return {
+    play(name, vol = 0.7) {
+      const src = cache[name];
+      if (!src || missing.has(name) || muted()) return null;
+      const a = src.cloneNode();          // permite que se superpongan
+      a.volume = vol;
+      a.play().catch(() => {});
+      return a;
+    },
+    // música del nivel (theme_audio.js) durante estrella / game over / victoria
+    pauseMusic() { if (window.themeMusic) window.themeMusic.pause(); },
+    resumeMusic() {
+      if (window.themeMusic && !muted()) window.themeMusic.play().catch(() => {});
+    },
+  };
+})();
+let starSfx = null;
+
 const IMG = {
   used: loadImg('/static/img/mario/qblock_used.png'),
   coin: loadImg('/static/img/mario/coin.png'),
@@ -119,6 +171,7 @@ function unlockPista(id) {
   const p = pistaById(id);
   if (!p || p.found) return;
   p.found = true;
+  SFX.play('pista', 0.6);
   showPistaPop(p);
   renderPistas();
   flashNotebookBtn();
@@ -461,10 +514,14 @@ function hitBlock(b) {
   if (b.type === 'brick') {
     b.vanished = true;
     spawnBrickBits(b);
+    SFX.play('romper_bloque');
   } else if (b.item === 'coin') {
     coinsGot++;
     spawnItem(b, 'coin');
+    SFX.play('bloque_golpe', 0.5);
+    SFX.play('moneda', 0.6);
   } else {
+    SFX.play('bloque_golpe', 0.5);
     powerups++;
     spawnItem(b, b.item);
     applyPowerup(b.item);
@@ -486,21 +543,34 @@ function spawnBrickBits(b) {
 function spawnItem(b, kind) { floatItems.push({ x: b.x, y: b.y - 16, kind, t: 0 }); }
 
 function applyPowerup(kind) {
-  if (kind === 'mush' && !player.big) player.big = true;   // solo visual + escudo
-  if (kind === 'star') player.starT = 8000;
+  if (kind === 'mush') { if (!player.big) player.big = true; SFX.play('hongo'); }   // solo visual + escudo
+  if (kind === 'star') {
+    player.starT = 8000;
+    SFX.pauseMusic();
+    if (starSfx) starSfx.pause();
+    starSfx = SFX.play('estrella', 0.6);
+  }
 }
 
 function hurtPlayer() {
   if (player.invuln > 0 || player.starT > 0) return;
-  if (player.big) { player.big = false; player.invuln = 1400; toast('¡Golpe! Perdiste el escudo.'); return; }
+  if (player.big) { player.big = false; player.invuln = 1400; SFX.play('dano'); toast('¡Golpe! Perdiste el escudo.'); return; }
   player.hp--; player.invuln = 1400;
-  if (player.hp <= 0) gameOverT = 2600;
-  else toast('¡Golpe! Vidas: ' + player.hp);
+  if (player.hp <= 0) gameOver();
+  else { SFX.play('dano'); toast('¡Golpe! Vidas: ' + player.hp); }
+}
+
+function gameOver() {
+  gameOverT = 2600;
+  SFX.pauseMusic();
+  if (starSfx) { starSfx.pause(); starSfx = null; }
+  SFX.play('game_over', 0.8);
 }
 
 function fallInPit() {
   player.hp--; player.invuln = 1200;
-  if (player.hp <= 0) { gameOverT = 2600; return; }
+  if (player.hp <= 0) { gameOver(); return; }
+  SFX.play('caida');
   player.x = player.safeX; player.y = player.safeY - 4; player.vx = 0; player.vy = 0;
   toast('¡Caíste! Vidas: ' + player.hp);
 }
@@ -536,6 +606,8 @@ function resetLevel() {
   const banner = document.getElementById('goalbanner'); if (banner) banner.style.display = 'none';
   const flag = document.getElementById('flagwrap'); if (flag) flag.hidden = true;
   const winScreen = document.getElementById('win'); if (winScreen) winScreen.classList.remove('show');
+  if (starSfx) { starSfx.pause(); starSfx = null; }
+  SFX.resumeMusic();
 }
 
 const respawn = () => resetLevel();
@@ -549,7 +621,13 @@ function updatePlayer(dt) {
   if (challengeOpen || transition || won || notebookOpen) { player.state = 'idle'; return; }
 
   if (player.invuln > 0) player.invuln -= dt;
-  if (player.starT > 0) player.starT -= dt;
+  if (player.starT > 0) {
+    player.starT -= dt;
+    if (player.starT <= 0) {                       // se acabó la estrella
+      if (starSfx) { starSfx.pause(); starSfx = null; }
+      SFX.resumeMusic();
+    }
+  }
 
   const MOVE = MOVE_BASE * (player.starT > 0 ? 1.7 : 1);
   player.vx = 0;
@@ -560,7 +638,7 @@ function updatePlayer(dt) {
   // dejaría de cumplirse, de modo que nunca entraría a la tubería.
   if (keys.down && onEntryPipe()) { startPipe('down'); return; }
   if (keys.jump && onExitPipe() && adminUnlocked) { startPipe('up'); return; }
-  if (keys.jump && player.onGround) { player.vy = JUMP_V; player.onGround = false; }
+  if (keys.jump && player.onGround) { player.vy = JUMP_V; player.onGround = false; SFX.play('salto', 0.45); }
 
   player.vy += GRAV;
   if (player.vy > GRAVMAX) player.vy = GRAVMAX;
@@ -658,6 +736,7 @@ function updateEnemies(dt) {
       const stomp = player.vy > 0 && (player.y + player.h - e.y) < 18;
       if (player.starT > 0 || stomp) {
         e.dead = true; e.deadT = 0;
+        SFX.play(stomp ? 'aplastar_goomba' : 'patada');
         if (stomp) player.vy = -6.5;
         if (e.clue) unlockPista(e.clue);
       } else hurtPlayer();
@@ -677,6 +756,7 @@ function updateUndEnemies(dt) {
       const stomp = player.vy > 0 && (player.y + player.h - e.y) < 18;
       if (player.starT > 0 || stomp) {
         e.dead = true; e.deadT = 0;
+        SFX.play(stomp ? 'aplastar_goomba' : 'patada');
         if (stomp) player.vy = -6.5;
       } else hurtPlayer();
     }
@@ -699,7 +779,7 @@ function updatePiranhas(dt) {
 }
 
 function reachGoal() {
-  if (hasKey && powerups >= TOTAL_POWERUPS) { goalDone = true; window._openGoal(); }
+  if (hasKey && powerups >= TOTAL_POWERUPS) { goalDone = true; SFX.play('meta', 0.8); window._openGoal(); }
   else {
     const f = [];
     if (!hasKey) f.push('la LLAVE (SQLi)');
@@ -710,7 +790,7 @@ function reachGoal() {
   }
 }
 
-function startPipe(dir) { transition = { dir, t: 0, phase: 'in' }; keys.left = keys.right = keys.jump = keys.down = false; }
+function startPipe(dir) { SFX.play(dir === 'down' ? 'tuberia_bajar' : 'tuberia_subir'); transition = { dir, t: 0, phase: 'in' }; keys.left = keys.right = keys.jump = keys.down = false; }
 
 function updateTransition(dt) {
   if (!transition) return;
@@ -1152,6 +1232,7 @@ function closeChallenge() { challengeOpen = false; document.getElementById('chal
 window._closeChallenge = closeChallenge;
 
 window._setAdminUnlocked = function () {
+  if (!adminUnlocked) SFX.play('llave', 0.8);
   adminUnlocked = true; hasKey = true;
   const n = document.getElementById('pipe-open-note'); if (n) n.style.display = 'block';
 };
@@ -1164,7 +1245,13 @@ window._openGoal = function () {
   const gb = document.getElementById('goalbanner'); if (gb) gb.style.display = 'block';
 };
 
-window._showWin = function () { won = true; const w = document.getElementById('win'); if (w) w.classList.add('show'); };
+window._showWin = function () {
+  if (!won) {
+    SFX.pauseMusic();
+    if (starSfx) { starSfx.pause(); starSfx = null; }
+    SFX.play('nivel_completado', 0.8);
+  }
+  won = true; const w = document.getElementById('win'); if (w) w.classList.add('show'); };
 window._toggleNotebook = toggleNotebook;
 
 renderPistas();
