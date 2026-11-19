@@ -3,6 +3,7 @@
 {% block head %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clue_notebook.css') }}">
 <style>
   .arcade-stage{ padding:0 !important; }
   .arcade-subtitle{ display:none !important; }
@@ -44,7 +45,9 @@
 {% block controls_help %}
   <strong>A D / ←→</strong> → Correr &nbsp;|&nbsp;
   <strong>W / Espacio</strong> → Saltar &nbsp;|&nbsp;
+  <strong>Salta sobre los robots</strong> → libera Flickies &nbsp;|&nbsp;
   <strong>E</strong> → Meta (datos) &nbsp;|&nbsp;
+  <strong>Q</strong> → Bitácora &nbsp;|&nbsp;
   <a href="/map" style="color:#ff2fd6;">← Mapa</a>
 {% endblock %}
 
@@ -56,15 +59,8 @@
 
     <a class="dl" href="/level/sonic/datos.png" download="datos_perdidos.png">⤓ DESCARGAR datos_perdidos.png</a>
 
-    <details open>
-      <summary>¿Cómo extraigo la flag? (esteganografía / metadatos)</summary>
-      <p class="hint"><strong>1.</strong> La imagen parece ruido, pero la flag está en sus <strong>metadatos</strong>, no en los píxeles. Descárgala y analízala con herramientas de forense.</p>
-      <p class="hint"><strong>2.</strong> Prueba en tu Kali/terminal:<br>
-        <code>strings datos_perdidos.png | grep FLAG</code><br>
-        <code>exiftool datos_perdidos.png</code><br>
-        <code>binwalk datos_perdidos.png</code></p>
-      <p class="hint"><strong>3.</strong> Busca un campo de texto/comentario dentro del PNG: ahí está el fragmento con la flag.</p>
-    </details>
+    <p class="hint" id="pistas-meta">Esmeraldas recuperadas: 0/7.</p>
+    <p class="hint">¿Te diste cuenta? <strong>Acabas de correr a través de un archivo PNG</strong>: firma, IHDR, IDAT… y un chunk <strong>tEXt</strong> que no se veía. Las 7 <strong>Esmeraldas de datos</strong> (monitores, Flickies de los robots, poste de control, el chunk invisible y el anillo gigante) te enseñan a analizarlo. Revísalas en la bitácora (<strong>Q</strong>).</p>
 
     <div class="flagbox">
       <label for="flag">Enviar flag</label>
@@ -81,6 +77,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/clue_notebook.js') }}"></script>
 <script src="{{ url_for('static', filename='js/level_sonic.js') }}"></script>
 <script>
 const flagmsg=document.getElementById('flagmsg');

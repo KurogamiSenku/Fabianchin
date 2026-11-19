@@ -22,11 +22,18 @@
     </div>
 
     <div class="arcade-cabinet">
-        <!-- Costado del gabinete en perspectiva: Fabiancho + lema -->
+        <!-- Junto al arcade: comentario que sale del gabinete + Fabiancho en su OVNI -->
         <aside class="cabinet-side">
-          <div class="cabinet-side-face">
+          <!-- Fabiancho flotando sobre su plataforma OVNI, diciendo su frase -->
+          <div class="ufo-rider">
+            <p class="side-bubble"><span class="bubble-name">💬 FABIANCHO</span>Fabiancho lleva tanto tiempo enseñando <b>Hacking Ético</b> que ya sólo queda el <b>esqueleto</b>.</p>
             <img class="side-skeli" src="{{ url_for('static', filename='img/skeli_fixed/idle/idle1.png') }}" alt="Fabiancho">
-            <p class="side-text">Fabiancho lleva tanto tiempo enseñando <b>Hacking Ético</b> que ya sólo queda el <b>esqueleto</b>.</p>
+            <div class="ufo" aria-hidden="true">
+              <span class="ufo-dome"></span>
+              <span class="ufo-rim"><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="ufo-belly"></span>
+            </div>
+            <div class="ufo-beam" aria-hidden="true"></div>
           </div>
         </aside>
 
@@ -134,7 +141,7 @@
             var cab = document.querySelector('.arcade-cabinet');
             if(!cab) return;
             cab.style.transform = 'scale(1)';
-            var parts = document.querySelectorAll('.arcade-cabinet, .arcade-marquee, .panel-frame, .cabinet-side');
+            var parts = document.querySelectorAll('.arcade-cabinet, .arcade-marquee, .panel-frame, .cabinet-side, .side-bubble, .ufo-rider');
             function unionBounds(){
                 var L=Infinity,T=Infinity,R=-Infinity,B=-Infinity;
                 parts.forEach(function(e){

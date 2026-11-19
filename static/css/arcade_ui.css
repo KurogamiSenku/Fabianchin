@@ -617,3 +617,157 @@
 
 /* dar un respiro extra: controles un poco más abajo */
 .arcade-body .panel-frame{ margin-top:6px; }
+
+/* ============================================================
+   REVISIÓN 9 — adiós recuadro morado. Fabiancho flota junto al
+   arcade sobre una plataforma OVNI y DICE su frase en un globo de
+   cómic que viaja con él. El vuelo combina varias capas suaves:
+   el conjunto flota en un "8" lento, el platillo se ladea por su
+   cuenta y Fabiancho compensa el equilibrio.
+   ============================================================ */
+.arcade-body .cabinet-side{
+  width:290px; height:auto; top:40px; bottom:110px;
+  margin-right:0; overflow:visible;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+}
+.arcade-body .cabinet-side-face{ display:none; }   /* por si queda en alguna plantilla */
+
+/* --- Conjunto que vuela: globo + Fabiancho + OVNI --- */
+.arcade-body .ufo-rider{
+  position:relative; width:270px;
+  display:flex; flex-direction:column; align-items:center;
+  animation:ufo-fly 6s ease-in-out infinite;
+  will-change:transform;
+}
+
+/* --- El globo: sale de la boca de Fabiancho --- */
+.arcade-body .side-bubble{
+  position:relative; z-index:5;
+  width:100%; box-sizing:border-box;
+  margin:0 0 -82px;                      /* pegadito a su cabeza (el sprite trae aire transparente arriba) */
+  padding:28px 18px 16px;
+  font-family:'Press Start 2P',monospace;
+  font-size:14px; line-height:2; letter-spacing:0;
+  color:#1a1030; text-align:left; text-shadow:none;
+  background:#fffbe8;
+  border:4px solid #04060e; border-radius:14px;
+  box-shadow:5px 5px 0 #04060e, 0 0 22px rgba(56,198,255,.35);
+  transform-origin:50% 100%;
+  animation:bubble-pop .5s cubic-bezier(.2,1.6,.4,1) both,
+            bubble-talk 3s ease-in-out .5s infinite;
+}
+.arcade-body .side-bubble b{ color:#b0127e; }
+.arcade-body .bubble-name{
+  position:absolute; left:12px; top:-14px;
+  font-size:10px; letter-spacing:1px; color:#fff;
+  background:#b0127e; border:3px solid #04060e; border-radius:8px;
+  padding:5px 8px; box-shadow:2px 2px 0 #04060e;
+}
+/* colita centrada que apunta hacia abajo, a la cabeza de Fabiancho */
+.arcade-body .side-bubble::before,
+.arcade-body .side-bubble::after{
+  content:""; position:absolute; width:0; height:0; border-style:solid;
+}
+.arcade-body .side-bubble::before{       /* contorno */
+  left:50%; bottom:-24px; margin-left:-14px;
+  border-width:24px 14px 0 14px;
+  border-color:#04060e transparent transparent transparent;
+}
+.arcade-body .side-bubble::after{        /* relleno */
+  left:50%; bottom:-14px; margin-left:-9px;
+  border-width:15px 9px 0 9px;
+  border-color:#fffbe8 transparent transparent transparent;
+}
+
+/* --- Fabiancho --- */
+.arcade-body .ufo-rider .side-skeli{
+  width:170px; height:auto; display:block;
+  margin-bottom:-40px;                   /* los pies se apoyan en la cúpula */
+  position:relative; z-index:2;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 4px 0 rgba(0,0,0,.45));
+  transform-origin:50% 100%;
+  animation:skeli-balance 3.2s ease-in-out infinite;
+}
+
+/* --- El platillo --- */
+.arcade-body .ufo{
+  position:relative; width:210px; height:58px; z-index:1;
+  animation:ufo-tilt 3.2s ease-in-out infinite;
+}
+.arcade-body .ufo-dome{
+  position:absolute; left:30px; right:30px; top:4px; height:22px;
+  border:3px solid #04060e; border-radius:50% 50% 40% 40%;
+  background:linear-gradient(180deg,#eaf3ff 0%,#a7b9d1 55%,#617089 100%);
+}
+.arcade-body .ufo-rim{
+  position:absolute; left:0; right:0; top:17px; height:22px;
+  border:3px solid #04060e; border-radius:50%;
+  background:linear-gradient(180deg,#9aa5b8 0%,#4f586c 60%,#2a3040 100%);
+  box-shadow:0 0 16px rgba(56,198,255,.45);
+  display:flex; align-items:center; justify-content:space-evenly; padding:0 14px;
+}
+.arcade-body .ufo-rim i{
+  width:8px; height:8px; border-radius:50%; border:2px solid #04060e;
+  background:#ffd24a; box-shadow:0 0 8px #ffd24a;
+  animation:ufo-lights 1.2s steps(1) infinite;
+}
+.arcade-body .ufo-rim i:nth-child(2){ animation-delay:.24s; background:#38c6ff; box-shadow:0 0 8px #38c6ff; }
+.arcade-body .ufo-rim i:nth-child(3){ animation-delay:.48s; background:#ff2fd6; box-shadow:0 0 8px #ff2fd6; }
+.arcade-body .ufo-rim i:nth-child(4){ animation-delay:.72s; background:#3ddc84; box-shadow:0 0 8px #3ddc84; }
+.arcade-body .ufo-rim i:nth-child(5){ animation-delay:.96s; }
+.arcade-body .ufo-belly{
+  position:absolute; left:66px; right:66px; top:37px; height:16px;
+  border:3px solid #04060e; border-top:none; border-radius:0 0 40px 40px;
+  background:linear-gradient(180deg,#2a3040,#141826);
+}
+.arcade-body .ufo-belly::after{
+  content:""; position:absolute; left:50%; bottom:-6px; width:24px; height:7px; margin-left:-12px;
+  border-radius:50%; background:#7ff3ff; box-shadow:0 0 14px 4px rgba(127,243,255,.85);
+  animation:ufo-thruster .35s ease-in-out infinite alternate;
+}
+.arcade-body .ufo-beam{
+  width:130px; height:120px; margin-top:-2px;
+  clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);
+  background:linear-gradient(180deg,rgba(127,243,255,.5),rgba(127,243,255,0));
+  transform-origin:50% 0;
+  animation:ufo-beam 3.2s ease-in-out infinite;
+  pointer-events:none;
+}
+
+/* --- Animaciones --- */
+@keyframes bubble-pop{
+  from{ transform:scale(.3); opacity:0; }
+  to  { transform:scale(1);  opacity:1; }
+}
+/* el globo "respira" como si hablara */
+@keyframes bubble-talk{
+  0%,100%{ transform:scale(1); }
+  50%    { transform:scale(1.025); }
+}
+/* vuelo en "8": arriba/abajo + un pequeño vaivén lateral */
+@keyframes ufo-fly{
+  0%  { transform:translate(0,0); }
+  25% { transform:translate(5px,-10px); }
+  50% { transform:translate(0,-16px); }
+  75% { transform:translate(-5px,-8px); }
+  100%{ transform:translate(0,0); }
+}
+/* el platillo se ladea… */
+@keyframes ufo-tilt{
+  0%,100%{ transform:rotate(-4deg); }
+  50%    { transform:rotate(4deg); }
+}
+/* …y Fabiancho compensa para no caerse */
+@keyframes skeli-balance{
+  0%,100%{ transform:rotate(-2deg) translateX(-2px); }
+  50%    { transform:rotate(2deg)  translateX(2px); }
+}
+@keyframes ufo-beam{
+  0%,100%{ opacity:.5; transform:rotate(4deg) scaleX(.95); }
+  50%    { opacity:1;  transform:rotate(-4deg) scaleX(1.05); }
+}
+@keyframes ufo-thruster{ from{ opacity:.6; transform:scaleX(.8); } to{ opacity:1; transform:scaleX(1.15); } }
+@keyframes ufo-lights{ 50%{ filter:brightness(.35); box-shadow:none; } }
+/* Nota: el OVNI se anima SIEMPRE (también con "reducir animaciones"
+   activado en el sistema), porque su vuelo es suave y es parte del diseño. */
