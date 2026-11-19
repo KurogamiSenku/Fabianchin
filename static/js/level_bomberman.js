@@ -11,10 +11,8 @@ let COLS = BASE_COLS;
 cv.width = COLS * TILE; cv.height = ROWS * TILE;
 const BREACH = { c:BASE_COLS-1, r:5 };
 const SECRET_TERM = { c:BASE_COLS+EXTENSION_COLS-2, r:5 };
-const SECRET_ACCESS_CODE = 'mamahuevo';
 let secretSectorUnlocked = false;
 let recordsTerminalActive = false;
-let secretCodeBuffer = '';
 
 function loadImg(src){ const i = new Image(); i.src = src; return i; }
 const sprites = { idle: [], walk: [] };
@@ -97,40 +95,15 @@ const clueNotebook = window.createClueNotebook({
 function typingInField(e){ const t=e.target||document.activeElement;
     return t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
 
-function trackSecretCode(e){
-    if(e.key.length!==1||!/^[a-z]$/i.test(e.key)){
-        secretCodeBuffer='';
-        return '';
+window.registerSecretAccessCode(() => {
+    if(unlockSecretSector()){
+        gameplayHintTitle='CÓDIGO ACTIVADO';
+        gameplayHint='Sector oculto abierto. Derrota a los cuatro Bomberman para habilitar el terminal.';
+        gameplayHintTimer=8000;
     }
-    const candidate=secretCodeBuffer+e.key.toLowerCase();
-    if(candidate.endsWith(SECRET_ACCESS_CODE)){
-        secretCodeBuffer='';
-        return 'complete';
-    }
-    for(let size=Math.min(candidate.length,SECRET_ACCESS_CODE.length-1);size>0;size--){
-        const suffix=candidate.slice(-size);
-        if(SECRET_ACCESS_CODE.startsWith(suffix)){
-            secretCodeBuffer=suffix;
-            return 'progress';
-        }
-    }
-    secretCodeBuffer='';
-    return '';
-}
-
+}, () => challengeOpen || clueNotebook.isOpen());
 window.addEventListener('keydown', e=>{
     if (typingInField(e) || challengeOpen || clueNotebook.isOpen()){
-        secretCodeBuffer='';
-        return;
-    }
-    const secretCodeStatus=trackSecretCode(e);
-    if(secretCodeStatus){
-        e.preventDefault();
-        if(secretCodeStatus==='complete'&&unlockSecretSector()){
-            gameplayHintTitle='CÓDIGO ACTIVADO';
-            gameplayHint='Sector oculto abierto. Derrota a los cuatro Bomberman para habilitar el terminal.';
-            gameplayHintTimer=8000;
-        }
         return;
     }
     if (e.code==='Space'){ e.preventDefault(); placeBomb(); return; }

@@ -115,7 +115,7 @@ const sonicClues = [
       body:'¿No tienes herramientas forenses? Con Python y Pillow, al abrir una imagen PNG, su diccionario de información (.info) devuelve los chunks de texto como un diccionario clave → valor.',
       source:'Flicky liberado del robot cerca de la meta' },
     { id:'gigante', icon:'🤍', title:'Esmeralda 7 · La Esmeralda del Comentario',
-      body:'El técnico de la zona etiquetó el fragmento recuperado en un campo llamado "Comentario". Recuerda: las flags de esta plataforma tienen el formato FLAG{...}.',
+      body:'El técnico de la zona etiquetó el fragmento recuperado en un campo llamado "Comentario". Copia el valor completo de ese campo.',
       source:'Anillo gigante (llegaste con '+RINGS_FOR_GIANT+'+ anillos)' },
 ];
 const clueNotebook = window.createClueNotebook({
@@ -263,6 +263,9 @@ function updateSpecials(dt){
 
 function typingInField(e){ const t=e.target||document.activeElement;
     return t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
+window.registerSecretAccessCode(openChallenge, () =>
+    challengeOpen || clueNotebook.isOpen()
+);
 window.addEventListener('keydown', e=>{
     if (typingInField(e) || challengeOpen || clueNotebook.isOpen()) return;
     if (['a','A','ArrowLeft'].includes(e.key)) keys.left=true;

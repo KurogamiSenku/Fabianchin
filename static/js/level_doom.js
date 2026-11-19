@@ -108,7 +108,6 @@ player.r=.18;
 
 const keys = {};
 let challengeOpen = false;
-let secretCode = '';
 let revealWholeMap = false;
 let statusMessage = '';
 let statusTimer = 0;
@@ -139,23 +138,14 @@ const clueNotebook = window.createClueNotebook({
     clues:mapClues,
 });
 function typing(e){ const t=e.target||document.activeElement; return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
+window.registerSecretAccessCode(() => {
+    revealWholeMap=true;
+    showStatus('Mapa completo revelado.');
+    openChallenge();
+}, () => challengeOpen || clueNotebook.isOpen());
 window.addEventListener('keydown', e=>{
     if (typing(e)||challengeOpen) return;
     if (clueNotebook.isOpen()) return;
-    if (e.key.length===1 && /^[a-z]$/i.test(e.key)){
-        const next=(secretCode+e.key.toLowerCase()).slice(-'mamahuevo'.length);
-        if ('mamahuevo'.startsWith(next)){
-            secretCode=next;
-            e.preventDefault();
-            if (secretCode==='mamahuevo'){
-                revealWholeMap=true;
-                showStatus('Código aceptado: el mapa completo está revelado.');
-                secretCode='';
-            }
-            return;
-        }
-        secretCode=e.key.toLowerCase()==='m'?'m':'';
-    }
     if (e.key==='r'||e.key==='R'){
         window.location.reload();
         return;
@@ -315,8 +305,6 @@ function drawMinimap(){
         ctx.arc(mapX+player.x*tileSize,mapY+player.y*tileSize,Math.max(2,tileSize*.32),0,Math.PI*2);
         ctx.fill();
     }
-    ctx.fillStyle='#c2b8ae'; ctx.font='8px monospace';
-    ctx.fillText('Escribe mamahuevo para revelar',panelX+panelWidth/2,panelY+panelHeight-9);
 }
 
 function render(){

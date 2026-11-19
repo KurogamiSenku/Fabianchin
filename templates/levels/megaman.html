@@ -29,6 +29,7 @@
   .terminal-small{font-size:.9rem}
   @media(max-width:600px){ #arena{min-height:360px}.terminal{padding:14px}.terminal h2{font-size:10px}}
 </style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clue_notebook.css') }}">
 {% endblock %}
 
 {% block marquee %}
@@ -46,11 +47,12 @@
   <strong>W / Espacio</strong> → Saltar &nbsp;|&nbsp;
   <strong>J / F</strong> → Disparar &nbsp;|&nbsp;
   <strong>E</strong> → Usar terminal &nbsp;|&nbsp;
+  <strong>Q</strong> → Bitácora &nbsp;|&nbsp;
   <strong>R</strong> → Reiniciar tras perder
 {% endblock %}
 
 {% block after_cabinet %}
-<div class="terminal-overlay" id="terminal-overlay" role="dialog" aria-modal="true" aria-labelledby="terminal-title">
+<div class="terminal-overlay matrix-challenge matrix-megaman" id="terminal-overlay" role="dialog" aria-modal="true" aria-labelledby="terminal-title">
   <div class="terminal">
     <h2 id="terminal-title">▸ VISOR DE ARCHIVOS · LABORATORIO WILY</h2>
     <p>Visor de diagnóstico iniciado en <code>/srv/wily/public</code>. Encuentra los planos del reactor y copia la flag.</p>
@@ -62,7 +64,7 @@
     </div>
     <pre id="file-output">// Respuesta del visor.</pre>
     <label for="flag-input">Enviar flag</label>
-    <input id="flag-input" type="text" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+    <input id="flag-input" type="text" placeholder="Escribe la flag" autocomplete="off" spellcheck="false">
     <div class="terminal-actions"><button id="submit-flag">ENVIAR FLAG</button></div>
     <div id="terminal-message" aria-live="polite"></div>
     <p class="terminal-small">La terminal es parte del reto educativo y solo consulta archivos ficticios del juego.</p>
@@ -71,5 +73,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/clue_notebook.js') }}"></script>
 <script src="{{ url_for('static', filename='js/level_megaman.js') }}"></script>
 {% endblock %}

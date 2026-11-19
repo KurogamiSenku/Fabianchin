@@ -217,6 +217,10 @@ const clueNotebook = window.createClueNotebook({
     ],
 });
 function typing(e){ const t=e.target||document.activeElement; return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
+window.registerSecretAccessCode(() => {
+    leagueRevealed=true;
+    activeDialogue=null;
+}, () => challengeOpen || clueNotebook.isOpen());
 window.addEventListener('keydown', e=>{
     if (typing(e)||challengeOpen) return;
     if (clueNotebook.isOpen()) return;

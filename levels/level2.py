@@ -15,7 +15,7 @@ def documentation():
     return (
         "<h2>Documentación interna</h2>"
         "<p>Sección en construcción.</p>"
-        "<!-- FLAG{enumeracion_web_completada} -->"
+        "<!-- enumeracion_web_completada -->"
     ), 200
 
 

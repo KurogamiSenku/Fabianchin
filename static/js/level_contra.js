@@ -191,6 +191,10 @@ const keys = { left:false, right:false, up:false };
 function typingInField(e){ const t=e.target||document.activeElement;
     return t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable); }
 
+window.registerSecretAccessCode(openChallenge, () =>
+    challengeOpen || notebookOpen || gameOverT > 0 || popupOpen
+);
+
 window.addEventListener('keydown', e=>{
     if (!typingInField(e)){
       if (e.key==='q'||e.key==='Q'){ dismissPop(); toggleNotebook(); e.preventDefault(); return; }

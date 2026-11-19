@@ -14,30 +14,30 @@
   const platforms = [
     { x: 0, y: 1770, w: W, h: 100, checkpoint: true },
     { x: 70, y: 1625, w: 200, h: 18 },
-    { x: 480, y: 1480, w: 210, h: 18 },
-    { x: 285, y: 1335, w: 190, h: 18 },
-    { x: 40, y: 1190, w: 190, h: 18, checkpoint: true },
+    { x: 225, y: 1480, w: 210, h: 18 },
+    { x: 400, y: 1335, w: 190, h: 18 },
+    { x: 300, y: 1190, w: 190, h: 18, checkpoint: true },
     { x: 400, y: 1045, w: 190, h: 18 },
     { x: 550, y: 900, w: 170, h: 18 },
-    { x: 290, y: 755, w: 180, h: 18, checkpoint: true },
-    { x: 60, y: 610, w: 190, h: 18 },
-    { x: 420, y: 465, w: 190, h: 18 },
-    { x: 225, y: 320, w: 190, h: 18 },
+    { x: 500, y: 755, w: 180, h: 18, checkpoint: true },
+    { x: 390, y: 610, w: 190, h: 18 },
+    { x: 250, y: 465, w: 190, h: 18 },
+    { x: 320, y: 320, w: 190, h: 18 },
     { x: 320, y: 170, w: 220, h: 22, checkpoint: true }
   ];
   const spikes = [
-    { x: 620, y: 1462, w: 48, h: 18 },
-    { x: 145, y: 1172, w: 50, h: 18 },
-    { x: 605, y: 882, w: 52, h: 18 },
-    { x: 100, y: 592, w: 48, h: 18 },
-    { x: 335, y: 302, w: 54, h: 18 }
+    { x: 380, y: 1462, w: 48, h: 18 },
+    { x: 425, y: 1172, w: 50, h: 18 },
+    { x: 640, y: 882, w: 52, h: 18 },
+    { x: 500, y: 592, w: 48, h: 18 },
+    { x: 430, y: 302, w: 54, h: 18 }
   ];
   const enemyDefs = [
-    { x: 535, y: 1430, min: 500, max: 645 },
-    { x: 320, y: 1285, min: 305, max: 425 },
-    { x: 430, y: 995, min: 410, max: 545 },
-    { x: 315, y: 705, min: 300, max: 420 },
-    { x: 475, y: 415, min: 435, max: 575 }
+    { x: 290, y: 1430, min: 285, max: 330 },
+    { x: 480, y: 1285, min: 460, max: 530 },
+    { x: 500, y: 995, min: 470, max: 540 },
+    { x: 580, y: 705, min: 560, max: 630 },
+    { x: 270, y: 415, min: 260, max: 385 }
   ];
   const megaman = new Image();
   megaman.src = '/static/img/markers/megaman_walk.png';
@@ -72,8 +72,40 @@
     return target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
   }
 
+  const clueNotebook = window.createClueNotebook({
+    title: 'BITÁCORA · LABORATORIO WILY',
+    intro: 'Las notas del ascenso y del visor se guardan aquí.',
+    lockedText: 'Continúa explorando el laboratorio para recuperar esta pista.',
+    isBlocked: () => terminalOpen,
+    onToggle: open => {
+      if (open) keys.left = keys.right = keys.jump = keys.fire = false;
+    },
+    clues: [
+      {
+        id: 'checkpoints', icon: '🪜', title: 'Ruta de ascenso',
+        body: 'Las plataformas azules marcan la subida. Los puntos de control guardan tu avance.',
+        source: 'Activaste un punto de control',
+      },
+      {
+        id: 'readme', icon: '📄', title: 'Registro público',
+        body: 'El visor empieza en una carpeta pública. README.txt describe dónde buscar los planos.',
+        source: 'Leíste README.txt',
+      },
+      {
+        id: 'paths', icon: '🔐', title: 'Fuera del directorio',
+        body: 'El registro indica que los planos están fuera de la carpeta pública. Comprueba cómo el visor resuelve rutas relativas.',
+        source: 'Exploraste las rutas del visor',
+      },
+    ],
+  });
+
+  window.registerSecretAccessCode(openTerminal, () =>
+    terminalOpen || gameOver || clueNotebook.isOpen()
+  );
+
   function setKeys(event, pressed) {
     if (typingInField(event.target)) return;
+    if (clueNotebook.isOpen()) return;
     const key = event.key.toLowerCase();
     if (['a', 'arrowleft'].includes(key)) keys.left = pressed;
     if (['d', 'arrowright'].includes(key)) keys.right = pressed;
@@ -113,6 +145,7 @@
   function openTerminal() {
     terminalOpen = true;
     keys.left = keys.right = keys.jump = keys.fire = false;
+    clueNotebook.unlock('paths');
     document.getElementById('terminal-overlay').classList.add('show');
     document.getElementById('file-path').focus();
   }
@@ -163,7 +196,7 @@
   }
 
   function updatePlayer(dt) {
-    if (terminalOpen || gameOver) return;
+    if (terminalOpen || gameOver || clueNotebook.isOpen()) return;
     const step = dt / 16.67;
     player.invulnerable = Math.max(0, player.invulnerable - dt);
     player.shotCooldown = Math.max(0, player.shotCooldown - dt);
@@ -196,6 +229,7 @@
               x: platform.x + 14,
               y: platform.y - PLAYER_H
             };
+            clueNotebook.unlock('checkpoints');
           }
           break;
         }
@@ -214,7 +248,7 @@
   }
 
   function updateCombat(dt) {
-    if (terminalOpen || gameOver) return;
+    if (terminalOpen || gameOver || clueNotebook.isOpen()) return;
     const step = dt / 16.67;
     const playerCenter = { x: player.x + PLAYER_W / 2, y: player.y + PLAYER_H / 2 };
     for (const enemy of enemies) {
@@ -459,6 +493,8 @@
     const result = await response.json();
     output.textContent = result.ok ? `${result.path}\n\n${result.content}` : result.message;
     output.style.color = result.ok ? '#a6f0ca' : '#ff9a9a';
+    if (result.ok && result.path.endsWith('/README.txt')) clueNotebook.unlock('readme');
+    if (result.ok && result.path === '/opt/wily/secure/flag.txt') clueNotebook.unlock('paths');
   }
   async function submitFlag() {
     const messageEl = document.getElementById('terminal-message');

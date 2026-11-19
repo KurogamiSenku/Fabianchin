@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
     {% block head %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/matrix_terminal.css') }}">
 </head>
 <body class="arcade-body {% block body_class %}{% endblock %}">
     <!-- Fondo retro para TODAS las páginas -->
@@ -129,8 +130,18 @@
         });
     </script>
 
-    {# Contenido fuera de la cabina (p. ej. overlays que no deben escalarse) #}
+    {# Los retos se declaran con el contenido del nivel y se montan en el vidrio. #}
     {% block after_cabinet %}{% endblock %}
+
+    <script>
+        (function(){
+            var stage = document.getElementById('arcade-stage');
+            var challenge = document.querySelector('.matrix-challenge');
+            if (!stage || !challenge) return;
+            stage.appendChild(challenge);
+            stage.classList.add('challenge-screen-active');
+        })();
+    </script>
 
     <script src="{{ url_for('static', filename='js/arcade_shell.js') }}"></script>
 
@@ -182,6 +193,9 @@
     })();
     </script>
 
+    {% if level_id is defined %}
+    <script src="{{ url_for('static', filename='js/secret_access.js') }}"></script>
+    {% endif %}
     {% block scripts %}{% endblock %}
 
     {% if music %}

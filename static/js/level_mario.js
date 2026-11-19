@@ -369,6 +369,10 @@ function typingInField(e) {
   return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
 }
 
+window.registerSecretAccessCode(() => window._openGoal(), () =>
+  challengeOpen || transition || won || gameOverT > 0 || notebookOpen
+);
+
 window.addEventListener('keydown', e => {
   if (!typingInField(e)) {
     if (e.key === 'q' || e.key === 'Q') { toggleNotebook(); e.preventDefault(); return; }

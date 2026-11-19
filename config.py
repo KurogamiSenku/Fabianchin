@@ -14,8 +14,8 @@ LEVEL_ORDER = [
 ]
 
 FLAGS = {
-    "level1": "FLAG{primera_bandera_oculta_en_el_codigo}",
-    "level2": "FLAG{enumeracion_web_completada}",
+    "level1": "mario_sqli_tuberia_admin",
+    "level2": "enumeracion_web_completada",
 }
 
 # --- Progresión del mapa (ids numéricos PROGRESIVOS, 7 niveles) ---
@@ -31,11 +31,11 @@ DEV_UNLOCK_ALL = True
 BOMBERMAN_HALF1 = "bomberman_"
 BOMBERMAN_HALF2 = "sqli_idor"
 LEVEL_FLAGS = {
-    1: "FLAG{mario_sqli_tuberia_admin}",
-    2: "FLAG{contra_file_upload_bypass}",
-    # 3: "FLAG{megaman_...}",  # <- lo define quien construye Mega Man (nivel 3)
+    1: "mario_sqli_tuberia_admin",
+    2: "contra_file_upload_bypass",
+    3: "megaman_wily_lab",
     4: BOMBERMAN_HALF1 + BOMBERMAN_HALF2,
     5: "doom_sudo_root",
-    6: "FLAG{sonic_datos_en_metadatos}",
+    6: "sonic_datos_en_metadatos",
     7: "pokemon_liga_backup",
 }
