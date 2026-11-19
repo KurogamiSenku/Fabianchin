@@ -551,9 +551,12 @@ function updatePlayer(dt) {
   player.vx = 0;
   if (keys.left) { player.vx = -MOVE; player.facing = 'left'; }
   if (keys.right) { player.vx = MOVE; player.facing = 'right'; }
-  if (keys.jump && player.onGround) { player.vy = JUMP_V; player.onGround = false; }
+  // Las tuberías se comprueban ANTES del salto: si no, al pulsar arriba
+  // sobre la tubería de salida Mario saltaría (onGround=false) y onExitPipe()
+  // dejaría de cumplirse, de modo que nunca entraría a la tubería.
   if (keys.down && onEntryPipe()) { startPipe('down'); return; }
   if (keys.jump && onExitPipe() && adminUnlocked) { startPipe('up'); return; }
+  if (keys.jump && player.onGround) { player.vy = JUMP_V; player.onGround = false; }
 
   player.vy += GRAV;
   if (player.vy > GRAVMAX) player.vy = GRAVMAX;

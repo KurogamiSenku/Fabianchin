@@ -496,3 +496,124 @@
 #notebook-btn:hover{ transform:translateY(-50%) translateX(5px) !important; filter:brightness(1.1); }
 #notebook-btn:active{ transform:translateY(-50%) translateX(2px) !important; }
 #notebook-btn .nb-count{ display:none !important; }
+
+/* ============================================================
+   REVISIÓN 6 — marquesina con BANNER a todo lo ancho (arte real
+   de cada juego) + ranura de moneda más grande.
+   ============================================================ */
+
+/* La marquesina pasa a ser un marco que contiene el banner completo.
+   Ratio 7.2:1 = mismo encuadre uniforme de todos los banners => sin recorte. */
+.arcade-body .arcade-marquee.has-banner{
+  padding:0 !important;
+  overflow:hidden;
+  background:#04060e;                 /* respaldo por si el banner no cubre */
+  aspect-ratio:6 / 1;
+  min-height:0 !important;
+  height:auto;
+  margin-top:14px;
+}
+/* el banner llena por completo el marco, recortando lo mínimo */
+.arcade-body .marquee-banner{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover; object-position:center;
+  display:block; z-index:1;
+  image-rendering:auto;
+}
+/* brillo "backlit" de cristal por encima del banner */
+.arcade-body .arcade-marquee.has-banner::after{ z-index:3; }
+/* sin tiras LED cuando hay banner (el arte ya ocupa los costados) */
+.arcade-body .arcade-marquee.has-banner .led-strip{ display:none; }
+
+/* ----- Ranura de monedas más grande ----- */
+.arcade-body .coin-slot{ gap:9px; }
+.coin-slot-plate{
+  width:82px; height:92px; border-radius:12px; padding-top:14px;
+}
+.coin-slot-mouth{ width:46px; height:12px; border-radius:4px; }
+.coin-slot-label{ font-size:11px; letter-spacing:1px; }
+
+/* ----- Bitácora compartida (clue_notebook) como pestaña lateral izquierda ----- */
+.clue-notebook-btn{
+  position:fixed !important; left:0 !important; right:auto !important;
+  top:50% !important; bottom:auto !important;
+  transform:translateY(-50%) !important;
+  display:block !important;
+  writing-mode:vertical-rl; text-orientation:mixed; text-align:center;
+  font-family:'Press Start 2P',monospace !important; font-size:12px !important;
+  letter-spacing:2px !important; line-height:1.1 !important;
+  color:#2a0f0a !important;
+  background:linear-gradient(180deg,#ffd27a,#e86a4a) !important;
+  border:3px solid #000 !important; border-left:none !important;
+  border-radius:0 12px 12px 0 !important;
+  box-shadow:3px 3px 0 rgba(0,0,0,.5) !important;
+  padding:16px 9px !important; gap:0 !important;
+  z-index:700 !important;
+  transition:transform .12s ease, filter .12s ease !important;
+}
+.clue-notebook-btn:hover{ transform:translateY(-50%) translateX(5px) !important; filter:brightness(1.08); }
+.clue-notebook-btn:active{ transform:translateY(-50%) translateX(2px) !important; }
+.clue-notebook-count{ display:none !important; }
+/* el "flash" de atención no debe descentrar la pestaña: sólo resplandor */
+.clue-notebook-btn.flash{ animation:clue-tab-flash .55s ease 3 !important; }
+@keyframes clue-tab-flash{
+  0%,100%{ box-shadow:3px 3px 0 rgba(0,0,0,.5); filter:brightness(1); }
+  50%{ box-shadow:3px 3px 0 rgba(0,0,0,.5), 0 0 22px 7px rgba(255,215,95,.95); filter:brightness(1.25); }
+}
+
+/* ============================================================
+   REVISIÓN 7 — gabinete con efecto de perspectiva: el frente
+   (pantalla) queda plano y legible; el COSTADO izquierdo se gira
+   en 3D y muestra a Fabiancho + el lema. Marquesina más alta.
+   ============================================================ */
+.arcade-body .arcade-cabinet{ position:relative; perspective:1500px; }
+
+/* El costado: panel vertical anclado al borde izquierdo del gabinete,
+   girado sobre su eje derecho para "abrirse" hacia el fondo. */
+.arcade-body .cabinet-side{
+  position:absolute; right:100%; top:44px;
+  width:168px; height:calc(100% - 150px);
+  transform:none;                    /* plano, al extremo (sin perspectiva) */
+  z-index:2; pointer-events:none;
+  margin-right:-2px;                 /* se une sin costura al frente */
+}
+.arcade-body .cabinet-side-face{
+  position:absolute; inset:0;
+  border:4px solid #04060e; border-right:none;
+  border-radius:16px 0 0 16px;
+  background:
+    linear-gradient(100deg, #05060d 0%, #1b1133 42%, #2a1850 78%, #3a1f66 100%);
+  box-shadow:
+    inset 0 0 0 2px #120a26,
+    inset 8px 0 26px rgba(0,0,0,.65),
+    inset -6px 0 14px rgba(150,90,255,.25);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; padding:18px 12px; overflow:hidden;
+}
+/* franja de neón en el canto frontal del costado */
+.arcade-body .cabinet-side-face::before{
+  content:""; position:absolute; top:0; right:0; width:5px; height:100%;
+  background:linear-gradient(180deg,#38c6ff,#b06bff,#ff2fd6);
+  box-shadow:0 0 12px rgba(176,107,255,.8);
+}
+/* leves líneas de chapa */
+.arcade-body .cabinet-side-face::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 2px, transparent 2px 26px);
+}
+.arcade-body .side-skeli{
+  width:142px; height:auto; image-rendering:pixelated;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));
+  position:relative; z-index:1;
+}
+.arcade-body .side-text{
+  margin:0; position:relative; z-index:1;
+  font-family:'Press Start 2P',monospace;
+  font-size:8.5px; line-height:1.7; letter-spacing:.3px;
+  color:#d7c7ff; text-align:center; text-shadow:0 2px 0 #04060e;
+}
+.arcade-body .side-text b{ color:#8fe39b; }
+
+/* dar un respiro extra: controles un poco más abajo */
+.arcade-body .panel-frame{ margin-top:6px; }

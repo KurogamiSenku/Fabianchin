@@ -153,13 +153,20 @@ let pickups = [];   // curaciones que sueltan los soldados
 // ====================================================================
 const SOLDIER_DEFS = [
     { x:320,  y:182, dir:1,  min:60,   max:470,  fire:1700 },
+    { x:540,  y:180, dir:-1, min:480,  max:640,  fire:1600 },
     { x:760,  y:176, dir:1,  min:640,  max:1000, fire:2100 },
     { x:960,  y:176, dir:-1, min:640,  max:1000, fire:2600 },
+    { x:1120, y:186, dir:1,  min:1030, max:1180, fire:1800 },
     { x:1290, y:192, dir:-1, min:1180, max:1450, fire:2300 },
+    { x:1500, y:178, dir:1,  min:1460, max:1620, fire:1500 },
     { x:1740, y:160, dir:1,  min:1620, max:1900, fire:3000 },
+    { x:1950, y:172, dir:-1, min:1905, max:2030, fire:2200 },
     { x:2100, y:180, dir:1,  min:2040, max:2370, fire:1900 },
+    { x:2300, y:184, dir:-1, min:2210, max:2470, fire:1650 },
     { x:2550, y:168, dir:-1, min:2500, max:2780, fire:3200 },
-    { x:3000, y:190, dir:1,  min:2910, max:3300, fire:2400 },
+    { x:2750, y:176, dir:1,  min:2610, max:2900, fire:2000 },
+    { x:3000, y:190, dir:1,  min:2910, max:3230, fire:2400 },
+    { x:3300, y:188, dir:-1, min:3230, max:3360, fire:2600 },
 ];
 let soldiers = [];
 const bullets = [];    // balas enemigas
